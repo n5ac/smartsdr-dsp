@@ -1,0 +1,36 @@
+DSP_API Documentation
+
+Topic: Configuration File
+
+The DSP_API executable requires an associated ".cfg" configuration file.
+By example, the configuration file for FreeDV is FreeDV.cfg.  
+
+The ".cfg" file must reside in the same folder as the executable.
+This is currently 
+    /nfsroots/microburst/home/root/
+but will be changed in the future when the MODEM executables are
+moved to a protected folder.
+
+It is a text file, and can be composed with a test editor in either Unix
+or Windows format.
+
+All content prior to the '[header]' identifier will be ignored,
+so any free form text can be at the top of the file, prior to the [header].
+
+Currently, the only required [header] information is the 
+"Minimum-SmartSDR-Version:"  but providing all the information
+in the example is recommended.
+
+The [setup] section contains any or all commands required to 
+configure the radio for use with the MODEM.
+
+Empty lines will be skipped.
+
+The end of the configuration transmissions to the radio are
+terminated by either the [end] identifier, or encountering the
+end of file (EOF).
+
+Any text after the [end] identifier will be ignored.
+
+==
+
