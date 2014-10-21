@@ -45,10 +45,13 @@
 #include "discovery_client.h"
 #include "sched_waveform.h"
 
+//#define CONSOLE_THREAD /* Use when we need a console thread. Cannot be defined for customer card */
 
 static uint32 _api_version;
 static uint32 _handle;
+#ifdef CONSOLE_THREAD
 static pthread_t _console_thread_ID;
+#endif
 static BOOL console_thread_abort = FALSE;
 #define PROMPT "\n\033[92mWaveform -->\033[33m"
 static sem_t _startup_sem, _communications_sem;
@@ -117,10 +120,12 @@ void SmartSDR_API_Init(void)
     sched_waveform_Init();
 
     // Start the console thread
+#ifdef CONSOLE_THREAD
     pthread_create(&_console_thread_ID, NULL, &_console_thread, NULL);
 
     // wait for the console to print out all it's stuff
-    sem_wait(&_startup_sem);
+     sem_wait(&_startup_sem);
+#endif
     tc_Init();
     dc_Init();
 }
