@@ -129,118 +129,12 @@ int main(void) {
 	setup_segfault_handler();
     SmartSDR_API_Init();
 
-//			} // End of Receiver CODER processing
-//			else	// Transmit ...
-//			{
-//                //	If 'initial' flag, clear buffers TX1, TX2, TX3, TX4
-//                if(initial_tx)
-//                {
-//                	TX1_cb->start = 0;	// Clear buffers TX1, TX2, TX3, TX4
-//                	TX1_cb->end	  = 0;
-//                	TX2_cb->start = 0;
-//                	TX2_cb->end	  = 0;
-//                	TX3_cb->start = 0;
-//                	TX3_cb->end	  = 0;
-//                	TX4_cb->start = 0;
-//                	TX4_cb->end	  = 0;
-//                }
-//
-//            	//	Set the receive 'initial' flag
-//            	initial_rx = 1;
-//
-//                // Check for new transmit input packet & move to TX1_cb.
-//            	// TODO - If receive packet, discard here?
-//
-//            	if(InputTxPacketReady)
-//            	{
-//            		for(i=0;i<128;i++)
-//            		{
-//            			//	fsample = Get next float from packet;
-//            			fsample = ntohl(fsample);	// TODO issues with/without a cast ???
-//            			cbWriteFloat(RX1_cb, fsample);
-//            		}
-//            	}
-//
-//
-//                // Check for >= 384 samples in TX1_cb and spin downsampler
-//                //	Convert to shorts and move to TX2_cb.
-//            	if(cfbContains(TX1_cb) >= 384)
-//            	{
-//            		for(i=0 ; i<384 ; i++)
-//            		{
-//            			float_in[i] = cbReadFloat(TX1_cb);
-//            		}
-//
-//            		fdmdv_24_to_8(float_out, float_in, 384);
-//
-//            		for(i=0 ; i<128 ; i++)
-//            		{
-//            			cbWriteShort(TX2_cb, (short) float_out[i]*SCALE);
-//            		}
-//
-//            	}
-//
-//                // Check for >= 320 samples in TX2_cb and spin vocoder
-//                // 	Move output to TX3_cb.
-//            	if(csbContains(RX2_cb) >= 320)
-//            	{
-//            		for( i=0 ; i<320 ; i++)
-//            		{
-//            			speech_in[i] = cbReadShort(TX2_cb);
-//            		}
-//
-//            		freedv_tx(_freedvS, mod_out, speech_in);
-//
-//            		for( i=0 ; i<320 ; i++)
-//            		{
-//            			cbWriteShort(RX3_cb, mod_out[i]);
-//            		}
-//            	}
-//
-//                // Check for >= 128 samples in TX3_cb, convert to float, scale
-//                //	and spin the upsampler. Move output to TX4_cb.
-//
-//            	if(csbContains(TX3_cb) >= 128)
-//            	{
-//            		for( i=0 ; i<128 ; i++)
-//            		{
-//            			float_in[i] = ((float) cbReadShort(TX3_cb)) / SCALE;
-//            		}
-//
-//            		fdmdv_8_to_24(float_out, float_in, 384);
-//
-//            		for( i=0 ; i<384 ; i++)
-//            		{
-//            			cbWriteFloat(TX4_cb, float_out[i]);
-//            		}
-//            	}
-//
-//                // Check for >= 128 samples in TX4_cb. Form packet and
-//                //	export.
-//                if(cfbContains(TX4_cb) >= 128)
-//            	{
-//            		for( i=0 ; i<128 ; i++)
-//            		{
-//            			// Set up the outbound packet
-//            			fsample = htonl( cbReadFloat(RX4_cb) );
-//            			// put the fsample into the outbound packet
-//            		}
-//            	}
-//
-//			} // End of Transmit CODER processing
-//		} // End of CODER ON
-    	usleep(5000);
-//	} // End of WHILE() loop
-
     while(1) {
     	usleep(100000);
     }
 
     return 1;
 }
-
-
-// EoF =====-----
 
 
 
