@@ -124,9 +124,10 @@ void SmartSDR_API_Init(void)
     pthread_create(&_console_thread_ID, NULL, &_console_thread, NULL);
 
     // wait for the console to print out all it's stuff
-     sem_wait(&_startup_sem);
-#endif
+    sem_wait(&_startup_sem);
+    // initialize the traffic cop
     tc_Init();
+    // initialize the discovery client
     dc_Init();
 }
 

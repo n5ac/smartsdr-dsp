@@ -259,7 +259,7 @@ static void* _sched_waveform_thread(void* param)
  * *********************************************************************************************
  */
 
-	    int 	nin, nout;
+    int 	nin, nout;
 
     int		i;			// for loop counter
     float	fsample;	// a float sample
@@ -268,12 +268,6 @@ static void* _sched_waveform_thread(void* param)
     // Flags ...
     int		initial_tx = 1; 			// Flags for TX circular buffer, clear if starting transmit
     int		initial_rx = 1;				// Flags for RX circular buffer, clear if starting receive
-    //int		Coder_ON    = 0;			// Is CODEC2 On/Active ???
-    //int		transmit_ON = 0;			// Is CODEC2 in transmit mode?
-	//int		New_Packet_Waiting = 0;		// Is new packet waiting?
-	//int		Is_Control_Packet = 0;		// Is the new packet a control packet?
-	//int		InputRxPacketReady = 0;		// Is the new packet a sampled data packet for RX input?
-	//int 	InputTxPacketReady = 0;		// Is the new packet a sampled data packet for TX input?
 
 	// VOCODER I/O BUFFERS
     short	speech_in[FREEDV_NSAMPLES];
@@ -368,6 +362,8 @@ static void* _sched_waveform_thread(void* param)
 		{
 			do {
 				buf_desc = _WaveformList_UnlinkHead();
+				// if we got signalled, but there was no new data, something's wrong
+				// and we'll just wait for the next packet
 				if (buf_desc == NULL)
 				{
 					//output( "We were signaled that there was another buffer descriptor, but there's not one here");
@@ -670,6 +666,8 @@ static void* _sched_waveform_thread(void* param)
 					}
 					hal_BufferRelease(&buf_desc);
 
+					// the concensus is it doesn't matter to do this -- Graham put this in to
+					// yield the processor
 					usleep(10);
 				}
 			} while(1); // Seems infinite loop but will exit once there are no longer any buffers linked in _Waveformlist
