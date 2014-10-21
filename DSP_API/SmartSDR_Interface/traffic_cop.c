@@ -515,8 +515,8 @@ static uint32 _sendAPIcommand(char* command, uint32* sequence, BOOL block)
     result = write(_socket, message, len);
     *(message+len-1) = 0;
     // output what we're sending as long as it is not a ping
-    if (strstr(message, "ping") == 0)
-        output(ANSI_GREEN "-> SmartSDR: \033[33m%s\033[m\n",command);
+    // if (strstr(message, "ping") == 0)
+    //    output(ANSI_GREEN "-> SmartSDR: \033[33m%s\033[m\n",command);
     if (result == len)
     {
         ret_val = SUCCESS;
