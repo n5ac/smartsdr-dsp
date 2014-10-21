@@ -203,7 +203,7 @@ void my_put_next_rx_char(void *callback_state, char c)
         // lop off first character
         strcpy(_rx_string, _rx_string+1);
     }
-    output(ANSI_MAGENTA "new string = '%s'\n",_rx_string);
+    //output(ANSI_MAGENTA "new string = '%s'\n",_rx_string);
 
     char* api_cmd = safe_malloc(80);
     sprintf(api_cmd, "waveform status slice=%d string=\"%s\"",0,_rx_string);

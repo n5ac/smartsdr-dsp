@@ -539,8 +539,8 @@ uint32 tc_sendSmartSDRcommand(char* command, BOOL block, char** response)
     if (response) *response = NULL;
     uint32 sequence = 0;
 
-    if (strcmp(command, "ping") != 0)
-        output(ANSI_GREEN "sending command: \033[m%s\n",command);
+   // if (strcmp(command, "ping") != 0)
+   //     output(ANSI_GREEN "sending command: \033[m%s\n",command);
     uint32 result = _sendAPIcommand(command, &sequence, block);
 
     // if we're not waiting for a response, just return
