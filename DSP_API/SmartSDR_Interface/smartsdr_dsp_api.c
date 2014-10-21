@@ -122,6 +122,7 @@ void SmartSDR_API_Init(void)
     // Start the console thread
 #ifdef CONSOLE_THREAD
     pthread_create(&_console_thread_ID, NULL, &_console_thread, NULL);
+#endif
 
     // wait for the console to print out all it's stuff
     sem_wait(&_startup_sem);
