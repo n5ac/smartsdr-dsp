@@ -59,7 +59,7 @@
 
 
 const char* APP_NAME = "FreeDV";            // Name of Application
-const char* CFG_FILE = "FreeDV.cfg";        // Name of associated configuration file
+const char* CFG_FILE = "/home/root/FreeDV.cfg";        // Name of associated configuration file
 
 /* This structure mirrors the one found in /usr/include/asm/ucontext.h */
 typedef struct _sig_ucontext {
