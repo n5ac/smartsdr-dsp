@@ -44,6 +44,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <ifaddrs.h>
 
 #include "common.h"
 #include "traffic_cop.h"
@@ -613,8 +614,50 @@ void tc_Init(const char * hostname, const char * api_port)
 		output("NULL Hostname - tc_setHostname()\n");
 		return;
 	}
+    struct ifaddrs *ifaddr, *ifa;
+    int family, s, n;
+    char host[NI_MAXHOST];
+    BOOL use_loopback = FALSE;
 
-    strncpy(_hostname, hostname, 31);
+    if ( getifaddrs(&ifaddr) == -1 ) {
+    	output("Error getting local interface addrs. Using ip supplied in discovery packet\n");
+    } else {
+    	/* Walk through linked list of interfaces. */
+    	ifa = ifaddr;
+    	for ( n = 0; ifa != NULL; ifa = ifa->ifa_next, n++ ) {
+    		if ( ifa->ifa_addr == NULL )
+    			continue;
+
+    		family = ifa->ifa_addr->sa_family;
+
+    		/* Only care about IPV4 adresses */
+    		if ( family == AF_INET ) {
+    			s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+    			if ( s != 0 ) {
+    				output("getnameinfo() failed: %s\n", gai_strerror(s));
+    				continue;
+    			} else {
+
+    				/* We are on the same IP in the waveform and the radio hence we'll use local loopback interface instead
+    				 * of the radios IP
+    				 */
+    				if ( strncmp(hostname, host, NI_MAXHOST) == 0 ) {
+    					use_loopback = TRUE;
+    					output("We are on the same IP as the radio. Using loopback interface\n");
+    					break;
+    				}
+    			}
+    		} else {
+    			continue;
+    		}
+    	}
+    }
+
+    if ( !use_loopback )
+    	strncpy(_hostname, hostname, 31);
+    else
+    	strncpy(_hostname, "127.0.0.1", 31);
+
 	strncpy(_api_port, api_port, 31);
 
 
