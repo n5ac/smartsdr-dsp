@@ -33,6 +33,7 @@
 #include <string.h> // for memset
 #include <sys/socket.h>
 #include <netinet/in.h> // for htonl, htons, IPPROTO_UDP
+#include <arpa/inet.h>
 #include <pthread.h>
 #include <errno.h> // for errno
 #include <unistd.h>
@@ -46,6 +47,7 @@
 static int _dc_sock;
 static pthread_t _dc_thread;
 static BOOL _dc_abort = FALSE;
+static char * _restrict_ip = NULL;
 
 
 void printRadio(Radio radio)
@@ -75,9 +77,28 @@ void printRadio(Radio radio)
 static void _dc_RadioFound(Radio radio)
 {
 
-	if(getIP(radio->ip) == ntohl(net_get_ip()))
-	{
-		output("Radio found");
+	BOOL radio_found = FALSE;
+
+	if ( _restrict_ip != NULL ) {
+		if ( getIP(radio->ip) == getIP(_restrict_ip)) {
+			/* We have found the radio that we are restricted to */
+			output("We found a radio that maches our _restrict_ip - '%s'\n", _restrict_ip);
+			radio_found = TRUE;
+		}
+	} else if ( FALSE ) { /* Are we running within a radio? */
+
+		if(getIP(radio->ip) == ntohl(net_get_ip())) {
+			radio_found = TRUE;
+			output("We found a radio that is running on the same box as us - '%s'\n", radio->ip);
+		}
+
+	} else { /* Simply connect to first radio we find */
+		radio_found = TRUE;
+		output("We are attaching to the first radio we see");
+	}
+
+	if ( radio_found ) {
+		output("Radio found\n");
 		// yes -- connect and stop looking for more radios
 		// TODO: connect
 		    // start a keepalive to keep the channel open and know when it dies
@@ -269,10 +290,15 @@ static void* _dc_ListenerLoop(void* param)
 		}
 	}
 
+	if ( _restrict_ip ) {
+		safe_free(_restrict_ip);
+		_restrict_ip = NULL;
+	}
+
 	return NULL;
 }
 
-void dc_Init(void)
+void dc_Init(const char * radio_ip)
 {
 	output("Discovery Client Init: Opening socket");
 	int true = TRUE;
@@ -309,6 +335,16 @@ void dc_Init(void)
 		return;
 	}
 	output("\n");
+
+	if ( _restrict_ip ) {
+		safe_free(_restrict_ip );
+		_restrict_ip = NULL;
+	}
+
+	if ( radio_ip != NULL ) {
+		_restrict_ip = safe_malloc(strlen(radio_ip) + 1 );
+		strncpy(_restrict_ip, radio_ip, strlen(radio_ip) + 1);
+	}
 
 	// start the listener thread
 	pthread_create(&_dc_thread, NULL, &_dc_ListenerLoop, NULL);

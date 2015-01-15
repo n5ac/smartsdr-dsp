@@ -45,7 +45,7 @@ typedef struct _radio
 
 } radioType, *Radio;
 
-void dc_Init(void);
+void dc_Init(const char * radio_ip);
 void dc_Exit(void);
 
 void printRadio(Radio radio);

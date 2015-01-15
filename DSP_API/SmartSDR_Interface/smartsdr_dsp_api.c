@@ -107,7 +107,7 @@ void* _console_thread(void* param)
     return NULL;
 }
 
-void SmartSDR_API_Init(BOOL enable_console)
+void SmartSDR_API_Init(BOOL enable_console, const char * radio_ip)
 {
     sem_init(&_startup_sem,0,0);
     sem_init(&_communications_sem,0,0);
@@ -129,7 +129,7 @@ void SmartSDR_API_Init(BOOL enable_console)
     /* Initialize the discovery client
      * When a radio is found then the Traffic Cop is Started
      */
-    dc_Init();
+    dc_Init(radio_ip);
 }
 
 /* *****************************************************************************

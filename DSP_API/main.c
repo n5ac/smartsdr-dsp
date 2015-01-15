@@ -127,7 +127,9 @@ void setup_segfault_handler(void)
 int main( int argc, char * argv[])
 {
 	const char * console_param = "--console";
+	const char * restrict_ip_param = "--ip=";
 	BOOL enable_console = FALSE;
+	char * restrict_ip = NULL;
 
 	/* Semaphore will be used to signal end of execution */
 	sem_init(&shutdown_sem, 0, 0);
@@ -142,12 +144,21 @@ int main( int argc, char * argv[])
 			 * service or as a subprocess.
 			 */
 			enable_console = TRUE;
+		} else if ( strncmp(argv[i], restrict_ip_param, strlen(restrict_ip_param)) == 0 ) {
+
+			restrict_ip = safe_malloc(strlen(argv[i]));
+			strncpy(restrict_ip, argv[i]+strlen(restrict_ip_param), strlen(argv[i]));
+			output("Restrict IP = '%s'", restrict_ip);
 		} else {
 			output("Unknown console parameter - '%s'\n", argv[i]);
 		}
 	}
 
-    SmartSDR_API_Init(enable_console);
+    SmartSDR_API_Init(enable_console, restrict_ip);
+
+    if ( restrict_ip ) {
+    	safe_free(restrict_ip);
+    }
 
     /* Wait to be notified of shutdown */
     sem_wait(&shutdown_sem);

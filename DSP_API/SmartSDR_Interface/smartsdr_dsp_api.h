@@ -45,7 +45,7 @@ uint32 api_getVersion(void);
 void api_setHandle(uint32 handle);
 uint32 api_getHandle(void);
 void SmartSDR_API_Shutdown(void);
-void SmartSDR_API_Init(BOOL enable_console);
+void SmartSDR_API_Init(BOOL enable_console, const char * radio_ip);
 uint32 register_mode(void);
 
 
