@@ -121,20 +121,33 @@ void setup_segfault_handler(void)
     signal(SIGPIPE, SIG_IGN);
 }
 
-
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // 	main()
 
-int main(void)
+int main( int argc, char * argv[])
 {
+	const char * console_param = "--console";
+	BOOL enable_console = FALSE;
 
 	/* Semaphore will be used to signal end of execution */
 	sem_init(&shutdown_sem, 0, 0);
-
+	/* If compiled in DEBUG then seg-faults will include a stack trace */
 	setup_segfault_handler();
 
-    SmartSDR_API_Init();
+	int i = 0;
+	for ( i = 1 ; i < argc; i++ ) {
+		if (strncmp(argv[i], console_param, strlen(console_param)) == 0 ) {
+			/* We will run with a console for input.
+			 * This is normally disabled so that the waveform can run as a
+			 * service or as a subprocess.
+			 */
+			enable_console = TRUE;
+		} else {
+			output("Unknown console parameter - '%s'\n", argv[i]);
+		}
+	}
+
+    SmartSDR_API_Init(enable_console);
 
     /* Wait to be notified of shutdown */
     sem_wait(&shutdown_sem);

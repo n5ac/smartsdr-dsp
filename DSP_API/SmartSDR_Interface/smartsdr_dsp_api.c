@@ -49,9 +49,8 @@
 
 static uint32 _api_version;
 static uint32 _handle;
-#ifdef CONSOLE_THREAD
 static pthread_t _console_thread_ID;
-#endif
+
 static BOOL console_thread_abort = FALSE;
 #define PROMPT "\n\033[92mWaveform -->\033[33m"
 static sem_t _startup_sem, _communications_sem;
@@ -94,10 +93,10 @@ void SmartSDR_API_Shutdown(void)
 void* _console_thread(void* param)
 {
     cmd_banner();
+    output(PROMPT);
     // let everybody know we're through printing
     sem_post(&_startup_sem);
     sem_wait(&_communications_sem);
-    output(PROMPT);
     while (!console_thread_abort)
     {
         command();
@@ -108,7 +107,7 @@ void* _console_thread(void* param)
     return NULL;
 }
 
-void SmartSDR_API_Init(void)
+void SmartSDR_API_Init(BOOL enable_console)
 {
     sem_init(&_startup_sem,0,0);
     sem_init(&_communications_sem,0,0);
@@ -116,20 +115,22 @@ void SmartSDR_API_Init(void)
     // initialize printed output
     lock_printf_init();
     lock_malloc_init();
+    /* Initialize UDP connections for TX */
     vita_output_Init();
     sched_waveform_Init();
 
     // Start the console thread
-#ifdef CONSOLE_THREAD
-    pthread_create(&_console_thread_ID, NULL, &_console_thread, NULL);
-#endif
-
+    if ( enable_console ) {
+    	pthread_create(&_console_thread_ID, NULL, &_console_thread, NULL);
     // wait for the console to print out all it's stuff
-    sem_wait(&_startup_sem);
-    // initialize the traffic cop
-    tc_Init();
+    	sem_wait(&_startup_sem);
+    }
+
     // initialize the discovery client
     dc_Init();
+
+    /* Initialize Traffic Cop for TCP RX/TX */
+    tc_Init();
 }
 
 /* *****************************************************************************
