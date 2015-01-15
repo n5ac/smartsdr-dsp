@@ -135,11 +135,6 @@ uint32 cmd_exit(int requester_fd, int argc,char **argv)
 
 	write(requester_fd, string1, strlen(string1));
 
-//	if(argc > 1 && tolower(*argv[1]) == 'r')
-//		end_firmware(power_reboot);
-//	else
-//		end_firmware(power_leaveon);
-
 	_exit(0);
 	return SUCCESS;
 }

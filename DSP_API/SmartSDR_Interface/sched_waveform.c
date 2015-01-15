@@ -694,7 +694,7 @@ void sched_waveform_Init(void)
 	pthread_create(&_waveform_thread, NULL, &_sched_waveform_thread, NULL);
 
 	struct sched_param fifo_param;
-	fifo_param.sched_priority = 25;
+	fifo_param.sched_priority = 30;
 	pthread_setschedparam(_waveform_thread, SCHED_FIFO, &fifo_param);
 }
 
