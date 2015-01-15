@@ -354,7 +354,11 @@ static void* _tc_thread(void* arg)
     _tc_openSocket();
 
     result = register_mode();
-    if (result != SUCCESS) exit(1);
+    if (result != SUCCESS)  {
+    	output("** Could not register mode **\n");
+    }
+
+    tc_startKeepalive();
 
     // loop receiving data from SmartSDR and sending it where it should go
     while (!_abort)
@@ -522,7 +526,7 @@ static uint32 _sendAPIcommand(char* command, uint32* sequence, BOOL block)
     *(message+len-1) = 0;
     // output what we're sending as long as it is not a ping
     // if (strstr(message, "ping") == 0)
-    //    output(ANSI_GREEN "-> SmartSDR: \033[33m%s\033[m\n",command);
+        //output(ANSI_GREEN "-> SmartSDR: \033[33m%s\033[m\n",command);
     if (result == len)
     {
         ret_val = SUCCESS;
@@ -565,6 +569,9 @@ static void* _keepalive_thread(void* param)
 {
     char* response;
 
+    /* Sleep 2 seconds */
+    usleep(2000000);
+
     // enable the keepalive mechanism in SmartSDR
     uint32 ret_val = tc_sendSmartSDRcommand("keepalive enable", TRUE, &response);
     if (ret_val != SUCCESS)
@@ -588,6 +595,7 @@ static void* _keepalive_thread(void* param)
             break;
         }
     }
+    output("Keep thread closing\n");
     return NULL;
 }
 
