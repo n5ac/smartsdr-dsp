@@ -61,6 +61,8 @@
 const char* APP_NAME = "FreeDV";            // Name of Application
 const char* CFG_FILE = "/home/root/FreeDV.cfg";        // Name of associated configuration file
 
+static sem_t shutdown_sem;
+
 /* This structure mirrors the one found in /usr/include/asm/ucontext.h */
 typedef struct _sig_ucontext {
 	unsigned long     uc_flags;
@@ -124,16 +126,20 @@ void setup_segfault_handler(void)
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // 	main()
 
-int main(void) {
+int main(void)
+{
+
+	/* Semaphore will be used to signal end of execution */
+	sem_init(&shutdown_sem, 0, 0);
 
 	setup_segfault_handler();
+
     SmartSDR_API_Init();
 
-    while(1) {
-    	usleep(100000);
-    }
+    /* Wait to be notified of shutdown */
+    sem_wait(&shutdown_sem);
 
-    return 1;
+    return 0;
 }
 
 
