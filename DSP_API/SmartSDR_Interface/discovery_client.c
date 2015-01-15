@@ -115,26 +115,26 @@ static void _dc_ListenerParsePacket(uint8* packet, int32 length, struct sockaddr
 	VitaIFData p = (VitaIFData)packet;
 
 	// does this packet have our OUI?
-	if(htonl(p->class_id_h) != 0x00001C2D)
+	if(ntohl(p->class_id_h) != 0x00001C2D)
 	{
 		// no -- discard this packet
-		//output("_dc_ListenerParsePacket: wrong OUI (0x%08X)\n", htonl(p->class_id_h));
+		output("_dc_ListenerParsePacket: wrong OUI (0x%08X)\n", htonl(p->class_id_h));
 		return;
 	}
 
 	// is this packet an extended data packet?
-	if((p->header & VITA_HEADER_PACKET_TYPE_MASK) != VITA_PACKET_TYPE_EXT_DATA_WITH_STREAM_ID)
+	if((ntohl(p->header) & VITA_HEADER_PACKET_TYPE_MASK) != VITA_PACKET_TYPE_EXT_DATA_WITH_STREAM_ID)
 	{
 		// no -- discard this packet
-		//output("_dc_ListenerParsePacket: wrong packet type (0x%08X)\n", p->header & VITA_HEADER_PACKET_TYPE_MASK);
+		output("_dc_ListenerParsePacket: wrong packet type (0x%08X)\n", p->header & VITA_HEADER_PACKET_TYPE_MASK);
 		return;
 	}
 
 	// is this packet marked as a SL_VITA_DISCOVERY_CLASS?
-	if((htonl(p->class_id_l) & VITA_CLASS_ID_PACKET_CLASS_MASK) != 0xFFFF)
+	if((ntohl(p->class_id_l) & VITA_CLASS_ID_PACKET_CLASS_MASK) != 0xFFFF)
 	{
 		// no -- discard this packet
-		//output("_dc_ListenerParsePacket: wrong packet class (0x%04X)\n", p->class_id_l & VITA_CLASS_ID_PACKET_CLASS_MASK);
+		output("_dc_ListenerParsePacket: wrong packet class (0x%04X)\n", p->class_id_l & VITA_CLASS_ID_PACKET_CLASS_MASK);
 		return;
 	}
 
@@ -294,7 +294,8 @@ void dc_Init(void)
 	/* If you're running on the same box as the smartsdr firmware this is necessary so
 	 * that both processes can bind to the same VITA port
 	 */
-	/*int32 ret_val =*/ setsockopt(_dc_sock, SOL_SOCKET, SO_REUSEADDR, &true, sizeof(true));
+	errno = 0;
+	setsockopt(_dc_sock, SOL_SOCKET, SO_REUSEADDR, &true, sizeof(true));
 	if (errno)
 	{
 		output("error with reuse option: errno=%d",errno);

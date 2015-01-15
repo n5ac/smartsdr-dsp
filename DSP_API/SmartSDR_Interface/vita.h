@@ -74,7 +74,7 @@
 #define MAX_TCP_DATA_SIZE (ETH_DATA_LEN-16)
 
 // 16 ip header, 6 udp header
-#define MAX_UDP_DATA_SIZE (65535)
+#define MAX_UDP_DATA_SIZE (2048)
 
 #define MAX_IF_DATA_PAYLOAD_SIZE (MAX_UDP_DATA_SIZE) //-28)
 typedef struct _vita_if_data
