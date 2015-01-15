@@ -194,7 +194,7 @@ namespace CODEC2_GUI
 
         private void CheckDemodMode(Slice slc)
         {
-            if (slc.DemodMode == "USB")
+            if (slc.DemodMode == "FDV")
             {
                 // yes -- is this Slice already in the list?
                 if (!_fdvSlices.Contains(slc))
