@@ -115,8 +115,7 @@ void SmartSDR_API_Init(BOOL enable_console, const char * radio_ip)
     // initialize printed output
     lock_printf_init();
     lock_malloc_init();
-    /* Initialize UDP connections for TX */
-    vita_output_Init();
+
     sched_waveform_Init();
 
     // Start the console thread

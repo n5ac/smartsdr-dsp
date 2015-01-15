@@ -57,7 +57,6 @@ typedef struct _cmd
 } command_type, *Command;
 
 //! ask the TCP/IP command client to abort
-void tc_Abort(void);
 void tc_startKeepalive(void);
 void tc_abort(void);
 void tc_Init(const char * hostname, const char * api_port);

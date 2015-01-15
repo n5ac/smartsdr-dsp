@@ -358,6 +358,9 @@ static void* _tc_thread(void* arg)
     	output("** Could not register mode **\n");
     }
 
+    /* Initialize UDP connections for TX */
+    vita_output_Init(_hostname);
+
     tc_startKeepalive();
 
     // loop receiving data from SmartSDR and sending it where it should go

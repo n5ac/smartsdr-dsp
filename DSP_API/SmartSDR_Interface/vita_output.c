@@ -61,11 +61,11 @@ extern int errno;
 static vita_if_data waveform_packet;
 
 static int vita_sock;
-static struct sockaddr_in vita_sLocalAddr, vita_sDestAddrIf;
+static struct sockaddr_in vita_sLocalAddr;
 static uint32 _local_ip_addr;
 static uint16 _dest_port;
 
-void vita_output_Init(void)
+void vita_output_Init(const char * ip )
 {
 	output("\033[32mInitializing VITA-49 output engine...\n\033[m");
 
@@ -75,35 +75,28 @@ void vita_output_Init(void)
 		output(ANSI_RED " Failed to initialize VITA socket\n");
 		return;
 	}
+	errno = 0;
 	bind(vita_sock, (struct sockaddr *)&vita_sLocalAddr, sizeof(vita_sLocalAddr));
 	if (errno)
 	{
 		output(ANSI_RED "error binding socket: errno=%d\n",errno);
 	}
 
-	memset((char *)&vita_sLocalAddr, 0, sizeof(vita_sLocalAddr));
-	memset((char *)&vita_sDestAddrIf, 0, sizeof(vita_sDestAddrIf));
-
-	// IF Destination
-	vita_sDestAddrIf.sin_family = AF_INET;
-	vita_sDestAddrIf.sin_addr.s_addr = htonl(0xC0A8145D); // 192.168.20.108, used to be 192.168.30.40
-	vita_sDestAddrIf.sin_port = htons(VITA_49_PORT);
-	memset(&vita_sDestAddrIf.sin_zero, 0, sizeof(vita_sDestAddrIf.sin_zero));
-
-	// Source
-	vita_sLocalAddr.sin_family = AF_INET;
-	vita_sLocalAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	vita_sLocalAddr.sin_port = htons(VITA_49_SOURCE_PORT);
-	memset(&vita_sLocalAddr.sin_zero, 0, sizeof(vita_sLocalAddr.sin_zero));
-
 	struct in_addr addr;
-	if ( inet_aton("127.0.0.1", &addr) == 0) {
+
+	if ( ip == NULL ) {
+		output(ANSI_RED "NULL IP Supplied!!\n");
+		tc_abort();
+	}
+	if ( inet_aton(ip, &addr) == 0) {
 		output(ANSI_RED "Could not convert local addr to binary\n");
 	} else {
 		_local_ip_addr = ntohl(addr.s_addr);
 	}
 	_dest_port = 4991;
 	// output("host = %d.%d.%d.%d : %d", ip>>24, (ip>>16)&0xFF, (ip>>8)&0xFF, ip&0xFF, _dest_port);
+
+	output("Vita Output Init - ip = '%s' port = %d\n", ip,_dest_port);
 }
 
 void UDPSendByIPandPort(void* packet, uint32 num_bytes, uint32 ip_address, uint16 udp_port)
@@ -199,6 +192,6 @@ void emit_waveform_output(BufferDescriptor buf_desc_out)
 		buf_pointer += samples_to_send;
 		samples_sent += samples_to_send;
 		vita_sLocalAddr.sin_port = htons(VITA_49_SOURCE_PORT);
-		UDPSendByIPandPort(&waveform_packet, samples_to_send * 8 + 28, _local_ip_addr, 4991);
+		UDPSendByIPandPort(&waveform_packet, samples_to_send * 8 + 28, _local_ip_addr, _dest_port);
 	}
 }

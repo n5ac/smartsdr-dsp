@@ -40,7 +40,7 @@
 #include "complex.h"
 #include "hal_buffer.h"
 
-void vita_output_Init();
+void vita_output_Init(const char * ip );
 
 void UDPSendByIPandPort(void* packet, uint32 num_bytes, uint32 ip_address, uint16 udp_port);
 
