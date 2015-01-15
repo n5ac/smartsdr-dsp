@@ -55,7 +55,9 @@ static pthread_t _keepalive_thread_id;
 static __thread receive_data __local;
 //! address of the host to connect to -- defaults to 127.0.0.1
 //! but this is generally provided by discovery
-static char* _hostname = "127.0.0.1";
+static char _hostname[32] = "127.0.0.1";
+static char _api_port[32] = SMARTSDR_API_PORT;
+
 //const char* gai_strerror(int ecode);
 static BOOL _abort = FALSE;
 static int _socket;
@@ -602,10 +604,19 @@ void tc_abort(void)
     exit(1);
 }
 
-void tc_Init(void)
+void tc_Init(const char * hostname, const char * api_port)
 {
     _commandList_Init();
     output("\033[32mStarting Traffic Cop...\n\033[m");
+
+    if ( hostname == NULL || api_port == NULL) {
+		output("NULL Hostname - tc_setHostname()\n");
+		return;
+	}
+
+    strncpy(_hostname, hostname, 31);
+	strncpy(_api_port, api_port, 31);
+
 
     uint32 ret_val = pthread_create(&_tc_thread_id, NULL, &_tc_thread, NULL);
     if (ret_val != 0) output("failed to start Traffic Cop thread\n");

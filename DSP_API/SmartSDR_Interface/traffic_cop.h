@@ -60,7 +60,8 @@ typedef struct _cmd
 void tc_Abort(void);
 void tc_startKeepalive(void);
 void tc_abort(void);
-void tc_Init(void);
+void tc_Init(const char * hostname, const char * api_port);
+
 uint32 tc_sendSmartSDRcommand(char* command, BOOL block, char** response);
 Command tc_commandList_respond(uint32 sequence, char* response);
 

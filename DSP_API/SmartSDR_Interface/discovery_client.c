@@ -81,6 +81,8 @@ static void _dc_RadioFound(Radio radio)
 		// yes -- connect and stop looking for more radios
 		// TODO: connect
 		    // start a keepalive to keep the channel open and know when it dies
+		tc_Init(radio->ip, radio->port);
+
 		uint32 result = register_mode();
 		// quick and dirty fail for now
 		if (result != SUCCESS) exit(1);

@@ -126,11 +126,10 @@ void SmartSDR_API_Init(BOOL enable_console)
     	sem_wait(&_startup_sem);
     }
 
-    // initialize the discovery client
+    /* Initialize the discovery client
+     * When a radio is found then the Traffic Cop is Started
+     */
     dc_Init();
-
-    /* Initialize Traffic Cop for TCP RX/TX */
-    tc_Init();
 }
 
 /* *****************************************************************************
