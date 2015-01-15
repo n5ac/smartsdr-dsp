@@ -83,9 +83,6 @@ static void _dc_RadioFound(Radio radio)
 		    // start a keepalive to keep the channel open and know when it dies
 		tc_Init(radio->ip, radio->port);
 
-		uint32 result = register_mode();
-		// quick and dirty fail for now
-		if (result != SUCCESS) exit(1);
 		tc_startKeepalive();
 		usleep(250000);
 		hal_Listener_Init();

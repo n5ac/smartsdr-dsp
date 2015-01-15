@@ -353,6 +353,9 @@ static void* _tc_thread(void* arg)
     // if this fails, the program just exits
     _tc_openSocket();
 
+    result = register_mode();
+    if (result != SUCCESS) exit(1);
+
     // loop receiving data from SmartSDR and sending it where it should go
     while (!_abort)
     {
