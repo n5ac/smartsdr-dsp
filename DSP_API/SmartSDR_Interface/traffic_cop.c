@@ -356,6 +356,7 @@ static void* _tc_thread(void* arg)
     result = register_mode();
     if (result != SUCCESS)  {
     	output("** Could not register mode **\n");
+    	tc_abort();
     }
 
     /* Initialize UDP connections for TX */

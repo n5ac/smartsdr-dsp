@@ -59,7 +59,8 @@
 
 
 const char* APP_NAME = "FreeDV";            // Name of Application
-const char* CFG_FILE = "/home/root/FreeDV.cfg";        // Name of associated configuration file
+//const char* CFG_FILE = "FreeDV.cfg";        // Name of associated configuration file
+char * cfg_path = NULL;
 
 static sem_t shutdown_sem;
 
@@ -128,6 +129,7 @@ int main( int argc, char * argv[])
 {
 	const char * console_param = "--console";
 	const char * restrict_ip_param = "--ip=";
+	const char * config_path_param = "--cfg_path=";
 	BOOL enable_console = FALSE;
 	char * restrict_ip = NULL;
 
@@ -148,10 +150,19 @@ int main( int argc, char * argv[])
 
 			restrict_ip = safe_malloc(strlen(argv[i]));
 			strncpy(restrict_ip, argv[i]+strlen(restrict_ip_param), strlen(argv[i]));
-			output("Restrict IP = '%s'", restrict_ip);
+			output("Restrict IP = '%s'\n", restrict_ip);
+		} else if ( strncmp(argv[i], config_path_param ,strlen(config_path_param)) == 0 ) {
+			cfg_path = safe_malloc(strlen(argv[i]));
+			strncpy(cfg_path, argv[i] + strlen(config_path_param), strlen(argv[i]));
+			output("Config Path = '%s'\n", cfg_path);
 		} else {
 			output("Unknown console parameter - '%s'\n", argv[i]);
 		}
+	}
+
+	if ( ! cfg_path ) {
+		cfg_path = safe_malloc(strlen("./") + 1);
+		strncpy(cfg_path, "./", strlen("./") + 1);
 	}
 
     SmartSDR_API_Init(enable_console, restrict_ip);
@@ -162,6 +173,8 @@ int main( int argc, char * argv[])
 
     /* Wait to be notified of shutdown */
     sem_wait(&shutdown_sem);
+
+    safe_free(cfg_path);
 
     return 0;
 }

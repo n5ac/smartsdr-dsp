@@ -56,7 +56,7 @@ static BOOL console_thread_abort = FALSE;
 static sem_t _startup_sem, _communications_sem;
 
 extern const char* APP_NAME;
-extern const char* CFG_FILE;
+extern char * cfg_path;
 
 void api_setVersion(uint32 version)
 {
@@ -151,23 +151,26 @@ uint32 register_mode(void)
     struct stat statbuf;
     char MinRadioVerString[40];
 
-
     // Check for existence of file before opening, otherwise will segfault.
-    if(stat(CFG_FILE, &statbuf) == 0)
+    char cfg_file[1024];
+    sprintf(cfg_file, "%s%s%s", cfg_path, APP_NAME, ".cfg");
+
+    output("READING CONFIG FILE '%s' \n", cfg_file);
+    if(stat(cfg_file, &statbuf) == 0)
     {
         output(ANSI_WHITE"Configuration file exists.\n");
     }
     else
     {
-        output(ANSI_RED"CONFIGURATION FILE DOES NOT EXIST.\n");
+        output(ANSI_RED"CONFIGURATION FILE '%s' DOES NOT EXIST.\n", cfg_file);
         usleep(1000000);
         return 999;
     }
 
-    cfgStream = fopen(CFG_FILE, "r");
+    cfgStream = fopen(cfg_file, "r");
     if (ferror(cfgStream))
     {
-        output(ANSI_YELLOW"Error opening file %s \n", CFG_FILE);
+        output(ANSI_YELLOW"Error opening file %s \n", cfg_file);
         return 999;
     }
     else{
@@ -182,7 +185,7 @@ uint32 register_mode(void)
         numRead = getline(&inputBuffer, &nbytes, cfgStream);
         if (numRead == -1)
         {
-            output(ANSI_YELLOW"Error reading config file %s\n", CFG_FILE);
+            output(ANSI_YELLOW"Error reading config file %s\n", cfg_file);
             return 999;
         }
 
@@ -197,7 +200,7 @@ uint32 register_mode(void)
         {
             if (ferror(cfgStream))
             {
-                output(ANSI_YELLOW"Read error %s, reached end of file, [header] not found. \n", CFG_FILE);
+                output(ANSI_YELLOW"Read error %s, reached end of file, [header] not found. \n", cfg_file);
                 return 999;   // should return a fail    return -1;
             }
         }
@@ -209,7 +212,7 @@ uint32 register_mode(void)
         numRead = getline(&inputBuffer, &nbytes, cfgStream);
         if (numRead == -1)
         {
-            output(ANSI_YELLOW"Error reading config file %s\n", CFG_FILE);
+            output(ANSI_YELLOW"Error reading config file %s\n", cfg_file);
             // TODO return here?
         }
 
@@ -226,7 +229,7 @@ uint32 register_mode(void)
         {
             if (ferror(cfgStream))
             {
-                output(ANSI_YELLOW"Read error %s, minimum version not found, reached end of file. \n", CFG_FILE);
+                output(ANSI_YELLOW"Read error %s, minimum version not found, reached end of file. \n", cfg_file);
                 return 999;
             }
         }
@@ -238,7 +241,7 @@ uint32 register_mode(void)
         numRead = getline(&inputBuffer, &nbytes, cfgStream);
         if (numRead == -1)
         {
-            output(ANSI_YELLOW"Error reading config file %s\n", CFG_FILE);
+            output(ANSI_YELLOW"Error reading config file %s\n", cfg_file);
             return 999;
         }
 
@@ -253,7 +256,7 @@ uint32 register_mode(void)
         {
             if (ferror(cfgStream))
             {
-                output(ANSI_YELLOW"Read error %s, [setup] not found. \n", CFG_FILE);
+                output(ANSI_YELLOW"Read error %s, [setup] not found. \n", cfg_file);
                 return 999;   // should return a fail    return -1;
             }
         }
@@ -266,7 +269,7 @@ uint32 register_mode(void)
         numRead = getline(&inputBuffer, &nbytes, cfgStream);
         if (numRead == -1)
         {
-            output("Error reading config file %s\n", CFG_FILE);
+            output("Error reading config file %s\n", cfg_file);
             return 999;
         }
 
@@ -288,7 +291,7 @@ uint32 register_mode(void)
         }
         else if (ferror(cfgStream))
         {
-            output("End of file %s, reached. \n\n", CFG_FILE);
+            output("End of file %s, reached. \n\n", cfg_file);
             readFlag = FALSE;
         }
         else
@@ -301,11 +304,11 @@ uint32 register_mode(void)
 
     if (fclose(cfgStream) == EOF)
     {
-        output(ANSI_YELLOW"Error closing config file %s\n", CFG_FILE);
+        output(ANSI_YELLOW"Error closing config file %s\n", cfg_file);
     }
     else
     {
-        output(ANSI_CYAN "FreeDV: SUCCESS, closed config file %s\n", CFG_FILE);
+        output(ANSI_CYAN "FreeDV: SUCCESS, closed config file %s\n", cfg_file);
     }
 
     return SUCCESS;
