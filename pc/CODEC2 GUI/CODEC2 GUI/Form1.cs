@@ -289,25 +289,38 @@ namespace CODEC2_GUI
 
         void slc_WaveformStatusReceived(Slice slc, string status)
         {
-            string[] words = status.Split(' ');
-
-            foreach (string kv in words)
+            if(status.StartsWith("string"))
             {
-                string[] tokens = kv.Split('=');
-                if (tokens.Length != 2)
+                Debug.WriteLine(status);
+                string x = "ASDLKFJASLDKJ";
+
+                int start_pos = status.IndexOf("\"");
+                // did we find beginning quotes?
+                if(start_pos < 0) return; // no -- return
+
+                /*int end_pos = status.LastIndexOf("\"");
+                // did we find ending quotes?
+                if(end_pos == start_pos) return; // no -- return
+                */
+                start_pos += 1; // ignore beginning quotes
+                string value = status.Substring(start_pos);
+                
+                Control c = FindControlByName(this, "txtIn" + slc.Index);
+                if (c == null) return;
+
+                TextBox txtbox = c as TextBox;
+                if (txtbox == null) return;
+
+                if (InvokeRequired)
                 {
-                    Debug.WriteLine("slc_WaveformStatusReceived: Invalid key/value pair (" + kv + ")");
-                    continue;
+                    Invoke(new MethodInvoker(delegate
+                    {
+                        txtbox.Text = value;
+                    }));
                 }
-
-                string key = tokens[0];
-                string value = tokens[1];
-
-                switch (key)
+                else
                 {
-                    case "string":
-                        // TODO: update the string
-                        break;
+                    txtbox.Text = value;
                 }
             }
         }
