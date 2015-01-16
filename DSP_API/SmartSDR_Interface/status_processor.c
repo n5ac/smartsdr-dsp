@@ -186,8 +186,13 @@ void status_processor(char* string)
             sscanf(string, "%i", &val);
             char* cmd = strtok_r(string, "|", &save);
             cmd = strtok_r(NULL, "", &save);
+#ifdef DEBUG
             output("\033[32mExecuting command from SmartSDR: \033[m%s\n",cmd);
-            process_command(cmd);
+#endif
+            uint32 ret = process_command(cmd);
+            char response[1024];
+            sprintf(response, "waveform response %d|%d", val, ret);
+            tc_sendSmartSDRcommand(response, FALSE, NULL );
             break;
         }
         case 'S': // status
