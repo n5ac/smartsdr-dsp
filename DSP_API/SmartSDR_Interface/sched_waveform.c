@@ -6,7 +6,8 @@
 // *                strictly prohibited by law.
 // *
 // *    \date 29-AUG-2014
-// *    \author Ed Gonzalez
+// *    \author 	Ed Gonzalez
+// *    \mangler 	Graham / KE9H
 // *
 // */
 
@@ -123,14 +124,14 @@ void sched_waveform_signal()
 	sem_post(&sched_waveform_sem);
 }
 
+
 /* *********************************************************************************************
  * *********************************************************************************************
+ * *********************                                                 ***********************
+ * *********************  LOCATION OF MODULATOR / DEMODULATOR INTERFACE  ***********************
+ * *********************                                                 ***********************
  * *********************************************************************************************
- * ********************   TEMPORARY LOCATION OF DEMOD/MOD **************************************
- * *********************************************************************************************
- * *********************************************************************************************
- * *********************************************************************************************
- */
+ * ****************************************************************************************** */
 
 #include <stdio.h>
 #include "freedv_api.h"
@@ -139,10 +140,10 @@ void sched_waveform_signal()
 
 #define PACKET_SAMPLES  128
 
-#define SCALE_RX_IN  	16000.0 // Multiplier
-#define SCALE_RX_OUT   8000.0	// Divisor
-#define SCALE_TX_IN     16000.0 // Multiplier
-#define SCALE_TX_OUT   32768.0 // Divisor
+#define SCALE_RX_IN  	16000.0 	// Multiplier
+#define SCALE_RX_OUT     8000.0		// Divisor
+#define SCALE_TX_IN     16000.0 	// Multiplier
+#define SCALE_TX_OUT    32768.0 	// Divisor
 
 #define FILTER_TAPS	48
 #define DECIMATION_FACTOR 	3
@@ -239,26 +240,9 @@ void freedv_set_string(uint32 slice, char* string)
 
 
 
-/* *********************************************************************************************
- * *********************************************************************************************
- * *********************************************************************************************
- * ********************  ^^^  TEMPORARY LOCATION OF DEMOD/MOD ^^^ **************************************
- * *********************************************************************************************
- * *********************************************************************************************
- * *********************************************************************************************
- */
-
-
-
 
 static void* _sched_waveform_thread(void* param)
 {
-
-/* *********************************************************************************************
- * ******************** ^  TEMPORARY LOCATION OF DEMOD/MOD ^^^ **************************************
- * *********************************************************************************************
- */
-
     int 	nin, nout;
 
     int		i;			// for loop counter
@@ -266,8 +250,8 @@ static void* _sched_waveform_thread(void* param)
 //    float   Sig2Noise;	// Signal to noise ratio
 
     // Flags ...
-    int		initial_tx = 1; 			// Flags for TX circular buffer, clear if starting transmit
-    int		initial_rx = 1;				// Flags for RX circular buffer, clear if starting receive
+    int		initial_tx = 1; 		// Flags for TX circular buffer, clear if starting transmit
+    int		initial_rx = 1;			// Flags for RX circular buffer, clear if starting receive
 
 	// VOCODER I/O BUFFERS
     short	speech_in[FREEDV_NSAMPLES];
@@ -345,10 +329,6 @@ static void* _sched_waveform_thread(void* param)
     _freedvS->callback_state = (void*)&_my_cb_state;
     _freedvS->freedv_get_next_tx_char = &my_get_next_tx_char;
 
-/* *********************************************************************************************
- * ******************** ^  TEMPORARY LOCATION OF DEMOD/MOD ^^^ **************************************
- * *********************************************************************************************
- */
 
 
 	// show that we are running

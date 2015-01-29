@@ -55,6 +55,7 @@
 #include <ucontext.h>
 
 #include "smartsdr_dsp_api.h"
+
 #include "common.h"
 
 
@@ -146,6 +147,7 @@ int main( int argc, char * argv[])
 			 * service or as a subprocess.
 			 */
 			enable_console = TRUE;
+			output(ANSI_YELLOW" WAVEFORM Version 1.0.3, Console alive.\n"ANSI_WHITE);
 		} else if ( strncmp(argv[i], restrict_ip_param, strlen(restrict_ip_param)) == 0 ) {
 
 			restrict_ip = safe_malloc(strlen(argv[i]));
