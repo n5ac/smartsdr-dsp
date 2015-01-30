@@ -305,7 +305,7 @@ int freedv_rx(struct freedv *f, short speech_out[], short demod_in[]) {
     fdmdv_get_demod_stats(f->fdmdv, &f->fdmdv_stats);
 
     if (f->fdmdv_stats.sync) {
-    	printf("\033[97mIn sync. Pass demod_in to Codec, Codec to speech_out\n");
+    	// printf("\033[97mIn sync. Pass demod_in to Codec, Codec to speech_out\n");
         if (reliable_sync_bit == 0) {
             memcpy(f->rx_bits, f->fdmdv_bits, bits_per_fdmdv_frame*sizeof(int));
             nout = 0;
@@ -385,7 +385,7 @@ int freedv_rx(struct freedv *f, short speech_out[], short demod_in[]) {
         }
     } /* if (sync) .... */
     else {
-    	printf("\033[97mNot in sync. Pass demod_in to speech_out\n");
+    	// printf("\033[97mNot in sync. Pass demod_in to speech_out\n");
         /* if not in sync pass through analog samples */
         /* this lets us "hear" whats going on, e.g. during tuning */
         for(i=0; i<nin_prev; i++)
