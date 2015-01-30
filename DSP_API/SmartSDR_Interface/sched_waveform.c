@@ -140,9 +140,9 @@ void sched_waveform_signal()
 
 #define PACKET_SAMPLES  128
 
-#define SCALE_RX_IN  	16000.0 	// Multiplier
+#define SCALE_RX_IN  	 8000.0 	// Multiplier		// Was 16000 GGH 2015 JAN 30
 #define SCALE_RX_OUT     8000.0		// Divisor
-#define SCALE_TX_IN     16000.0 	// Multiplier
+#define SCALE_TX_IN     32000.0 	// Multiplier		// Was 16000 GGH 2015 JAN 30
 #define SCALE_TX_OUT    32768.0 	// Divisor
 
 #define FILTER_TAPS	48
