@@ -30,7 +30,7 @@ all: freedv
 freedv: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	arm-linux-gnueabihf-gcc -static  -o "freedv" $(OBJS) $(USER_OBJS) $(LIBS)
+	arm-linux-gnueabihf-gcc  -o "freedv" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
