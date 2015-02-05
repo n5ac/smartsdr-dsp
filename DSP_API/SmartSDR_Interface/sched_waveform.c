@@ -406,7 +406,7 @@ static void* _sched_waveform_thread(void* param)
 						// TODO - If transmit packet, discard here?
 
 
-						for(i=0;i<128;i++)
+						for( i = 0 ; i < PACKET_SAMPLES ; i++)
 						{
 							//output("Outputting ")
 							//	fsample = Get next float from packet;
@@ -487,10 +487,10 @@ static void* _sched_waveform_thread(void* param)
 						// Check for >= 128 samples in RX4_cb. Form packet and
 						//	export.
 
-						uint32 check_samples = 128;
+						uint32 check_samples = PACKET_SAMPLES;
 
 						if(initial_rx)
-							check_samples = 128 * 3;
+							check_samples = PACKET_SAMPLES * 3;
 
 						if(cfbContains(RX4_cb) >= check_samples )
 						{
@@ -543,7 +543,7 @@ static void* _sched_waveform_thread(void* param)
 						// TODO - If transmit packet, discard here?
 
 
-						for(i=0;i<128;i++)
+						for( i = 0 ; i < PACKET_SAMPLES ; i++ )
 						{
 							//output("Outputting ")
 							//	fsample = Get next float from packet;
@@ -612,14 +612,14 @@ static void* _sched_waveform_thread(void* param)
 						// Check for >= 128 samples in RX4_cb. Form packet and
 						//	export.
 
-						uint32 tx_check_samples = 128;
+						uint32 tx_check_samples = PACKET_SAMPLES;
 
 						if(initial_tx)
-							tx_check_samples = 128 * 3;
+							tx_check_samples = PACKET_SAMPLES * 3;
 
 						if(cfbContains(TX4_cb) >= tx_check_samples )
 						{
-							for( i=0 ; i<128 ; i++)
+							for( i = 0 ; i < PACKET_SAMPLES ; i++)
 							{
 								//output("Fetching from end buffer \n");
 								// Set up the outbound packet
