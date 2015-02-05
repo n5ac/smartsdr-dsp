@@ -376,7 +376,6 @@ static void* _sched_waveform_thread(void* param)
 					//output("buf_desc unlinked with mag %.6g", hal_BufferMag(buf_desc));
 
 					//output(" \"Processed\" buffer stream id = 0x%08X\n", buf_desc->stream_id);
-					BOOL emit = FALSE;
 
 					if( (buf_desc->stream_id & 1) == 0) { //RX BUFFER
 						//	If 'initial_rx' flag, clear buffers RX1, RX2, RX3, RX4
@@ -465,6 +464,8 @@ static void* _sched_waveform_thread(void* param)
 								{
 									cbWriteShort(RX3_cb, speech_out[i]);
 								}
+
+
 							}
 	//						} else {
 		//						break; /* Break out of while loop */
@@ -509,7 +510,6 @@ static void* _sched_waveform_thread(void* param)
 								((Complex*)buf_desc->buf_ptr)[i].real = fsample;
 								((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
 							}
-							emit = TRUE;
 						} else {
 							output("RX Starved buffer out\n");
 							for( i=0 ; i<128 ; i++)
@@ -520,7 +520,6 @@ static void* _sched_waveform_thread(void* param)
 							}
 							if(initial_rx)
 								initial_rx = FALSE;
-							emit = FALSE;
 						}
 
 
@@ -644,7 +643,6 @@ static void* _sched_waveform_thread(void* param)
 								((Complex*)buf_desc->buf_ptr)[i].real = fsample;
 								((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
 							}
-							emit = TRUE;
 						} else {
 							output("TX Starved buffer out\n");
 							for( i=0 ; i<128 ; i++)
@@ -655,15 +653,14 @@ static void* _sched_waveform_thread(void* param)
 							}
 							if(initial_tx)
 								initial_tx = FALSE;
-							emit = FALSE;
 						}
 
 
 					}
 
-					if(emit) {
-						emit_waveform_output(buf_desc);
-					}
+
+					emit_waveform_output(buf_desc);
+
 					hal_BufferRelease(&buf_desc);
 
 					// the concensus is it doesn't matter to do this -- Graham put this in to
