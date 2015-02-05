@@ -373,7 +373,6 @@ static void* _sched_waveform_thread(void* param)
 				{
 					// convert the buffer to little endian
 					_dsp_convertBufEndian(buf_desc);
-					//output("buf_desc unlinked with mag %.6g", hal_BufferMag(buf_desc));
 
 					//output(" \"Processed\" buffer stream id = 0x%08X\n", buf_desc->stream_id);
 
@@ -392,14 +391,8 @@ static void* _sched_waveform_thread(void* param)
 
 
 							/* Clear filter memory */
-
-							for ( i = 0; i < MEM_24; i++) {
-								float_in_24k[i] = 0.0;
-							}
-
-							for ( i = 0; i < MEM_8; i++ ) {
-								float_in_8k[i] = 0;
-							}
+							memset(float_in_24k, 0, MEM_24 * sizeof(float));
+							memset(float_in_8k, 0, MEM_8 * sizeof(float));
 
 							/* Requires us to set initial_rx to FALSE which we do at the end of
 							 * the first loop
@@ -512,12 +505,9 @@ static void* _sched_waveform_thread(void* param)
 							}
 						} else {
 							output("RX Starved buffer out\n");
-							for( i=0 ; i<128 ; i++)
-							{
 
-								((Complex*)buf_desc->buf_ptr)[i].real = 0.0f;
-								((Complex*)buf_desc->buf_ptr)[i].imag = 0.0f;
-							}
+							memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
+
 							if(initial_rx)
 								initial_rx = FALSE;
 						}
@@ -539,13 +529,8 @@ static void* _sched_waveform_thread(void* param)
 
 							/* Clear filter memory */
 
-							for ( i = 0; i < MEM_24; i++) {
-								tx_float_in_24k[i] = 0.0;
-							}
-
-							for ( i = 0; i < MEM_8; i++ ) {
-								tx_float_in_8k[i] = 0;
-							}
+							memset(tx_float_in_24k, 0, MEM_24 * sizeof(float));
+							memset(tx_float_in_8k, 0, MEM_8 * sizeof(float));
 
 							/* Requires us to set initial_rx to FALSE which we do at the end of
 							 * the first loop
@@ -645,12 +630,9 @@ static void* _sched_waveform_thread(void* param)
 							}
 						} else {
 							output("TX Starved buffer out\n");
-							for( i=0 ; i<128 ; i++)
-							{
 
-								((Complex*)buf_desc->buf_ptr)[i].real = 0.0f;
-								((Complex*)buf_desc->buf_ptr)[i].imag = 0.0f;
-							}
+							memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
+
 							if(initial_tx)
 								initial_tx = FALSE;
 						}
