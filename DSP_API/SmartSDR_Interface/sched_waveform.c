@@ -263,7 +263,7 @@ static void* _sched_waveform_thread(void* param)
 
     int		i;			// for loop counter
     float	fsample;	// a float sample
-    float   Sig2Noise;	// Signal to noise ratio
+//    float   Sig2Noise;	// Signal to noise ratio
 
     // Flags ...
     int		initial_tx = 1; 			// Flags for TX circular buffer, clear if starting transmit
@@ -457,18 +457,13 @@ static void* _sched_waveform_thread(void* param)
 
 								nout = freedv_rx(_freedvS, speech_out, demod_in);
 
+	//							if(nout != 320 ) {
+	//								output("NOUT not 320 it is %d\nNIN was %d\n", nout, nin);
+	//							}
 
-
-								if ( nout == nin && _freedvS->reliable_sync_bit ){
-									for( i=0 ; i < nout ; i++)
-									{
-										cbWriteShort(RX3_cb, speech_out[i]);
-									}
-								} else {
-
-									for ( i = 0; i < nin ; i ++ ) {
-										cbWriteShort(RX3_cb, demod_in[i]);
-									}
+								for( i=0 ; i < nout ; i++)
+								{
+									cbWriteShort(RX3_cb, speech_out[i]);
 								}
 							}
 	//						} else {
@@ -492,7 +487,7 @@ static void* _sched_waveform_thread(void* param)
 							{
 								cbWriteFloat(RX4_cb, float_out_24k[i]);
 							}
-							Sig2Noise = (_freedvS->fdmdv_stats.snr_est);
+							//Sig2Noise = (_freedvS->fdmdv_stats.snr_est);
 						}
 
 						// Check for >= 128 samples in RX4_cb. Form packet and

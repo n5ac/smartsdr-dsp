@@ -65,8 +65,6 @@ struct freedv {
 
     void                *callback_state;
 
-    int 				reliable_sync_bit;
-
 };
 
 struct freedv *freedv_open(int mode);
