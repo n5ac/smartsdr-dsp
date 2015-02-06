@@ -139,9 +139,9 @@ void sched_waveform_signal()
 
 #define PACKET_SAMPLES  128
 
-#define SCALE_RX_IN  	16000.0 // Multiplier
+#define SCALE_RX_IN  	8000.0 // Multiplier
 #define SCALE_RX_OUT   8000.0	// Divisor
-#define SCALE_TX_IN     16000.0 // Multiplier
+#define SCALE_TX_IN     32000.0 // Multiplier
 #define SCALE_TX_OUT   32768.0 // Divisor
 
 #define FILTER_TAPS	48
@@ -161,14 +161,14 @@ static char _rx_string[MAX_RX_STRING_LENGTH + 5];
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //	Circular Buffer Declarations
 
-float RX1_buff[(PACKET_SAMPLES * 6)+1];		// RX1 Packet Input Buffer
-short RX2_buff[(PACKET_SAMPLES * 6)+1];		// RX2 Vocoder input buffer
-short RX3_buff[(PACKET_SAMPLES * 6)+1];		// RX3 Vocoder output buffer
+float RX1_buff[(PACKET_SAMPLES * 12)+1];		// RX1 Packet Input Buffer
+short RX2_buff[(PACKET_SAMPLES * 12)+1];		// RX2 Vocoder input buffer
+short RX3_buff[(PACKET_SAMPLES * 12)+1];		// RX3 Vocoder output buffer
 float RX4_buff[(PACKET_SAMPLES * 12)+1];		// RX4 Packet output Buffer
 
-float TX1_buff[(PACKET_SAMPLES * 6) +1];		// TX1 Packet Input Buffer
-short TX2_buff[(PACKET_SAMPLES * 6)+1];		// TX2 Vocoder input buffer
-short TX3_buff[(PACKET_SAMPLES * 6)+1];		// TX3 Vocoder output buffer
+float TX1_buff[(PACKET_SAMPLES * 12) +1];		// TX1 Packet Input Buffer
+short TX2_buff[(PACKET_SAMPLES * 12)+1];		// TX2 Vocoder input buffer
+short TX3_buff[(PACKET_SAMPLES * 12)+1];		// TX3 Vocoder output buffer
 float TX4_buff[(PACKET_SAMPLES * 12)+1];		// TX4 Packet output Buffer
 
 circular_float_buffer rx1_cb;
@@ -349,10 +349,11 @@ static void* _sched_waveform_thread(void* param)
  * ******************** ^  TEMPORARY LOCATION OF DEMOD/MOD ^^^ **************************************
  * *********************************************************************************************
  */
-
-
+    uint32 bypass_count = 0;
+    BOOL bypass_demod = TRUE;
 	// show that we are running
 	BufferDescriptor buf_desc;
+
 	while( !_waveform_thread_abort )
 	{
 		// wait for a buffer descriptor to get posted
@@ -373,10 +374,8 @@ static void* _sched_waveform_thread(void* param)
 				{
 					// convert the buffer to little endian
 					_dsp_convertBufEndian(buf_desc);
-					//output("buf_desc unlinked with mag %.6g", hal_BufferMag(buf_desc));
 
 					//output(" \"Processed\" buffer stream id = 0x%08X\n", buf_desc->stream_id);
-					BOOL emit = FALSE;
 
 					if( (buf_desc->stream_id & 1) == 0) { //RX BUFFER
 						//	If 'initial_rx' flag, clear buffers RX1, RX2, RX3, RX4
@@ -393,14 +392,8 @@ static void* _sched_waveform_thread(void* param)
 
 
 							/* Clear filter memory */
-
-							for ( i = 0; i < MEM_24; i++) {
-								float_in_24k[i] = 0.0;
-							}
-
-							for ( i = 0; i < MEM_8; i++ ) {
-								float_in_8k[i] = 0;
-							}
+							memset(float_in_24k, 0, MEM_24 * sizeof(float));
+							memset(float_in_8k, 0, MEM_8 * sizeof(float));
 
 							/* Requires us to set initial_rx to FALSE which we do at the end of
 							 * the first loop
@@ -414,7 +407,7 @@ static void* _sched_waveform_thread(void* param)
 						// TODO - If transmit packet, discard here?
 
 
-						for(i=0;i<128;i++)
+						for( i = 0 ; i < PACKET_SAMPLES ; i++)
 						{
 							//output("Outputting ")
 							//	fsample = Get next float from packet;
@@ -457,14 +450,37 @@ static void* _sched_waveform_thread(void* param)
 
 								nout = freedv_rx(_freedvS, speech_out, demod_in);
 
-	//							if(nout != 320 ) {
-	//								output("NOUT not 320 it is %d\nNIN was %d\n", nout, nin);
-	//							}
 
-								for( i=0 ; i < nout ; i++)
-								{
-									cbWriteShort(RX3_cb, speech_out[i]);
+
+								if ( _freedvS->fdmdv_stats.sync ) {
+									/* Increase count for turning bypass off */
+									if ( bypass_count < 10) bypass_count++;
+								} else {
+									if ( bypass_count > 0 ) bypass_count--;
 								}
+
+								if ( bypass_count > 7 ) {
+									//if ( bypass_demod ) output("baypass_demod transitioning to FALSE\n");
+
+									bypass_demod = FALSE;
+								}
+								else if ( bypass_count < 2 ) {
+									//if ( !bypass_demod ) output("baypass_demod transitioning to TRUE \n");
+									bypass_demod = TRUE;
+								}
+								if ( bypass_demod ) {
+									for ( i = 0 ; i < nin ; i++ ) {
+										cbWriteShort(RX3_cb, demod_in[i]);
+									}
+								} else {
+									for( i=0 ; i < nout ; i++)
+									{
+										cbWriteShort(RX3_cb, speech_out[i]);
+									}
+								}
+
+								//output("%d\n", bypass_count);
+
 							}
 	//						} else {
 		//						break; /* Break out of while loop */
@@ -493,10 +509,10 @@ static void* _sched_waveform_thread(void* param)
 						// Check for >= 128 samples in RX4_cb. Form packet and
 						//	export.
 
-						uint32 check_samples = 128;
+						uint32 check_samples = PACKET_SAMPLES;
 
 						if(initial_rx)
-							check_samples = 128 * 3;
+							check_samples = PACKET_SAMPLES * 3;
 
 						if(cfbContains(RX4_cb) >= check_samples )
 						{
@@ -506,21 +522,18 @@ static void* _sched_waveform_thread(void* param)
 								// Set up the outbound packet
 								fsample = cbReadFloat(RX4_cb);
 								// put the fsample into the outbound packet
+
 								((Complex*)buf_desc->buf_ptr)[i].real = fsample;
-								((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
+								((Complex*)buf_desc->buf_ptr)[i].imag = 0;
+
 							}
-							emit = TRUE;
 						} else {
 							output("RX Starved buffer out\n");
-							for( i=0 ; i<128 ; i++)
-							{
 
-								((Complex*)buf_desc->buf_ptr)[i].real = 0.0f;
-								((Complex*)buf_desc->buf_ptr)[i].imag = 0.0f;
-							}
+							memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
+
 							if(initial_rx)
 								initial_rx = FALSE;
-							emit = FALSE;
 						}
 
 
@@ -540,13 +553,8 @@ static void* _sched_waveform_thread(void* param)
 
 							/* Clear filter memory */
 
-							for ( i = 0; i < MEM_24; i++) {
-								tx_float_in_24k[i] = 0.0;
-							}
-
-							for ( i = 0; i < MEM_8; i++ ) {
-								tx_float_in_8k[i] = 0;
-							}
+							memset(tx_float_in_24k, 0, MEM_24 * sizeof(float));
+							memset(tx_float_in_8k, 0, MEM_8 * sizeof(float));
 
 							/* Requires us to set initial_rx to FALSE which we do at the end of
 							 * the first loop
@@ -559,7 +567,7 @@ static void* _sched_waveform_thread(void* param)
 						// TODO - If transmit packet, discard here?
 
 
-						for(i=0;i<128;i++)
+						for( i = 0 ; i < PACKET_SAMPLES ; i++ )
 						{
 							//output("Outputting ")
 							//	fsample = Get next float from packet;
@@ -628,14 +636,14 @@ static void* _sched_waveform_thread(void* param)
 						// Check for >= 128 samples in RX4_cb. Form packet and
 						//	export.
 
-						uint32 tx_check_samples = 128;
+						uint32 tx_check_samples = PACKET_SAMPLES;
 
 						if(initial_tx)
-							tx_check_samples = 128 * 3;
+							tx_check_samples = PACKET_SAMPLES * 3;
 
 						if(cfbContains(TX4_cb) >= tx_check_samples )
 						{
-							for( i=0 ; i<128 ; i++)
+							for( i = 0 ; i < PACKET_SAMPLES ; i++)
 							{
 								//output("Fetching from end buffer \n");
 								// Set up the outbound packet
@@ -644,26 +652,21 @@ static void* _sched_waveform_thread(void* param)
 								((Complex*)buf_desc->buf_ptr)[i].real = fsample;
 								((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
 							}
-							emit = TRUE;
 						} else {
 							output("TX Starved buffer out\n");
-							for( i=0 ; i<128 ; i++)
-							{
 
-								((Complex*)buf_desc->buf_ptr)[i].real = 0.0f;
-								((Complex*)buf_desc->buf_ptr)[i].imag = 0.0f;
-							}
+							memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
+
 							if(initial_tx)
 								initial_tx = FALSE;
-							emit = FALSE;
 						}
 
 
 					}
 
-					if(emit) {
-						emit_waveform_output(buf_desc);
-					}
+
+					emit_waveform_output(buf_desc);
+
 					hal_BufferRelease(&buf_desc);
 
 					// the concensus is it doesn't matter to do this -- Graham put this in to
