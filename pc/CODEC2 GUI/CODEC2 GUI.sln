@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CODEC2 GUI", "CODEC2 GUI\CODEC2 GUI.csproj", "{19634B34-7569-4D1D-8182-B10AC27E13FF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FreeDV", "CODEC2 GUI\FreeDV.csproj", "{19634B34-7569-4D1D-8182-B10AC27E13FF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexLib", "..\..\..\smartsdr-win\FlexLib\FlexLib.csproj", "{7927817C-D5EF-4A9E-B38E-29668F308343}"
 EndProject
@@ -10,6 +10,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Util", "..\..\..\smartsdr-win\Util\Util.csproj", "{38935DC9-FF48-470C-B876-473A3AE8BD32}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vita", "..\..\..\smartsdr-win\Vita\Vita.csproj", "{6ED364FB-7444-44DA-9196-1D8679425B3E}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "CODEC2_GUI_INSTALLER", "CODEC2_GUI_INSTALLER\CODEC2_GUI_INSTALLER.vdproj", "{AABE6A3C-F038-4448-981F-F68A6D5069C3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,6 +61,10 @@ Global
 		{6ED364FB-7444-44DA-9196-1D8679425B3E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6ED364FB-7444-44DA-9196-1D8679425B3E}.Release|x86.ActiveCfg = Release|x86
 		{6ED364FB-7444-44DA-9196-1D8679425B3E}.Release|x86.Build.0 = Release|x86
+		{AABE6A3C-F038-4448-981F-F68A6D5069C3}.Debug|Any CPU.ActiveCfg = Debug
+		{AABE6A3C-F038-4448-981F-F68A6D5069C3}.Debug|x86.ActiveCfg = Debug
+		{AABE6A3C-F038-4448-981F-F68A6D5069C3}.Release|Any CPU.ActiveCfg = Release
+		{AABE6A3C-F038-4448-981F-F68A6D5069C3}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
