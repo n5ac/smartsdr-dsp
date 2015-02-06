@@ -7,6 +7,7 @@
 	<buildSpec>
 		<buildCommand>
 			<name>org.eclipse.cdt.managedbuilder.core.genmakebuilder</name>
+			<triggers>clean,full,incremental,</triggers>
 			<arguments>
 				<dictionary>
 					<key>?name?</key>
@@ -22,7 +23,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.buildArguments</key>
-					<value>-k -j</value>
+					<value></value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.buildCommand</key>
@@ -30,7 +31,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.buildLocation</key>
-					<value>${workspace_loc:../../bin}</value>
+					<value>${workspace_loc:/DSP_API/Release}</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.cleanBuildTarget</key>
@@ -42,7 +43,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.enableAutoBuild</key>
-					<value>true</value>
+					<value>false</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.enableCleanBuild</key>
@@ -58,11 +59,11 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.stopOnError</key>
-					<value>false</value>
+					<value>true</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.useDefaultBuildCmd</key>
-					<value>false</value>
+					<value>true</value>
 				</dictionary>
 			</arguments>
 		</buildCommand>
@@ -77,6 +78,5 @@
 		<nature>org.eclipse.cdt.core.cnature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
-		<nature>org.eclipse.cdt.core.ccnature</nature>
 	</natures>
 </projectDescription>

@@ -1,5 +1,5 @@
 /* *****************************************************************************
- * common.h															2014 AUG 31
+ * common.h															2015 JAN 27
  *
  *  Created on: Aug 28, 2014
  *      Author: Graham / KE9H
@@ -72,13 +72,14 @@
 #define SL_CLOSE_CLIENT                 SL_ERROR_BASE + 0x03A
 
 #define ANSI_ESC                "\033["
-#define ANSI_RED ANSI_ESC       "91m"
-#define ANSI_GREEN ANSI_ESC     "92m"
+#define ANSI_RED 	ANSI_ESC  	"91m"
+#define ANSI_GREEN 	ANSI_ESC 	"92m"
 #define ANSI_YELLOW ANSI_ESC    "93m"
-#define ANSI_BLUE ANSI_ESC      "94m"
+#define ANSI_BLUE 	ANSI_ESC  	"94m"
 #define ANSI_MAGENTA ANSI_ESC   "95m"
-#define ANSI_CYAN ANSI_ESC      "96m"
-#define ANSI_WHITE ANSI_ESC     "97m"
+#define ANSI_CYAN 	ANSI_ESC 	"96m"
+#define ANSI_WHITE 	ANSI_ESC	"97m"
+#define CLR_WHT 	"\033[97m"
 #define ANSI_COLOR_OFF ANSI_ESC "m"
 
 #endif /* COMMON_H_ */

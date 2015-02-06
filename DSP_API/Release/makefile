@@ -14,23 +14,8 @@ RM := rm -rf
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(strip $(C++_DEPS)),)
--include $(C++_DEPS)
-endif
 ifneq ($(strip $(C_DEPS)),)
 -include $(C_DEPS)
-endif
-ifneq ($(strip $(CC_DEPS)),)
--include $(CC_DEPS)
-endif
-ifneq ($(strip $(CPP_DEPS)),)
--include $(CPP_DEPS)
-endif
-ifneq ($(strip $(CXX_DEPS)),)
--include $(CXX_DEPS)
-endif
-ifneq ($(strip $(C_UPPER_DEPS)),)
--include $(C_UPPER_DEPS)
 endif
 endif
 
@@ -44,19 +29,20 @@ all: freedv
 # Tool invocations
 freedv: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
-	@echo 'Invoking: GCC C++ Linker'
-	arm-angstrom-linux-gnueabi-gcc -rdynamic -o "freedv" $(OBJS) $(USER_OBJS) $(LIBS)
+	@echo 'Invoking: GCC C Linker'
+	arm-linux-gnueabihf-gcc -static  -o "freedv" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C++_DEPS)$(C_DEPS)$(CC_DEPS)$(CPP_DEPS)$(EXECUTABLES)$(CXX_DEPS)$(C_UPPER_DEPS) freedv
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) freedv
 	-@echo ' '
 
 post-build:
-	-cp freedv /nfsroots/microburst/home/root/
+	-@echo 'Install in BeagleBone at /home/debian/bin'
+	-scp freedv root@192.168.20.33:/home/debian/bin/
 	-@echo ' '
 
 .PHONY: all clean dependents
