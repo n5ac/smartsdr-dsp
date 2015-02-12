@@ -304,6 +304,9 @@ namespace CODEC2_GUI
                 */
                 start_pos += 1; // ignore beginning quotes
                 string value = status.Substring(start_pos);
+
+                // handle the remapped spaces
+                value = value.Replace("\u007f", " ");
                 
                 Control c = FindControlByName(this, "txtIn" + slc.Index);
                 if (c == null) return;
