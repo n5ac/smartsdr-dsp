@@ -154,7 +154,7 @@ int main( int argc, char * argv[])
 				safe_free( restrict_ip );
 				restrict_ip = NULL;
 			}
-			restrict_ip = safe_malloc(strlen(argv[i]));
+			restrict_ip = safe_malloc(strlen(argv[i])+1);
 			strncpy(restrict_ip, argv[i]+strlen(restrict_ip_param), strlen(argv[i]));
 			output("Restrict IP = '%s'\n", restrict_ip);
 		} else if ( strncmp(argv[i], config_path_param ,strlen(config_path_param)) == 0 ) {
@@ -163,7 +163,7 @@ int main( int argc, char * argv[])
 				safe_free( cfg_path ) ;
 				cfg_path = NULL;
 			}
-			cfg_path = safe_malloc(strlen(argv[i]));
+			cfg_path = safe_malloc(strlen(argv[i])+1);
 			strncpy(cfg_path, argv[i] + strlen(config_path_param), strlen(argv[i]));
 			output("Config Path = '%s'\n", cfg_path);
 		} else {
