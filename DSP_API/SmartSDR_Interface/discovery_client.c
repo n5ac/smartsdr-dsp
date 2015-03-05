@@ -204,10 +204,11 @@ static void _dc_ListenerParsePacket(uint8* packet, int32 length, struct sockaddr
 	}
 
 	// did we get at least an IP, port, and version?
-	if(radio->ip != 0 && radio->port != 0 && radio->version != 0)
-	{
+	if(radio->ip != 0 && radio->port != 0 && radio->version != 0) {
 		// yes -- report the radio as found
 		_dc_RadioFound(radio);
+	} else {
+		safe_free(radio);
 	}
 }
 
