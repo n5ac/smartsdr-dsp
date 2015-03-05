@@ -149,11 +149,20 @@ int main( int argc, char * argv[])
 			enable_console = TRUE;
 			output(ANSI_YELLOW" WAVEFORM Version 1.0.3, Console alive.\n"ANSI_WHITE);
 		} else if ( strncmp(argv[i], restrict_ip_param, strlen(restrict_ip_param)) == 0 ) {
-
+			/* Free if param was passed in twice */
+			if ( restrict_ip ) {
+				safe_free( restrict_ip );
+				restrict_ip = NULL;
+			}
 			restrict_ip = safe_malloc(strlen(argv[i]));
 			strncpy(restrict_ip, argv[i]+strlen(restrict_ip_param), strlen(argv[i]));
 			output("Restrict IP = '%s'\n", restrict_ip);
 		} else if ( strncmp(argv[i], config_path_param ,strlen(config_path_param)) == 0 ) {
+			/* Free if param was passed in twice */
+			if ( cfg_path ) {
+				safe_free( cfg_path ) ;
+				cfg_path = NULL;
+			}
 			cfg_path = safe_malloc(strlen(argv[i]));
 			strncpy(cfg_path, argv[i] + strlen(config_path_param), strlen(argv[i]));
 			output("Config Path = '%s'\n", cfg_path);
