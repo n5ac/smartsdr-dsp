@@ -177,7 +177,7 @@ uint32 register_mode(void)
 
     }
     /* Transfer data expecting to encounter end of input (or an error) */
-    inputBuffer = (char *) malloc (nbytes + 1); // Initial buffer size
+    inputBuffer = (char *) safe_malloc (nbytes + 1); // Initial buffer size
 
     readFlag = TRUE;
     while(readFlag)     // Look for the start of the [header]
@@ -186,6 +186,7 @@ uint32 register_mode(void)
         if (numRead == -1)
         {
             output(ANSI_YELLOW"Error reading config file %s\n", cfg_file);
+            safe_free(inputBuffer);
             return 999;
         }
 

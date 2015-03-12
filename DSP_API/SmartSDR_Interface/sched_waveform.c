@@ -196,8 +196,14 @@ Circular_Float_Buffer TX4_cb = &tx4_cb;
 void my_put_next_rx_char(void *callback_state, char c)
 {
     char new_char[2];
-    new_char[0] = c;
+    if ( c == ' ' ) {
+    	/* Encode spaces differently */
+    	new_char[0] = (char) 0x7F;
+    } else {
+    	new_char[0] = c;
+    }
     new_char[1] = 0;
+
     strncat(_rx_string, new_char, MAX_RX_STRING_LENGTH+4);
     if (strlen(_rx_string) > MAX_RX_STRING_LENGTH)
     {

@@ -140,3 +140,19 @@ void printIP(uint32 ip)
 	output("%d.%d.%d.%d\n",((ip>>24)& 0xFF),((ip>>16)& 0xFF),((ip>>8)& 0xFF),(ip & 0xFF));
 }
 
+void charReplace( char * string, char oldChar, char newChar )
+{
+	if ( string == NULL ) {
+		output("Null string passed to charReplace\n");
+		return ;
+	}
+
+	while (*string != 0 ) {
+		if ( *string == oldChar )
+			*string = newChar;
+
+		string++;
+	}
+
+}
+

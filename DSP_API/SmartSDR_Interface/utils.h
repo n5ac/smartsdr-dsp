@@ -45,5 +45,6 @@ void lock_malloc_init(void);
 void* safe_malloc(size_t size);
 void safe_free(void* ptr);
 void printIP(uint32 ip);
+void charReplace( char * string, char oldChar, char newChar );
 
 #endif /* UTILS_H_ */
