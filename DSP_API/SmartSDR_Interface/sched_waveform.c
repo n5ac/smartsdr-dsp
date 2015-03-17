@@ -196,12 +196,17 @@ Circular_Float_Buffer TX4_cb = &tx4_cb;
 void my_put_next_rx_char(void *callback_state, char c)
 {
     char new_char[2];
-    if ( c == ' ' ) {
+    if ( (uint32) c < 32 || (uint32) c > 126 ) {
+    	/* Treat all control chars as spaces */
+    	output(ANSI_YELLOW "Non-valid RX_STRING char. ASCII code = %d\n", (uint32) c);
+    	new_char[0] = (char) 0x7F;
+    } else if ( c == ' ' ) {
     	/* Encode spaces differently */
     	new_char[0] = (char) 0x7F;
     } else {
     	new_char[0] = c;
     }
+
     new_char[1] = 0;
 
     strncat(_rx_string, new_char, MAX_RX_STRING_LENGTH+4);
