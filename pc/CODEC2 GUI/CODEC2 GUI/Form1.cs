@@ -298,12 +298,12 @@ namespace CODEC2_GUI
                 // did we find beginning quotes?
                 if(start_pos < 0) return; // no -- return
 
-                /*int end_pos = status.LastIndexOf("\"");
+                int end_pos = status.LastIndexOf("\"");
                 // did we find ending quotes?
                 if(end_pos == start_pos) return; // no -- return
-                */
+                
                 start_pos += 1; // ignore beginning quotes
-                string value = status.Substring(start_pos);
+                string value = status.Substring(start_pos,end_pos - start_pos);
 
                 // handle the remapped spaces
                 value = value.Replace("\u007f", " ");
