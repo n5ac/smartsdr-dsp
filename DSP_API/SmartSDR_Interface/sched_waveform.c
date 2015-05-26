@@ -516,7 +516,7 @@ static void* _sched_waveform_thread(void* param)
 								// put the fsample into the outbound packet
 
 								((Complex*)buf_desc->buf_ptr)[i].real = fsample;
-								((Complex*)buf_desc->buf_ptr)[i].imag = 0;
+								((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
 
 							}
 						} else {
