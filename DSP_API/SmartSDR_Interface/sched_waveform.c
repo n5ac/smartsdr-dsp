@@ -198,7 +198,7 @@ void my_put_next_rx_char(void *callback_state, char c)
     char new_char[2];
     if ( (uint32) c < 32 || (uint32) c > 126 ) {
     	/* Treat all control chars as spaces */
-    	output(ANSI_YELLOW "Non-valid RX_STRING char. ASCII code = %d\n", (uint32) c);
+    	//output(ANSI_YELLOW "Non-valid RX_STRING char. ASCII code = %d\n", (uint32) c);
     	new_char[0] = (char) 0x7F;
     } else if ( c == ' ' ) {
     	/* Encode spaces differently */
@@ -520,7 +520,7 @@ static void* _sched_waveform_thread(void* param)
 
 							}
 						} else {
-							output("RX Starved buffer out\n");
+							//output("RX Starved buffer out\n");
 
 							memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
 
@@ -645,7 +645,7 @@ static void* _sched_waveform_thread(void* param)
 								((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
 							}
 						} else {
-							output("TX Starved buffer out\n");
+							//output("TX Starved buffer out\n");
 
 							memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
 
@@ -660,10 +660,6 @@ static void* _sched_waveform_thread(void* param)
 					emit_waveform_output(buf_desc);
 
 					hal_BufferRelease(&buf_desc);
-
-					// the concensus is it doesn't matter to do this -- Graham put this in to
-					// yield the processor
-					usleep(10);
 				}
 			} while(1); // Seems infinite loop but will exit once there are no longer any buffers linked in _Waveformlist
 		}
