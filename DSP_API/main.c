@@ -59,8 +59,8 @@
 #include "common.h"
 
 
-const char* APP_NAME = "FreeDV";            // Name of Application
-//const char* CFG_FILE = "FreeDV.cfg";        // Name of associated configuration file
+const char* APP_NAME = "ThumbDV";            // Name of Application - must match .cfg filename
+
 char * cfg_path = NULL;
 
 static sem_t shutdown_sem;
