@@ -62,8 +62,10 @@
 #define AMBE3000_HEADER_LEN     4U
 #define AMBE3000_START_BYTE     0x61U
 
-#define DEFAULT_PORT            2460U
+#define AMBE3000_SPEECHD_HEADER_LEN 3U
+
 #define BUFFER_LENGTH           400U
+#define THUMBDV_MAX_PACKET_LEN  2048U
 
 static void delay(unsigned int delay) {
     struct timespec tim, tim2;
@@ -71,7 +73,6 @@ static void delay(unsigned int delay) {
     tim.tv_nsec = delay * 1000UL;
     nanosleep(&tim, &tim2);
 };
-
 
 static void dump(char *text, unsigned char *data, unsigned int length)
 {
@@ -115,7 +116,7 @@ static void dump(char *text, unsigned char *data, unsigned int length)
 
 }
 
-int openSerial(const char * tty_name)
+int thumbDV_openSerial(const char * tty_name)
 {
     struct termios tty;
     int fd;
@@ -163,11 +164,12 @@ int openSerial(const char * tty_name)
     n1 = write(fd,reset,5);
     output("Wrote Reset %d chars\n",n1);
 
+    int ret = thumbDV_processSerial(fd);
+
     return fd;
 }
 
-
-int processSerial(int serial_fd)
+int thumbDV_processSerial(int serial_fd)
 {
     unsigned char buffer[BUFFER_LENGTH];
     unsigned int respLen;
@@ -215,3 +217,50 @@ int processSerial(int serial_fd)
     return 0;
 }
 
+int thumbDV_encode(short * speech_in, short * speech_out, uint16 num_of_samples )
+{
+    unsigned char packet[THUMBDV_MAX_PACKET_LEN];
+    uint16 speech_d_bytes = num_of_samples * sizeof(uint16);  /* Should be 2 times the number of samples */
+
+
+
+    /* Calculate length of packet */
+    uint16 length = AMBE3000_HEADER_LEN;
+    /* Includes Channel Field and SpeechD Field Header */
+    length += AMBE3000_SPEECHD_HEADER_LEN;
+    length += speech_d_bytes;
+
+    /* Will be used to write fields into packet */
+    unsigned char * idx = &packet[0];
+
+    *(idx++) = AMBE3000_START_BYTE;
+    /* Length split into two bytes */
+    *(idx++) = length >> 1;
+    *(idx++) = length & 0xF;
+    /* SPEECHD Type */
+    *(idx++) = 0x02;
+    /* Channel0 Identifier */
+    *(idx++) = 0x40;
+    /* SPEEECHD Identifier */
+    *(idx++) = 0x00;
+    /* SPEECHD No of Samples */
+    *(idx++) = num_of_samples >> 1;
+    *(idx++) = num_of_samples & 0xF;
+
+    output("Num of Samples = 0x%X\n", num_of_samples);
+
+    *idx = '\0';
+    output("Encode Packet Header = ");
+    unsigned char * p = &packet[0];
+    uint32 i = 0;
+    for ( i = 0 ; i < 7 ; i++ ){
+
+        output("%02X ",*p);
+        p++;
+    }
+    output("\n");
+
+
+    return num_of_samples;
+
+}
