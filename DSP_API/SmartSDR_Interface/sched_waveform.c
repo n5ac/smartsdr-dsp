@@ -43,6 +43,7 @@
 #include "hal_buffer.h"
 #include "sched_waveform.h"
 #include "vita_output.h"
+#include "thumbDV.h"
 
 //static Queue sched_fft_queue;
 static pthread_rwlock_t _list_lock;
@@ -183,6 +184,7 @@ Circular_Short_Buffer TX3_cb = &tx3_cb;
 circular_float_buffer tx4_cb;
 Circular_Float_Buffer TX4_cb = &tx4_cb;
 
+static int _dv_serial_fd = 0;
 
 static void* _sched_waveform_thread(void* param)
 {
@@ -216,11 +218,9 @@ static void* _sched_waveform_thread(void* param)
     float 	tx_float_in_24k[PACKET_SAMPLES * DECIMATION_FACTOR + FILTER_TAPS];
     float 	tx_float_out_24k[PACKET_SAMPLES * DECIMATION_FACTOR ];
 
-
-
-
     // =======================  Initialization Section =========================
 
+    _dv_serial_fd = openSerial("/dev/ttyUSB0");
 
     // Initialize the Circular Buffers
 
@@ -359,7 +359,7 @@ static void* _sched_waveform_thread(void* param)
 
                             /********* ENCODE *///////////////
                             //nout = freedv_rx(_freedvS, speech_out, demod_in);
-
+                            nout = 320;
                             for( i=0 ; i < nout ; i++)
                             {
                                 cbWriteShort(RX3_cb, speech_out[i]);
