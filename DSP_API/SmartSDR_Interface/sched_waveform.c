@@ -152,13 +152,6 @@ void sched_waveform_signal()
 #define MEM_24		FILTER_TAPS					   /* Memory required in 24kHz buffer */
 #define MEM_8		FILTER_TAPS/DECIMATION_FACTOR   /* Memory required in 8kHz buffer */
 
-
-
-static struct freedv *_freedvS;         // Initialize Coder structure
-static struct my_callback_state  _my_cb_state;
-#define MAX_RX_STRING_LENGTH 40
-static char _rx_string[MAX_RX_STRING_LENGTH + 5];
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //	Circular Buffer Declarations
 
@@ -189,67 +182,6 @@ circular_short_buffer tx3_cb;
 Circular_Short_Buffer TX3_cb = &tx3_cb;
 circular_float_buffer tx4_cb;
 Circular_Float_Buffer TX4_cb = &tx4_cb;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// Callbacks for embedded ASCII stream, transmit and receive
-
-void my_put_next_rx_char(void *callback_state, char c)
-{
-    char new_char[2];
-    if ( (uint32) c < 32 || (uint32) c > 126 ) {
-    	/* Treat all control chars as spaces */
-    	//output(ANSI_YELLOW "Non-valid RX_STRING char. ASCII code = %d\n", (uint32) c);
-    	new_char[0] = (char) 0x7F;
-    } else if ( c == ' ' ) {
-    	/* Encode spaces differently */
-    	new_char[0] = (char) 0x7F;
-    } else {
-    	new_char[0] = c;
-    }
-
-    new_char[1] = 0;
-
-    strncat(_rx_string, new_char, MAX_RX_STRING_LENGTH+4);
-    if (strlen(_rx_string) > MAX_RX_STRING_LENGTH)
-    {
-        // lop off first character
-        strcpy(_rx_string, _rx_string+1);
-    }
-    //output(ANSI_MAGENTA "new string = '%s'\n",_rx_string);
-
-    char* api_cmd = safe_malloc(80);
-    sprintf(api_cmd, "waveform status slice=%d string=\"%s\"",0,_rx_string);
-    tc_sendSmartSDRcommand(api_cmd,FALSE,NULL);
-    safe_free(api_cmd);
-}
-
-struct my_callback_state
-{
-    char  tx_str[80];
-    char *ptx_str;
-};
-
-char my_get_next_tx_char(void *callback_state)
-{
-    struct my_callback_state* pstate = (struct my_callback_state*)callback_state;
-    char  c = *pstate->ptx_str++;
-
-    if (*pstate->ptx_str == 0)
-    {
-        pstate->ptx_str = pstate->tx_str;
-    }
-
-    return c;
-}
-
-void freedv_set_string(uint32 slice, char* string)
-{
-    strcpy(_my_cb_state.tx_str, string);
-    _my_cb_state.ptx_str = _my_cb_state.tx_str;
-    output(ANSI_MAGENTA "new TX string is '%s'\n",string);
-}
-
-
 
 
 static void* _sched_waveform_thread(void* param)
@@ -288,8 +220,7 @@ static void* _sched_waveform_thread(void* param)
 
 
     // =======================  Initialization Section =========================
-    _freedvS = freedv_open(FREEDV_MODE_1600);	// Default system, only
-    //assert(_freedvS != NULL);					// debug only
+
 
     // Initialize the Circular Buffers
 
@@ -329,19 +260,6 @@ static void* _sched_waveform_thread(void* param)
 
 	initial_tx = TRUE;
 	initial_rx = TRUE;
-
-    // initialize the rx callback
-    _freedvS->freedv_put_next_rx_char = &my_put_next_rx_char;
-
-    // Set up callback for txt msg chars
-    // clear tx_string
-    memset(_my_cb_state.tx_str,0,80);
-    _my_cb_state.ptx_str = _my_cb_state.tx_str;
-    _freedvS->callback_state = (void*)&_my_cb_state;
-    _freedvS->freedv_get_next_tx_char = &my_get_next_tx_char;
-
-    uint32 bypass_count = 0;
-    BOOL bypass_demod = TRUE;
 
 	// show that we are running
 	BufferDescriptor buf_desc;
@@ -429,56 +347,26 @@ static void* _sched_waveform_thread(void* param)
 //
 //						// Check for >= 320 samples in RX2_cb and spin vocoder
 						// 	Move output to RX3_cb.
-//						do {
-							nin = freedv_nin(_freedvS); // TODO Is nin, nout really necessary?
+							nin = 320;
 
-							if ( csbContains(RX2_cb) >= nin )
-							{
-	//
-								for( i=0 ; i< nin ; i++)
-								{
-									demod_in[i] = cbReadShort(RX2_cb);
-								}
-
-								nout = freedv_rx(_freedvS, speech_out, demod_in);
-
-
-
-								if ( _freedvS->fdmdv_stats.sync ) {
-									/* Increase count for turning bypass off */
-									if ( bypass_count < 10) bypass_count++;
-								} else {
-									if ( bypass_count > 0 ) bypass_count--;
-								}
-
-								if ( bypass_count > 7 ) {
-									//if ( bypass_demod ) output("baypass_demod transitioning to FALSE\n");
-
-									bypass_demod = FALSE;
-								}
-								else if ( bypass_count < 2 ) {
-									//if ( !bypass_demod ) output("baypass_demod transitioning to TRUE \n");
-									bypass_demod = TRUE;
-								}
-								if ( bypass_demod ) {
-									for ( i = 0 ; i < nin ; i++ ) {
-										cbWriteShort(RX3_cb, demod_in[i]);
-									}
-								} else {
-									for( i=0 ; i < nout ; i++)
-									{
-										cbWriteShort(RX3_cb, speech_out[i]);
-									}
-								}
-
-								//output("%d\n", bypass_count);
-
-							}
-	//						} else {
-		//						break; /* Break out of while loop */
-							//}
-						//} while (1);
+                        if ( csbContains(RX2_cb) >= nin )
+                        {
 //
+                            for( i=0 ; i< nin ; i++)
+                            {
+                                demod_in[i] = cbReadShort(RX2_cb);
+                            }
+
+                            /********* ENCODE *///////////////
+                            //nout = freedv_rx(_freedvS, speech_out, demod_in);
+
+                            for( i=0 ; i < nout ; i++)
+                            {
+                                cbWriteShort(RX3_cb, speech_out[i]);
+                            }
+
+                        }
+
 						// Check for >= 128 samples in RX3_cb, convert to floats
 						//	and spin the upsampler. Move output to RX4_cb.
 
@@ -556,8 +444,6 @@ static void* _sched_waveform_thread(void* param)
 
 						initial_rx = TRUE;
 						// Check for new receiver input packet & move to TX1_cb.
-						// TODO - If transmit packet, discard here?
-
 
 						for( i = 0 ; i < PACKET_SAMPLES ; i++ )
 						{
@@ -591,20 +477,20 @@ static void* _sched_waveform_thread(void* param)
 						// 	Move output to TX3_cb.
 
 
-							if ( csbContains(TX2_cb) >= 320 )
-							{
-								for( i=0 ; i< 320 ; i++)
-								{
-									speech_in[i] = cbReadShort(TX2_cb);
-								}
+                        if ( csbContains(TX2_cb) >= 320 )
+                        {
+                            for( i=0 ; i< 320 ; i++)
+                            {
+                                speech_in[i] = cbReadShort(TX2_cb);
+                            }
 
-								freedv_tx(_freedvS, mod_out, speech_in);
+                            /* DECODE */
 
-								for( i=0 ; i < 320 ; i++)
-								{
-									cbWriteShort(TX3_cb, mod_out[i]);
-								}
-							}
+                            for( i=0 ; i < 320 ; i++)
+                            {
+                                cbWriteShort(TX3_cb, mod_out[i]);
+                            }
+                        }
 
 						// Check for >= 128 samples in TX3_cb, convert to floats
 						//	and spin the upsampler. Move output to TX4_cb.
@@ -665,7 +551,7 @@ static void* _sched_waveform_thread(void* param)
 		}
 	}
 	_waveform_thread_abort = TRUE;
-	 freedv_close(_freedvS);
+
 	return NULL;
 }
 

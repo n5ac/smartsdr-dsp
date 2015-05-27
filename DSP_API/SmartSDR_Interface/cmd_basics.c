@@ -266,7 +266,7 @@ uint32 cmd_slice(int requester_fd, int argc, char **argv)
         {
             char* new_string = argv[2]+strlen("string")+1;
             charReplace(new_string, (char) 0x7F, ' ');
-            freedv_set_string(slc, new_string);
+            /* TODO: Remove or raplace */
             return SUCCESS;
         }
     }
