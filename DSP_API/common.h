@@ -47,7 +47,7 @@
 #define SUCCESS 0
 
 #define SMARTSDR_API_PORT           "4992"
-#define VITA_49_PORT                4999
+#define VITA_49_PORT                5000
 #define VITA_49_SOURCE_PORT			VITA_49_PORT
 #define VITA_49_FFT_SOURCE_PORT		30003
 #define VITA_49_METER_SOURCE_PORT	30002
