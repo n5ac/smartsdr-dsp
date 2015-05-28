@@ -204,6 +204,8 @@ static void* _sched_waveform_thread(void* param)
     short 	demod_in[FREEDV_NSAMPLES];
     short 	mod_out[FREEDV_NSAMPLES];
 
+    unsigned char packet_out[FREEDV_NSAMPLES];
+
     // RX RESAMPLER I/O BUFFERS
     float 	float_in_8k[PACKET_SAMPLES + FILTER_TAPS];
     float 	float_out_8k[PACKET_SAMPLES];
@@ -347,7 +349,7 @@ static void* _sched_waveform_thread(void* param)
 //
 //						// Check for >= 320 samples in RX2_cb and spin vocoder
 						// 	Move output to RX3_cb.
-							nin = 320;
+							nin = 160;
 
                         if ( csbContains(RX2_cb) >= nin )
                         {
@@ -359,7 +361,14 @@ static void* _sched_waveform_thread(void* param)
 
                             /********* ENCODE *///////////////
                             //nout = freedv_rx(_freedvS, speech_out, demod_in);
-                            nout = 320;
+
+                            nout = thumbDV_encode(_dv_serial_fd, demod_in, packet_out, nin);
+                            if (nout == 0 ) output("x");
+                            if (nout != 0 ) {
+                                nout = thumbDV_decode(_dv_serial_fd, packet_out, speech_out, nout);
+                                if (nout == 0 ) output("y");
+                            }
+
                             for( i=0 ; i < nout ; i++)
                             {
                                 cbWriteShort(RX3_cb, speech_out[i]);
@@ -486,7 +495,7 @@ static void* _sched_waveform_thread(void* param)
 
                             /* DECODE */
                             uint32 encode_out = 0;
-                            encode_out = thumbDV_encode(_dv_serial_fd, speech_in, mod_out, 160);
+                            encode_out = thumbDV_encode(_dv_serial_fd, speech_in, (unsigned char * )mod_out, 160);
 
                             for( i=0 ; i < 160 ; i++)
                             {

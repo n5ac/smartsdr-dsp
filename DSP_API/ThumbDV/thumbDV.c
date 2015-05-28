@@ -64,11 +64,113 @@
 
 #define AMBE3000_SPEECHD_HEADER_LEN 3U
 
+#define AMBE3000_CTRL_PKT_TYPE      0x00
+#define AMBE3000_SPEECH_PKT_TYPE    0x02
+#define AMBE3000_CHAN_PKT_TYPE      0x01
+
 #define BUFFER_LENGTH           400U
 #define THUMBDV_MAX_PACKET_LEN  2048U
 
 static pthread_t _read_thread;
 BOOL _readThreadAbort = FALSE;
+
+static pthread_rwlock_t _encoded_list_lock;
+static BufferDescriptor _encoded_root;
+
+static pthread_rwlock_t _decoded_list_lock;
+static BufferDescriptor _decoded_root;
+
+static BufferDescriptor _thumbDVEncodedList_UnlinkHead(void)
+{
+    BufferDescriptor buf_desc = NULL;
+    pthread_rwlock_wrlock(&_encoded_list_lock);
+
+    if (_encoded_root == NULL || _encoded_root->next == NULL)
+    {
+        output("Attempt to unlink from a NULL head");
+        pthread_rwlock_unlock(&_encoded_list_lock);
+        return NULL;
+    }
+
+    if(_encoded_root->next != _encoded_root)
+        buf_desc = _encoded_root->next;
+
+    if(buf_desc != NULL)
+    {
+        // make sure buffer exists and is actually linked
+        if(!buf_desc || !buf_desc->prev || !buf_desc->next)
+        {
+            output( "Invalid buffer descriptor");
+            buf_desc = NULL;
+        }
+        else
+        {
+            buf_desc->next->prev = buf_desc->prev;
+            buf_desc->prev->next = buf_desc->next;
+            buf_desc->next = NULL;
+            buf_desc->prev = NULL;
+        }
+    }
+
+    pthread_rwlock_unlock(&_encoded_list_lock);
+    return buf_desc;
+}
+
+static void _thumbDVEncodedList_LinkTail(BufferDescriptor buf_desc)
+{
+    pthread_rwlock_wrlock(&_encoded_list_lock);
+    buf_desc->next = _encoded_root;
+    buf_desc->prev = _encoded_root->prev;
+    _encoded_root->prev->next = buf_desc;
+    _encoded_root->prev = buf_desc;
+    pthread_rwlock_unlock(&_encoded_list_lock);
+}
+
+static BufferDescriptor _thumbDVDecodedList_UnlinkHead(void)
+{
+    BufferDescriptor buf_desc = NULL;
+    pthread_rwlock_wrlock(&_decoded_list_lock);
+
+    if (_decoded_root == NULL || _decoded_root->next == NULL)
+    {
+        output("Attempt to unlink from a NULL head");
+        pthread_rwlock_unlock(&_decoded_list_lock);
+        return NULL;
+    }
+
+    if(_decoded_root->next != _decoded_root)
+        buf_desc = _decoded_root->next;
+
+    if(buf_desc != NULL)
+    {
+        // make sure buffer exists and is actually linked
+        if(!buf_desc || !buf_desc->prev || !buf_desc->next)
+        {
+            output( "Invalid buffer descriptor");
+            buf_desc = NULL;
+        }
+        else
+        {
+            buf_desc->next->prev = buf_desc->prev;
+            buf_desc->prev->next = buf_desc->next;
+            buf_desc->next = NULL;
+            buf_desc->prev = NULL;
+        }
+    }
+
+    pthread_rwlock_unlock(&_decoded_list_lock);
+    return buf_desc;
+}
+
+static void _thumbDVDecodedList_LinkTail(BufferDescriptor buf_desc)
+{
+    pthread_rwlock_wrlock(&_decoded_list_lock);
+    buf_desc->next = _decoded_root;
+    buf_desc->prev = _decoded_root->prev;
+    _decoded_root->prev->next = buf_desc;
+    _decoded_root->prev = buf_desc;
+    pthread_rwlock_unlock(&_decoded_list_lock);
+}
 
 static void delay(unsigned int delay) {
     struct timespec tim, tim2;
@@ -120,12 +222,25 @@ static void dump(char *text, unsigned char *data, unsigned int length)
 
 static void thumbDV_writeSerial(int serial_fd, const unsigned char * buffer, uint32 bytes)
 {
+    fd_set fds;
+
+    FD_ZERO(&fds);
+    FD_SET(serial_fd, &fds);
+
     int32 n = 0;
     errno = 0;
+    struct timeval timeout;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+    select(serial_fd + 1, NULL, &fds, NULL, &timeout);
+    if ( FD_ISSET(serial_fd, &fds)) {
     n = write(serial_fd , buffer, bytes);
-    if (n != bytes) {
-        output(ANSI_RED "Could not write to serial port. errno = %d\n", errno);
-        return;
+        if (n != bytes) {
+            output(ANSI_RED "Could not write to serial port. errno = %d\n", errno);
+            return;
+        }
+    } else {
+        output(ANSI_RED "Could not write to serial port. Timeout\n" ANSI_WHITE);
     }
 
 }
@@ -156,7 +271,7 @@ int thumbDV_openSerial(const char * tty_name)
     tty.c_lflag = 0;
 
     tty.c_oflag = 0;
-    tty.c_cc[VMIN]  = 0;
+    tty.c_cc[VMIN]  = 1;
     tty.c_cc[VTIME] = 5;
 
     tty.c_iflag &= ~(IXON | IXOFF | IXANY);
@@ -182,6 +297,7 @@ int thumbDV_processSerial(int serial_fd)
     unsigned int respLen;
     unsigned int offset;
     ssize_t len;
+    unsigned char packet_type;
 
     errno = 0;
     len = read(serial_fd, buffer, 1);
@@ -219,13 +335,75 @@ int thumbDV_processSerial(int serial_fd)
 
     respLen += AMBE3000_HEADER_LEN;
 
-
+    BufferDescriptor desc = NULL;
+    packet_type = buffer[3];
     dump("Serial data", buffer, respLen);
+    if ( packet_type == AMBE3000_CTRL_PKT_TYPE ) {
+    //    dump("Serial data", buffer, respLen);
+    } else if ( packet_type == AMBE3000_CHAN_PKT_TYPE ) {
+        desc = hal_BufferRequest(respLen, sizeof(unsigned char) );
+        memcpy(desc->buf_ptr, buffer, respLen);
+        /* Encoded data */
+        _thumbDVEncodedList_LinkTail(desc);
+    } else if ( packet_type == AMBE3000_SPEECH_PKT_TYPE ) {
+        desc = hal_BufferRequest(respLen, sizeof(unsigned char));
+        memcpy(desc->buf_ptr, buffer, respLen);
+        /* Speech data */
+        _thumbDVDecodedList_LinkTail(desc);
+
+    } else {
+        output(ANSI_RED "Unrecognized packet type 0x%02X ", packet_type);
+        safe_free(desc);
+    }
+
 
     return 0;
 }
 
-int thumbDV_encode(int serial_fd, short * speech_in, short * speech_out, uint8 num_of_samples )
+int thumbDV_decode(int serial_fd, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet)
+{
+
+    unsigned char * idx = &packet_in[0];
+
+    if ( *idx != AMBE3000_START_BYTE ) {
+        output(ANSI_RED "packet_in does not have valid start byte\n" ANSI_WHITE);
+        return -1;
+    }
+    idx++;
+
+    uint16 length = ( *idx << 8 ) + ( *(idx+1) );
+    //output("Packet length decode is 0x%02X", length);
+
+    if ( length != (bytes_in_packet - AMBE3000_HEADER_LEN)) {
+        output("Mismatched length %d expected %d\n", length, bytes_in_packet - AMBE3000_HEADER_LEN );
+    }
+
+    idx += 2;
+
+    if ( *idx != AMBE3000_CHAN_PKT_TYPE ) {
+        output(ANSI_RED "Invalid packet type for decode 0x%02X\n", *idx);
+        return -1;
+    }
+
+    idx++;
+
+    thumbDV_writeSerial(serial_fd, packet_in, bytes_in_packet);
+
+    int32 samples_returned = 0;
+    BufferDescriptor desc = _thumbDVDecodedList_UnlinkHead();
+
+    if ( desc != NULL ) {
+       memcpy(speech_out, desc->buf_ptr, desc->sample_size * desc->num_samples);
+       samples_returned = desc->num_samples;
+       safe_free(desc);
+    } else {
+        /* Do nothing for now */
+    }
+
+    return samples_returned;
+}
+
+int thumbDV_encode(int serial_fd, short * speech_in, unsigned char * packet_out, uint8 num_of_samples )
 {
     unsigned char packet[THUMBDV_MAX_PACKET_LEN];
     uint16 speech_d_bytes = num_of_samples * sizeof(uint16);  /* Should be 2 times the number of samples */
@@ -246,7 +424,7 @@ int thumbDV_encode(int serial_fd, short * speech_in, short * speech_out, uint8 n
     *(idx++) = length >> 8;
     *(idx++) = length & 0xFF;
     /* SPEECHD Type */
-    *(idx++) = 0x02;
+    *(idx++) = AMBE3000_SPEECH_PKT_TYPE;
     /* Channel0 Identifier */
     *(idx++) = 0x40;
     /* SPEEECHD Identifier */
@@ -254,9 +432,10 @@ int thumbDV_encode(int serial_fd, short * speech_in, short * speech_out, uint8 n
     /* SPEECHD No of Samples */
     *(idx++) = num_of_samples;
 
-    output("Num of Samples = 0x%X\n", num_of_samples);
+    //output("Num of Samples = 0x%X\n", num_of_samples);
 
     *idx = '\0';
+#ifdef WOOT
     output("Encode Packet Header = ");
     unsigned char * p = &packet[0];
     uint32 i = 0;
@@ -267,12 +446,25 @@ int thumbDV_encode(int serial_fd, short * speech_in, short * speech_out, uint8 n
     }
     output("\n");
 
+#endif
     memcpy(idx, speech_in, speech_d_bytes);
 
     /* +3 needed for first 3 fields of header */
     thumbDV_writeSerial(serial_fd, packet, length + 3);
 
-    return num_of_samples;
+    int32 samples_returned = 0;
+    BufferDescriptor desc = _thumbDVEncodedList_UnlinkHead();
+
+    if ( desc != NULL ) {
+        memcpy(packet_out, desc->buf_ptr, desc->sample_size * desc->num_samples);
+        samples_returned = desc->num_samples;
+        if ( samples_returned != num_of_samples ) output("Rate Mismatch expected %d got %d\n", num_of_samples, samples_returned);
+        safe_free(desc);
+    } else {
+        /* Do nothing for now */
+    }
+
+    return samples_returned;
 
 }
 
@@ -296,14 +488,12 @@ static void* _thumbDV_readThread(void* param)
         FD_ZERO(&fds);
         FD_SET(serial_fd, &fds);
 
-        output("Going into select\n");
-
         errno = 0;
         ret = select(topFd, &fds, NULL, NULL, &timeout);
         if (ret < 0) {
             fprintf(stderr, "ThumbDV: error from select, errno=%d\n", errno);
         }
-        output("Checking if our socket was set in fdx\n");
+
         if (FD_ISSET(serial_fd, &fds)) {
             ret = thumbDV_processSerial(serial_fd);
         }
@@ -315,7 +505,31 @@ static void* _thumbDV_readThread(void* param)
 
 void thumbDV_init(const char * serial_device_name, int * serial_fd)
 {
+    pthread_rwlock_init(&_encoded_list_lock, NULL);
+    pthread_rwlock_init(&_decoded_list_lock, NULL);
+
+    pthread_rwlock_wrlock(&_encoded_list_lock);
+    _encoded_root = (BufferDescriptor)safe_malloc(sizeof(buffer_descriptor));
+    memset(_encoded_root, 0, sizeof(buffer_descriptor));
+    _encoded_root->next = _encoded_root;
+    _encoded_root->prev = _encoded_root;
+    pthread_rwlock_unlock(&_encoded_list_lock);
+
+    pthread_rwlock_wrlock(&_decoded_list_lock);
+    _decoded_root = (BufferDescriptor)safe_malloc(sizeof(buffer_descriptor));
+    memset(_decoded_root, 0, sizeof(buffer_descriptor));
+    _decoded_root->next = _decoded_root;
+    _decoded_root->prev = _decoded_root;
+    pthread_rwlock_unlock(&_decoded_list_lock);
+
+
+
     *serial_fd = thumbDV_openSerial("/dev/ttyUSB0");
+
+    unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
+    thumbDV_writeSerial(*serial_fd, reset, 5);
+    /* Block until we get data from serial port after reset */
+    thumbDV_processSerial(*serial_fd);
 
     pthread_create(&_read_thread, NULL, &_thumbDV_readThread, serial_fd);
 
@@ -324,14 +538,12 @@ void thumbDV_init(const char * serial_device_name, int * serial_fd)
     pthread_setschedparam(_read_thread, SCHED_FIFO, &fifo_param);
 
 
-    unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
+    unsigned char get_prodID[5] = {0x61, 0x00, 0x01, 0x00, 0x30 };
+    unsigned char get_version[5] = {0x61, 0x00, 0x01, 0x00, 0x31};
     //unsigned char dstar_mode[17] = {0x61, 0x00, 0x0c, 0x00, 0x0a, 0x01, 0x30, 0x07, 0x63, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48};
-    //unsigned char get_prodID[5] = {0x61, 0x00, 0x01, 0x00, 0x30 };
-    //unsigned char get_version[5] = {0x61, 0x00, 0x01, 0x00, 0x31};
 
-    thumbDV_writeSerial(*serial_fd, reset, 5);
-//    thumbDV_writeSerial(*serial_fd, get_prodID, 5 );
-//    /thumbDV_writeSerial(*serial_fd, get_version, 5);
-//    thumbDV_writeSerial(*serial_fd, dstar_mode, 17);
+    thumbDV_writeSerial(*serial_fd, get_prodID, 5 );
+    thumbDV_writeSerial(*serial_fd, get_version, 5);
+    //thumbDV_writeSerial(*serial_fd, dstar_mode, 17);
 
 }
