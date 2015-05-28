@@ -220,7 +220,7 @@ static void* _sched_waveform_thread(void* param)
 
     // =======================  Initialization Section =========================
 
-    _dv_serial_fd = thumbDV_openSerial("/dev/ttyUSB0");
+    thumbDV_init("/dev/ttyUSB0", &_dv_serial_fd);
 
     // Initialize the Circular Buffers
 
@@ -477,18 +477,18 @@ static void* _sched_waveform_thread(void* param)
 						// 	Move output to TX3_cb.
 
 
-                        if ( csbContains(TX2_cb) >= 320 )
+                        if ( csbContains(TX2_cb) >= 160 )
                         {
-                            for( i=0 ; i< 320 ; i++)
+                            for( i=0 ; i< 160 ; i++)
                             {
                                 speech_in[i] = cbReadShort(TX2_cb);
                             }
 
                             /* DECODE */
                             uint32 encode_out = 0;
-                            encode_out = thumbDV_encode(speech_in, mod_out, 320);
+                            encode_out = thumbDV_encode(_dv_serial_fd, speech_in, mod_out, 160);
 
-                            for( i=0 ; i < 320 ; i++)
+                            for( i=0 ; i < 160 ; i++)
                             {
                                 cbWriteShort(TX3_cb, mod_out[i]);
                             }

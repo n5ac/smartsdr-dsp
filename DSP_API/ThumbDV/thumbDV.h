@@ -36,9 +36,10 @@
 #ifndef THUMBDV_THUMBDV_
 #define THUMBDV_THUMBDV_
 
+void thumbDV_init(const char * serial_device_name, int * serial_fd);
 int thumbDV_openSerial(const char * tty_name);
 int thumbDV_processSerial(int serial_fd);
 
-int thumbDV_encode(short * speech_in, short * speech_out, uint16 num_of_samples );
+int thumbDV_encode(int serial_fd, short * speech_in, short * speech_out, uint8 num_of_samples );
 
 #endif /* THUMBDV_THUMBDV_ */

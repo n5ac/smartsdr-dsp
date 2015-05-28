@@ -67,6 +67,9 @@
 #define BUFFER_LENGTH           400U
 #define THUMBDV_MAX_PACKET_LEN  2048U
 
+static pthread_t _read_thread;
+BOOL _readThreadAbort = FALSE;
+
 static void delay(unsigned int delay) {
     struct timespec tim, tim2;
     tim.tv_sec = 0;
@@ -113,6 +116,17 @@ static void dump(char *text, unsigned char *data, unsigned int length)
         else
             length = 0U;
     }
+}
+
+static void thumbDV_writeSerial(int serial_fd, const unsigned char * buffer, uint32 bytes)
+{
+    int32 n = 0;
+    errno = 0;
+    n = write(serial_fd , buffer, bytes);
+    if (n != bytes) {
+        output(ANSI_RED "Could not write to serial port. errno = %d\n", errno);
+        return;
+    }
 
 }
 
@@ -120,19 +134,17 @@ int thumbDV_openSerial(const char * tty_name)
 {
     struct termios tty;
     int fd;
-    int n1;
-    char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
 
     /* TODO: Sanitize tty_name */
 
     fd = open(tty_name, O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0) {
-        output("AMBEserver: error when opening %s, errno=%d\n", tty_name,errno);
+        output("ThumbDV: error when opening %s, errno=%d\n", tty_name, errno);
         return fd;
     }
 
     if (tcgetattr(fd, &tty) != 0) {
-        output( "AMBEserver: error %d from tcgetattr\n", errno);
+        output( "ThumbDV: error %d from tcgetattr\n", errno);
         return -1;
     }
 
@@ -156,16 +168,11 @@ int thumbDV_openSerial(const char * tty_name)
     tty.c_cflag &= ~CRTSCTS;
 
     if (tcsetattr(fd, TCSANOW, &tty) != 0) {
-        output("AMBEserver: error %d from tcsetattr\n", errno);
+        output("ThumbDV: error %d from tcsetattr\n", errno);
         return -1;
     }
 
     output("opened %s - fd = %d\n", tty_name, fd);
-    n1 = write(fd,reset,5);
-    output("Wrote Reset %d chars\n",n1);
-
-    int ret = thumbDV_processSerial(fd);
-
     return fd;
 }
 
@@ -176,14 +183,15 @@ int thumbDV_processSerial(int serial_fd)
     unsigned int offset;
     ssize_t len;
 
+    errno = 0;
     len = read(serial_fd, buffer, 1);
     if (len != 1) {
-        output(ANSI_RED "AMBEserver: error when reading from the serial port, errno=%d" ANSI_WHITE, errno);
+        output(ANSI_RED "ThumbDV: error when reading from the serial port, len = %d, errno=%d\n" ANSI_WHITE, len, errno);
         return 0;
     }
 
     if (buffer[0U] != AMBE3000_START_BYTE) {
-        output(ANSI_RED "AMBEserver: unknown byte from the DV3000, 0x%02X" ANSI_WHITE, buffer[0U]);
+        output(ANSI_RED "ThumbDV: unknown byte from the DV3000, 0x%02X\n" ANSI_WHITE, buffer[0U]);
         return 1;
     }
 
@@ -217,15 +225,15 @@ int thumbDV_processSerial(int serial_fd)
     return 0;
 }
 
-int thumbDV_encode(short * speech_in, short * speech_out, uint16 num_of_samples )
+int thumbDV_encode(int serial_fd, short * speech_in, short * speech_out, uint8 num_of_samples )
 {
     unsigned char packet[THUMBDV_MAX_PACKET_LEN];
     uint16 speech_d_bytes = num_of_samples * sizeof(uint16);  /* Should be 2 times the number of samples */
 
 
 
-    /* Calculate length of packet */
-    uint16 length = AMBE3000_HEADER_LEN;
+    /* Calculate length of packet NOT including the full header just the type field*/
+    uint16 length = 1;
     /* Includes Channel Field and SpeechD Field Header */
     length += AMBE3000_SPEECHD_HEADER_LEN;
     length += speech_d_bytes;
@@ -235,8 +243,8 @@ int thumbDV_encode(short * speech_in, short * speech_out, uint16 num_of_samples 
 
     *(idx++) = AMBE3000_START_BYTE;
     /* Length split into two bytes */
-    *(idx++) = length >> 1;
-    *(idx++) = length & 0xF;
+    *(idx++) = length >> 8;
+    *(idx++) = length & 0xFF;
     /* SPEECHD Type */
     *(idx++) = 0x02;
     /* Channel0 Identifier */
@@ -244,8 +252,7 @@ int thumbDV_encode(short * speech_in, short * speech_out, uint16 num_of_samples 
     /* SPEEECHD Identifier */
     *(idx++) = 0x00;
     /* SPEECHD No of Samples */
-    *(idx++) = num_of_samples >> 1;
-    *(idx++) = num_of_samples & 0xF;
+    *(idx++) = num_of_samples;
 
     output("Num of Samples = 0x%X\n", num_of_samples);
 
@@ -260,7 +267,71 @@ int thumbDV_encode(short * speech_in, short * speech_out, uint16 num_of_samples 
     }
     output("\n");
 
+    memcpy(idx, speech_in, speech_d_bytes);
+
+    /* +3 needed for first 3 fields of header */
+    thumbDV_writeSerial(serial_fd, packet, length + 3);
 
     return num_of_samples;
+
+}
+
+static void* _thumbDV_readThread(void* param)
+{
+    int topFd;
+    fd_set fds;
+    int ret;
+
+    int serial_fd = *(int*)param;
+    topFd = serial_fd + 1;
+
+    output("Serial FD = %d in thumbDV_readThread(). TopFD = %d\n", serial_fd, topFd);
+
+    struct timeval timeout;
+
+    while ( !_readThreadAbort ) {
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
+        FD_ZERO(&fds);
+        FD_SET(serial_fd, &fds);
+
+        output("Going into select\n");
+
+        errno = 0;
+        ret = select(topFd, &fds, NULL, NULL, &timeout);
+        if (ret < 0) {
+            fprintf(stderr, "ThumbDV: error from select, errno=%d\n", errno);
+        }
+        output("Checking if our socket was set in fdx\n");
+        if (FD_ISSET(serial_fd, &fds)) {
+            ret = thumbDV_processSerial(serial_fd);
+        }
+    }
+
+    output(ANSI_YELLOW "thumbDV_readThread has exited\n" ANSI_WHITE);
+    return 0;
+}
+
+void thumbDV_init(const char * serial_device_name, int * serial_fd)
+{
+    *serial_fd = thumbDV_openSerial("/dev/ttyUSB0");
+
+    pthread_create(&_read_thread, NULL, &_thumbDV_readThread, serial_fd);
+
+    struct sched_param fifo_param;
+    fifo_param.sched_priority = 30;
+    pthread_setschedparam(_read_thread, SCHED_FIFO, &fifo_param);
+
+
+    unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
+    //unsigned char dstar_mode[17] = {0x61, 0x00, 0x0c, 0x00, 0x0a, 0x01, 0x30, 0x07, 0x63, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48};
+    //unsigned char get_prodID[5] = {0x61, 0x00, 0x01, 0x00, 0x30 };
+    //unsigned char get_version[5] = {0x61, 0x00, 0x01, 0x00, 0x31};
+
+    thumbDV_writeSerial(*serial_fd, reset, 5);
+//    thumbDV_writeSerial(*serial_fd, get_prodID, 5 );
+//    /thumbDV_writeSerial(*serial_fd, get_version, 5);
+//    thumbDV_writeSerial(*serial_fd, dstar_mode, 17);
 
 }
