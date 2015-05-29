@@ -382,14 +382,14 @@ int thumbDV_processSerial(int serial_fd)
     } else if ( packet_type == AMBE3000_CHAN_PKT_TYPE ) {
         desc = hal_BufferRequest(respLen, sizeof(unsigned char) );
         memcpy(desc->buf_ptr, buffer, respLen);
-        dump("Coded Packet", buffer, respLen);
+        //dump("Coded Packet", buffer, respLen);
         /* Encoded data */
         _thumbDVEncodedList_LinkTail(desc);
     } else if ( packet_type == AMBE3000_SPEECH_PKT_TYPE ) {
         output("s");
         desc = hal_BufferRequest(respLen, sizeof(unsigned char));
         memcpy(desc->buf_ptr, buffer, respLen);
-        dump("SPEECH Packet", buffer, respLen);
+        //dump("SPEECH Packet", buffer, respLen);
         /* Speech data */
         _thumbDVDecodedList_LinkTail(desc);
 
@@ -438,7 +438,7 @@ int thumbDV_decode(int serial_fd, unsigned char * packet_in, short * speech_out,
     }
 
     int32 samples_returned = 0;
-    BufferDescriptor desc = NULL;//_thumbDVDecodedList_UnlinkHead();
+    BufferDescriptor desc = _thumbDVDecodedList_UnlinkHead();
     uint32 samples_in_speech_packet = 0;
 
     if ( desc != NULL ) {
@@ -503,7 +503,7 @@ int thumbDV_encode(int serial_fd, short * speech_in, unsigned char * packet_out,
     thumbDV_writeSerial(serial_fd, packet, length + 3);
 
     int32 samples_returned = 0;
-    BufferDescriptor desc = NULL ;//_thumbDVEncodedList_UnlinkHead();
+    BufferDescriptor desc = NULL;//_thumbDVEncodedList_UnlinkHead();
 
     if ( desc != NULL ) {
         memcpy(packet_out, desc->buf_ptr, desc->sample_size * desc->num_samples);

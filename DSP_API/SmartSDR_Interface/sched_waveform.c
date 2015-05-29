@@ -362,19 +362,20 @@ static void* _sched_waveform_thread(void* param)
                             /********* ENCODE *///////////////
                             //nout = freedv_rx(_freedvS, speech_out, demod_in);
 //
-                            nout = thumbDV_encode(_dv_serial_fd, demod_in, packet_out, nin);
-                            nout = 0;
+                            //nout = thumbDV_encode(_dv_serial_fd, demod_in, packet_out, nin);
+                            //nout = 0;
 //                            if (nout == 0 ) {
 //                                output("x");
 //                            } else {
 //                                nout = thumbDV_decode(_dv_serial_fd, packet_out, speech_out, nout);
 //                                if (nout == 0 ) output("y");
 //                            }
+                            nout = thumbDV_decode(_dv_serial_fd, NULL, speech_out, nout);
 
                             for( i=0 ; i < nout ; i++)
                             {
-                                //cbWriteShort(RX3_cb, speech_out[i]);
-                                cbWriteShort(RX3_cb, demod_in[i]);
+                                cbWriteShort(RX3_cb, speech_out[i]);
+                                //cbWriteShort(RX3_cb, demod_in[i]);
                             }
 
                         }
@@ -498,13 +499,13 @@ static void* _sched_waveform_thread(void* param)
 
                             /* DECODE */
                             uint32 decode_out = 0;
-                            //decode_out = thumbDV_encode(_dv_serial_fd, speech_in, (unsigned char * )mod_out, 160);
-                            decode_out = thumbDV_decode(_dv_serial_fd, NULL, mod_out, 160);
+                            decode_out = thumbDV_encode(_dv_serial_fd, speech_in, (unsigned char * )mod_out, 160);
+                            //decode_out = thumbDV_decode(_dv_serial_fd, NULL, mod_out, 160);
 
                             for( i=0 ; i < 160 ; i++)
                             {
-                                cbWriteShort(TX3_cb, mod_out[i]);
-                                //cbWriteShort(TX3_cb, 0);
+                                //cbWriteShort(TX3_cb, mod_out[i]);
+                                cbWriteShort(TX3_cb, 0);
                             }
                         }
 
