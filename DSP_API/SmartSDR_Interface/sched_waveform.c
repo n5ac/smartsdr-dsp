@@ -330,16 +330,16 @@ static void* _sched_waveform_thread(void* param)
 //
 						// Check for >= 384 samples in RX1_cb and spin downsampler
 						//	Convert to shorts and move to RX2_cb.
-						if(cfbContains(RX1_cb) >= 384)
+						if(cfbContains(RX1_cb) >= 480)
 						{
-							for(i=0 ; i<384 ; i++)
+							for(i=0 ; i<480 ; i++)
 							{
 								float_in_24k[i + MEM_24] = cbReadFloat(RX1_cb);
 							}
 
-							fdmdv_24_to_8(float_out_8k, &float_in_24k[MEM_24], 128);
+							fdmdv_24_to_8(float_out_8k, &float_in_24k[MEM_24], 160);
 
-							for(i=0 ; i<128 ; i++)
+							for(i=0 ; i< 160 ; i++)
 							{
 								cbWriteShort(RX2_cb, (short) (float_out_8k[i]*SCALE_RX_IN));
 
@@ -358,20 +358,23 @@ static void* _sched_waveform_thread(void* param)
                             {
                                 demod_in[i] = cbReadShort(RX2_cb);
                             }
-
+                            nout = 160;
                             /********* ENCODE *///////////////
                             //nout = freedv_rx(_freedvS, speech_out, demod_in);
-
+//
                             nout = thumbDV_encode(_dv_serial_fd, demod_in, packet_out, nin);
-                            if (nout == 0 ) output("x");
-                            if (nout != 0 ) {
-                                nout = thumbDV_decode(_dv_serial_fd, packet_out, speech_out, nout);
-                                if (nout == 0 ) output("y");
-                            }
+                            nout = 0;
+//                            if (nout == 0 ) {
+//                                output("x");
+//                            } else {
+//                                nout = thumbDV_decode(_dv_serial_fd, packet_out, speech_out, nout);
+//                                if (nout == 0 ) output("y");
+//                            }
 
                             for( i=0 ; i < nout ; i++)
                             {
-                                cbWriteShort(RX3_cb, speech_out[i]);
+                                //cbWriteShort(RX3_cb, speech_out[i]);
+                                cbWriteShort(RX3_cb, demod_in[i]);
                             }
 
                         }
@@ -379,16 +382,16 @@ static void* _sched_waveform_thread(void* param)
 						// Check for >= 128 samples in RX3_cb, convert to floats
 						//	and spin the upsampler. Move output to RX4_cb.
 
-						if(csbContains(RX3_cb) >= 128)
+						if(csbContains(RX3_cb) >= 160)
 						{
-							for( i=0 ; i<128 ; i++)
+							for( i=0 ; i< 160 ; i++)
 							{
 								float_in_8k[i+MEM_8] = ((float)  (cbReadShort(RX3_cb) / SCALE_RX_OUT)     );
 							}
 
-							fdmdv_8_to_24(float_out_24k, &float_in_8k[MEM_8], 128);
+							fdmdv_8_to_24(float_out_24k, &float_in_8k[MEM_8], 160);
 
-							for( i=0 ; i<384 ; i++)
+							for( i=0 ; i< 480 ; i++)
 							{
 								cbWriteFloat(RX4_cb, float_out_24k[i]);
 							}
@@ -465,16 +468,16 @@ static void* _sched_waveform_thread(void* param)
 //
 						// Check for >= 384 samples in TX1_cb and spin downsampler
 						//	Convert to shorts and move to TX2_cb.
-						if(cfbContains(TX1_cb) >= 384)
+						if(cfbContains(TX1_cb) >= 480)
 						{
-							for(i=0 ; i<384 ; i++)
+							for(i=0 ; i< 480 ; i++)
 							{
 								tx_float_in_24k[i + MEM_24] = cbReadFloat(TX1_cb);
 							}
 
-							fdmdv_24_to_8(tx_float_out_8k, &tx_float_in_24k[MEM_24], 128);
+							fdmdv_24_to_8(tx_float_out_8k, &tx_float_in_24k[MEM_24], 160);
 
-							for(i=0 ; i<128 ; i++)
+							for(i=0 ; i< 160 ; i++)
 							{
 								cbWriteShort(TX2_cb, (short) (tx_float_out_8k[i]*SCALE_TX_IN));
 
@@ -494,28 +497,30 @@ static void* _sched_waveform_thread(void* param)
                             }
 
                             /* DECODE */
-                            uint32 encode_out = 0;
-                            encode_out = thumbDV_encode(_dv_serial_fd, speech_in, (unsigned char * )mod_out, 160);
+                            uint32 decode_out = 0;
+                            //decode_out = thumbDV_encode(_dv_serial_fd, speech_in, (unsigned char * )mod_out, 160);
+                            decode_out = thumbDV_decode(_dv_serial_fd, NULL, mod_out, 160);
 
                             for( i=0 ; i < 160 ; i++)
                             {
                                 cbWriteShort(TX3_cb, mod_out[i]);
+                                //cbWriteShort(TX3_cb, 0);
                             }
                         }
 
 						// Check for >= 128 samples in TX3_cb, convert to floats
 						//	and spin the upsampler. Move output to TX4_cb.
 
-						if(csbContains(TX3_cb) >= 128)
+						if(csbContains(TX3_cb) >= 160)
 						{
-							for( i=0 ; i<128 ; i++)
+							for( i=0 ; i<160 ; i++)
 							{
 								tx_float_in_8k[i+MEM_8] = ((float)  (cbReadShort(TX3_cb) / SCALE_TX_OUT));
 							}
 
-							fdmdv_8_to_24(tx_float_out_24k, &tx_float_in_8k[MEM_8], 128);
+							fdmdv_8_to_24(tx_float_out_24k, &tx_float_in_8k[MEM_8], 160);
 
-							for( i=0 ; i<384 ; i++)
+							for( i=0 ; i<480 ; i++)
 							{
 								cbWriteFloat(TX4_cb, tx_float_out_24k[i]);
 							}
