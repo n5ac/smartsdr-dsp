@@ -531,6 +531,14 @@ void thumbDV_init(const char * serial_device_name, int * serial_fd)
     /* Block until we get data from serial port after reset */
     thumbDV_processSerial(*serial_fd);
 
+    unsigned char reset_softcfg[11] = {0x61, 0x00, 0x07, 0x00, 0x34, 0x05, 0x03, 0xEB, 0xFF, 0xFF, 0xFF};
+    thumbDV_writeSerial(*serial_fd, reset_softcfg, 11);
+    thumbDV_processSerial(*serial_fd);
+
+    unsigned char disable_parity[6] = {0x61, 0x00, 0x02, 0x00, 0x3F, 0x00};
+    thumbDV_writeSerial(*serial_fd, disable_parity, 6);
+    thumbDV_processSerial(*serial_fd);
+
     pthread_create(&_read_thread, NULL, &_thumbDV_readThread, serial_fd);
 
     struct sched_param fifo_param;
@@ -540,10 +548,15 @@ void thumbDV_init(const char * serial_device_name, int * serial_fd)
 
     unsigned char get_prodID[5] = {0x61, 0x00, 0x01, 0x00, 0x30 };
     unsigned char get_version[5] = {0x61, 0x00, 0x01, 0x00, 0x31};
-    //unsigned char dstar_mode[17] = {0x61, 0x00, 0x0c, 0x00, 0x0a, 0x01, 0x30, 0x07, 0x63, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48};
+    unsigned char read_cfg[5] = {0x61, 0x00, 0x01, 0x00, 0x37};
+    unsigned char dstar_mode[17] = {0x61, 0x00, 0x0D, 0x00, 0x0A, 0x01, 0x30, 0x07, 0x63, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48};
+
+
 
     thumbDV_writeSerial(*serial_fd, get_prodID, 5 );
     thumbDV_writeSerial(*serial_fd, get_version, 5);
-    //thumbDV_writeSerial(*serial_fd, dstar_mode, 17);
+    thumbDV_writeSerial(*serial_fd, read_cfg, 5);
+
+    thumbDV_writeSerial(*serial_fd, dstar_mode, 17);
 
 }
