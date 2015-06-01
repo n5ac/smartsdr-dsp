@@ -443,7 +443,12 @@ int thumbDV_decode(int serial_fd, unsigned char * packet_in, short * speech_out,
     if ( desc != NULL ) {
         samples_in_speech_packet = ((unsigned char * )desc->buf_ptr)[5];
 
-       memcpy(speech_out, desc->buf_ptr + AMBE3000_HEADER_LEN + AMBE3000_SPEECHD_HEADER_LEN - 1, sizeof(uint16) * samples_in_speech_packet);
+        unsigned char * idx = &(((unsigned char * )desc->buf_ptr)[6]);
+        uint32 i = 0;
+        for ( i = 0; i < samples_in_speech_packet; i++, idx += 2) {
+            speech_out[i] = ( idx[0] << 8 ) + idx[1];
+        }
+
        samples_returned = samples_in_speech_packet;
        if ( samples_returned != 160 ) output("Rate Mismatch expected %d got %d\n", 160, samples_returned);
        safe_free(desc);

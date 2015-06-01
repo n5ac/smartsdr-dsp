@@ -150,9 +150,12 @@ void sched_waveform_signal()
 //#define SCALE_TX_OUT    32767.0f    // Divisor
 
 #define SCALE_RX_IN     SCALE_AMBE
+#define SCALE_TX_OUT    SCALE_AMBE
+
+
 #define SCALE_RX_OUT    SCALE_AMBE
 #define SCALE_TX_IN     SCALE_AMBE
-#define SCALE_TX_OUT    SCALE_AMBE
+
 
 #define FILTER_TAPS	48
 #define DECIMATION_FACTOR 	3
@@ -396,7 +399,8 @@ static void* _sched_waveform_thread(void* param)
 						{
 							for( i=0 ; i< DV_PACKET_SAMPLES ; i++)
 							{
-								float_in_8k[i+MEM_8] = 0.5f * ((float)  (cbReadShort(RX3_cb) / SCALE_RX_OUT));
+								float_in_8k[i+MEM_8] = ((float)  (cbReadShort(RX3_cb) / SCALE_RX_OUT));
+
 							}
 
 							fdmdv_8_to_24(float_out_24k, &float_in_8k[MEM_8], DV_PACKET_SAMPLES);
@@ -489,8 +493,7 @@ static void* _sched_waveform_thread(void* param)
 
 							for(i=0 ; i < DV_PACKET_SAMPLES ; i++)
 							{
-								cbWriteShort(TX2_cb, (short) (0.5f * tx_float_out_8k[i]*SCALE_TX_IN));
-
+								cbWriteShort(TX2_cb, (short) (tx_float_out_8k[i]*SCALE_TX_IN));
 							}
 
 						}
