@@ -386,7 +386,6 @@ int thumbDV_processSerial(int serial_fd)
         /* Encoded data */
         _thumbDVEncodedList_LinkTail(desc);
     } else if ( packet_type == AMBE3000_SPEECH_PKT_TYPE ) {
-        output("s");
         desc = hal_BufferRequest(respLen, sizeof(unsigned char));
         memcpy(desc->buf_ptr, buffer, respLen);
         //dump("SPEECH Packet", buffer, respLen);
@@ -461,7 +460,7 @@ int thumbDV_encode(int serial_fd, short * speech_in, unsigned char * packet_out,
     uint16 speech_d_bytes = num_of_samples * sizeof(uint16);  /* Should be 2 times the number of samples */
 
     /* Calculate length of packet NOT including the full header just the type field*/
-    uint16 length = 1;
+    uint16 length = 0;
     /* Includes Channel Field and SpeechD Field Header */
     length += AMBE3000_SPEECHD_HEADER_LEN;
     length += speech_d_bytes;
@@ -481,14 +480,13 @@ int thumbDV_encode(int serial_fd, short * speech_in, unsigned char * packet_out,
     *(idx++) = 0x00;
     /* SPEECHD No of Samples */
     *(idx++) = num_of_samples;
+    uint32 i = 0;
+//    output("Num of Samples = 0x%X\n", num_of_samples);
 
-    //output("Num of Samples = 0x%X\n", num_of_samples);
-
-    *idx = '\0';
 #ifdef WOOT
     output("Encode Packet Header = ");
     unsigned char * p = &packet[0];
-    uint32 i = 0;
+    i = 0;
     for ( i = 0 ; i < 7 ; i++ ){
 
         output("%02X ",*p);
@@ -497,10 +495,14 @@ int thumbDV_encode(int serial_fd, short * speech_in, unsigned char * packet_out,
     output("\n");
 
 #endif
-    memcpy(idx, speech_in, speech_d_bytes);
+    //memcpy(idx, speech_in, speech_d_bytes);
+    i = 0;
+    for ( i = 0 ; i < num_of_samples ; i++, idx += 2 ) {
+        idx[0] = speech_in[i] >> 8;
+        idx[1] = (speech_in[i] & 0x00FF) ;
+    }
 
-    /* +3 needed for first 3 fields of header */
-    thumbDV_writeSerial(serial_fd, packet, length + 3);
+    thumbDV_writeSerial(serial_fd, packet, length + AMBE3000_HEADER_LEN);
 
     int32 samples_returned = 0;
     BufferDescriptor desc = NULL;//_thumbDVEncodedList_UnlinkHead();
@@ -607,10 +609,23 @@ void thumbDV_init(const char * serial_device_name, int * serial_fd)
     thumbDV_writeSerial(*serial_fd, read_cfg, 5);
     thumbDV_writeSerial(*serial_fd, dstar_mode, 17);
 
+    /* Init */
+    unsigned char pkt_init[6] = { 0x61, 0x00, 0x02, 0x00, 0x0B, 0x07 };
+    thumbDV_writeSerial(*serial_fd, pkt_init, 6);
+
+    /* PKT GAIN - set to 0dB */
+    unsigned char pkt_gain[7] = { 0x61, 0x00, 0x03, 0x00, 0x4B, 0x00, 0x00 };
+    thumbDV_writeSerial(*serial_fd, pkt_gain, 7);
+
+    /* Companding off so it uses 16bit linear */
+    unsigned char pkt_compand[6] = { 0x61, 0x00, 0x02, 0x00, 0x32, 0x00 };
+    thumbDV_writeSerial(*serial_fd, pkt_compand, 6);
 
     unsigned char test_coded[15] =  {0x61, 0x00 ,0x0B ,0x01 ,0x01 ,0x48 ,0x5E ,0x83 ,0x12 ,0x3B ,0x98 ,0x79 ,0xDE ,0x13 ,0x90};
 
     thumbDV_writeSerial(*serial_fd, test_coded, 15);
+
+
 
 
 }
