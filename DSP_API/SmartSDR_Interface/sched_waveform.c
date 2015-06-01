@@ -140,11 +140,19 @@ void sched_waveform_signal()
 #include "resampler.h"
 
 #define PACKET_SAMPLES  128
+#define DV_PACKET_SAMPLES 160
 
-#define SCALE_RX_IN  	 8000.0 	// Multiplier   // Was 16000 GGH Jan 30, 2015
-#define SCALE_RX_OUT     8000.0		// Divisor
-#define SCALE_TX_IN     32000.0 	// Multiplier   // Was 16000 GGH Jan 30, 2015
-#define SCALE_TX_OUT    32768.0 	// Divisor
+#define SCALE_AMBE      32767.0f
+//
+//#define SCALE_RX_IN      32767.0f   // Multiplier   // Was 16000 GGH Jan 30, 2015
+//#define SCALE_RX_OUT     32767.0f       // Divisor
+//#define SCALE_TX_IN     32767.0f    // Multiplier   // Was 16000 GGH Jan 30, 2015
+//#define SCALE_TX_OUT    32767.0f    // Divisor
+
+#define SCALE_RX_IN     SCALE_AMBE
+#define SCALE_RX_OUT    SCALE_AMBE
+#define SCALE_TX_IN     SCALE_AMBE
+#define SCALE_TX_OUT    SCALE_AMBE
 
 #define FILTER_TAPS	48
 #define DECIMATION_FACTOR 	3
@@ -156,15 +164,15 @@ void sched_waveform_signal()
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //	Circular Buffer Declarations
 
-float RX1_buff[(PACKET_SAMPLES * 12)+1];		// RX1 Packet Input Buffer
-short RX2_buff[(PACKET_SAMPLES * 12)+1];		// RX2 Vocoder input buffer
-short RX3_buff[(PACKET_SAMPLES * 12)+1];		// RX3 Vocoder output buffer
-float RX4_buff[(PACKET_SAMPLES * 12)+1];		// RX4 Packet output Buffer
+float RX1_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX1 Packet Input Buffer
+short RX2_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX2 Vocoder input buffer
+short RX3_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX3 Vocoder output buffer
+float RX4_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX4 Packet output Buffer
 
-float TX1_buff[(PACKET_SAMPLES * 12) +1];		// TX1 Packet Input Buffer
-short TX2_buff[(PACKET_SAMPLES * 12)+1];		// TX2 Vocoder input buffer
-short TX3_buff[(PACKET_SAMPLES * 12)+1];		// TX3 Vocoder output buffer
-float TX4_buff[(PACKET_SAMPLES * 12)+1];		// TX4 Packet output Buffer
+float TX1_buff[(DV_PACKET_SAMPLES * 12) +1];		// TX1 Packet Input Buffer
+short TX2_buff[(DV_PACKET_SAMPLES * 12)+1];		// TX2 Vocoder input buffer
+short TX3_buff[(DV_PACKET_SAMPLES * 12)+1];		// TX3 Vocoder output buffer
+float TX4_buff[(DV_PACKET_SAMPLES * 12)+1];		// TX4 Packet output Buffer
 
 circular_float_buffer rx1_cb;
 Circular_Float_Buffer RX1_cb = &rx1_cb;
@@ -207,18 +215,18 @@ static void* _sched_waveform_thread(void* param)
     unsigned char packet_out[FREEDV_NSAMPLES];
 
     // RX RESAMPLER I/O BUFFERS
-    float 	float_in_8k[PACKET_SAMPLES + FILTER_TAPS];
-    float 	float_out_8k[PACKET_SAMPLES];
+    float 	float_in_8k[DV_PACKET_SAMPLES + FILTER_TAPS];
+    float 	float_out_8k[DV_PACKET_SAMPLES];
 
-    float 	float_in_24k[PACKET_SAMPLES * DECIMATION_FACTOR + FILTER_TAPS];
-    float 	float_out_24k[PACKET_SAMPLES * DECIMATION_FACTOR ];
+    float 	float_in_24k[DV_PACKET_SAMPLES * DECIMATION_FACTOR + FILTER_TAPS];
+    float 	float_out_24k[DV_PACKET_SAMPLES * DECIMATION_FACTOR ];
 
     // TX RESAMPLER I/O BUFFERS
-    float 	tx_float_in_8k[PACKET_SAMPLES + FILTER_TAPS];
-    float 	tx_float_out_8k[PACKET_SAMPLES];
+    float 	tx_float_in_8k[DV_PACKET_SAMPLES + FILTER_TAPS];
+    float 	tx_float_out_8k[DV_PACKET_SAMPLES];
 
-    float 	tx_float_in_24k[PACKET_SAMPLES * DECIMATION_FACTOR + FILTER_TAPS];
-    float 	tx_float_out_24k[PACKET_SAMPLES * DECIMATION_FACTOR ];
+    float 	tx_float_in_24k[DV_PACKET_SAMPLES * DECIMATION_FACTOR + FILTER_TAPS];
+    float 	tx_float_out_24k[DV_PACKET_SAMPLES * DECIMATION_FACTOR ];
 
     // =======================  Initialization Section =========================
 
@@ -327,29 +335,29 @@ static void* _sched_waveform_thread(void* param)
 
 						}
 
-//
+
 						// Check for >= 384 samples in RX1_cb and spin downsampler
 						//	Convert to shorts and move to RX2_cb.
-						if(cfbContains(RX1_cb) >= 480)
+						if(cfbContains(RX1_cb) >= DV_PACKET_SAMPLES * DECIMATION_FACTOR)
 						{
-							for(i=0 ; i<480 ; i++)
+							for(i=0 ; i< DV_PACKET_SAMPLES * DECIMATION_FACTOR ; i++)
 							{
 								float_in_24k[i + MEM_24] = cbReadFloat(RX1_cb);
 							}
 
-							fdmdv_24_to_8(float_out_8k, &float_in_24k[MEM_24], 160);
+							fdmdv_24_to_8(float_out_8k, &float_in_24k[MEM_24], DV_PACKET_SAMPLES);
 
-							for(i=0 ; i< 160 ; i++)
+							for(i=0 ; i< DV_PACKET_SAMPLES ; i++)
 							{
 								cbWriteShort(RX2_cb, (short) (float_out_8k[i]*SCALE_RX_IN));
 
 							}
 
 						}
-//
+
 //						// Check for >= 320 samples in RX2_cb and spin vocoder
 						// 	Move output to RX3_cb.
-							nin = 160;
+							nin = DV_PACKET_SAMPLES;
 
                         if ( csbContains(RX2_cb) >= nin )
                         {
@@ -358,7 +366,7 @@ static void* _sched_waveform_thread(void* param)
                             {
                                 demod_in[i] = cbReadShort(RX2_cb);
                             }
-                            nout = 160;
+                            nout = DV_PACKET_SAMPLES;
                             /********* ENCODE *///////////////
                             //nout = freedv_rx(_freedvS, speech_out, demod_in);
 //
@@ -372,6 +380,7 @@ static void* _sched_waveform_thread(void* param)
 //                            }
                             nout = thumbDV_decode(_dv_serial_fd, NULL, speech_out, nout);
 
+
                             for( i=0 ; i < nout ; i++)
                             {
                                 cbWriteShort(RX3_cb, speech_out[i]);
@@ -383,16 +392,16 @@ static void* _sched_waveform_thread(void* param)
 						// Check for >= 128 samples in RX3_cb, convert to floats
 						//	and spin the upsampler. Move output to RX4_cb.
 
-						if(csbContains(RX3_cb) >= 160)
+						if(csbContains(RX3_cb) >= DV_PACKET_SAMPLES)
 						{
-							for( i=0 ; i< 160 ; i++)
+							for( i=0 ; i< DV_PACKET_SAMPLES ; i++)
 							{
-								float_in_8k[i+MEM_8] = ((float)  (cbReadShort(RX3_cb) / SCALE_RX_OUT)     );
+								float_in_8k[i+MEM_8] = 0.5f * ((float)  (cbReadShort(RX3_cb) / SCALE_RX_OUT));
 							}
 
-							fdmdv_8_to_24(float_out_24k, &float_in_8k[MEM_8], 160);
+							fdmdv_8_to_24(float_out_24k, &float_in_8k[MEM_8], DV_PACKET_SAMPLES);
 
-							for( i=0 ; i< 480 ; i++)
+							for( i=0 ; i< DV_PACKET_SAMPLES * DECIMATION_FACTOR ; i++)
 							{
 								cbWriteFloat(RX4_cb, float_out_24k[i]);
 							}
@@ -407,15 +416,16 @@ static void* _sched_waveform_thread(void* param)
 						if(initial_rx)
 							check_samples = PACKET_SAMPLES * 3;
 
+
 						if(cfbContains(RX4_cb) >= check_samples )
 						{
-							for( i=0 ; i<128 ; i++)
+							for( i=0 ; i< PACKET_SAMPLES ; i++)
 							{
 								//output("Fetching from end buffer \n");
 								// Set up the outbound packet
 								fsample = cbReadFloat(RX4_cb);
-								// put the fsample into the outbound packet
-
+//								// put the fsample into the outbound packet
+//
 								((Complex*)buf_desc->buf_ptr)[i].real = fsample;
 								((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
 
@@ -428,7 +438,6 @@ static void* _sched_waveform_thread(void* param)
 							if(initial_rx)
 								initial_rx = FALSE;
 						}
-
 
 					} else if ( (buf_desc->stream_id & 1) == 1) { //TX BUFFER
 						//	If 'initial_rx' flag, clear buffers TX1, TX2, TX3, TX4
@@ -469,18 +478,18 @@ static void* _sched_waveform_thread(void* param)
 //
 						// Check for >= 384 samples in TX1_cb and spin downsampler
 						//	Convert to shorts and move to TX2_cb.
-						if(cfbContains(TX1_cb) >= 480)
+						if(cfbContains(TX1_cb) >= DV_PACKET_SAMPLES * DECIMATION_FACTOR)
 						{
-							for(i=0 ; i< 480 ; i++)
+							for(i=0 ; i< DV_PACKET_SAMPLES * DECIMATION_FACTOR ; i++)
 							{
 								tx_float_in_24k[i + MEM_24] = cbReadFloat(TX1_cb);
 							}
 
-							fdmdv_24_to_8(tx_float_out_8k, &tx_float_in_24k[MEM_24], 160);
+							fdmdv_24_to_8(tx_float_out_8k, &tx_float_in_24k[MEM_24], DV_PACKET_SAMPLES);
 
-							for(i=0 ; i< 160 ; i++)
+							for(i=0 ; i < DV_PACKET_SAMPLES ; i++)
 							{
-								cbWriteShort(TX2_cb, (short) (tx_float_out_8k[i]*SCALE_TX_IN));
+								cbWriteShort(TX2_cb, (short) (0.5f * tx_float_out_8k[i]*SCALE_TX_IN));
 
 							}
 
@@ -490,38 +499,40 @@ static void* _sched_waveform_thread(void* param)
 						// 	Move output to TX3_cb.
 
 
-                        if ( csbContains(TX2_cb) >= 160 )
+                        if ( csbContains(TX2_cb) >= DV_PACKET_SAMPLES )
                         {
-                            for( i=0 ; i< 160 ; i++)
+                            for( i=0 ; i< DV_PACKET_SAMPLES ; i++)
                             {
                                 speech_in[i] = cbReadShort(TX2_cb);
                             }
 
+                            //output("Speech in = %d", speech_in[0]);
+
                             /* DECODE */
                             uint32 decode_out = 0;
-                            decode_out = thumbDV_encode(_dv_serial_fd, speech_in, (unsigned char * )mod_out, 160);
+                            decode_out = thumbDV_encode(_dv_serial_fd, speech_in, (unsigned char * )mod_out, DV_PACKET_SAMPLES);
                             //decode_out = thumbDV_decode(_dv_serial_fd, NULL, mod_out, 160);
 
-                            for( i=0 ; i < 160 ; i++)
+                            for( i = 0 ; i < DV_PACKET_SAMPLES ; i++)
                             {
                                 //cbWriteShort(TX3_cb, mod_out[i]);
-                                cbWriteShort(TX3_cb, 0);
+                                cbWriteShort(TX3_cb, speech_in[i]);
                             }
                         }
 
 						// Check for >= 128 samples in TX3_cb, convert to floats
 						//	and spin the upsampler. Move output to TX4_cb.
 
-						if(csbContains(TX3_cb) >= 160)
+						if(csbContains(TX3_cb) >= DV_PACKET_SAMPLES)
 						{
-							for( i=0 ; i<160 ; i++)
+							for( i=0 ; i< DV_PACKET_SAMPLES ; i++)
 							{
 								tx_float_in_8k[i+MEM_8] = ((float)  (cbReadShort(TX3_cb) / SCALE_TX_OUT));
 							}
 
-							fdmdv_8_to_24(tx_float_out_24k, &tx_float_in_8k[MEM_8], 160);
+							fdmdv_8_to_24(tx_float_out_24k, &tx_float_in_8k[MEM_8], DV_PACKET_SAMPLES);
 
-							for( i=0 ; i<480 ; i++)
+							for( i=0 ; i< DV_PACKET_SAMPLES * DECIMATION_FACTOR ; i++)
 							{
 								cbWriteFloat(TX4_cb, tx_float_out_24k[i]);
 							}
@@ -555,7 +566,6 @@ static void* _sched_waveform_thread(void* param)
 							if(initial_tx)
 								initial_tx = FALSE;
 						}
-
 
 					}
 
