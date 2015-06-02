@@ -24,10 +24,15 @@
  *
  * ************************************************************************** */
 
-/* Demod Section */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "DStarDefines.h"
 #include "gmsk_modem.h"
 #include "common.h"
+
+/* Demod Section */
 
 const float DEMOD_COEFFS_TABLE[] = {
     /* 2400 Hz */
@@ -152,3 +157,78 @@ uint32 gmsk_encode(GMSK_MOD mod, BOOL bit, float * buffer, unsigned int length)
 }
 
 /* Init */
+
+FIR_FILTER gmsk_createFilter(const float * taps, uint32 length)
+{
+    FIR_FILTER filter = (FIR_FILTER) safe_malloc(sizeof(fir_filter));
+
+    filter->length = length;
+    filter->buf_len = 20 * length;
+    filter->taps = (float *) safe_malloc(length * sizeof(float));
+    memcpy(filter->taps, taps, length * sizeof(float));
+
+    filter->buffer = (float *) safe_malloc(filter->buf_len * sizeof(float));
+    filter->pointer = length;
+
+    return filter;
+}
+
+void gmsk_destroyFilter(FIR_FILTER filter)
+{
+    if ( filter == NULL ) {
+        output(ANSI_RED "NULL FIlter object\n"ANSI_WHITE ) ;
+        return;
+    }
+
+    safe_free(filter->taps);
+    safe_free(filter->buffer);
+    safe_free(filter);
+
+}
+
+GMSK_DEMOD gmsk_createDemodulator(void)
+{
+    GMSK_DEMOD demod = (GMSK_DEMOD) safe_malloc(sizeof(gmsk_demod));
+    demod->m_pll = 0;
+    demod->m_prev = FALSE;
+    demod->m_invert = FALSE;
+
+    demod->filter = gmsk_createFilter(DEMOD_COEFFS_TABLE, DEMOD_COEFFS_LENGTH);
+
+    return demod;
+}
+
+GMSK_MOD gmsk_createModulator(void)
+{
+    GMSK_MOD mod = (GMSK_MOD) safe_malloc(sizeof(gmsk_mod));
+    mod->m_invert = FALSE;
+
+    mod->filter = gmsk_createFilter(MOD_COEFFS_TABLE, MOD_COEFFS_LENGTH);
+
+    return mod;
+}
+
+void gmsk_destroyDemodulator(GMSK_DEMOD demod )
+{
+    if ( demod == NULL ) {
+            output(ANSI_RED "NULL GMSK_DEMOD\n" ANSI_WHITE);
+            return;
+        }
+
+    gmsk_destroyFilter(demod->filter);
+    safe_free(demod);
+}
+
+void gmsk_destroyModulator(GMSK_MOD mod )
+{
+
+    if ( mod == NULL ) {
+            output(ANSI_RED "NULL GMSK_MOD\n" ANSI_WHITE);
+            return;
+    }
+
+    gmsk_destroyFilter(mod->filter);
+    safe_free(mod);
+
+}
+

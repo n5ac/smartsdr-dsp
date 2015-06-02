@@ -33,22 +33,41 @@ enum DEMOD_STATE {
     DEMOD_UNKNOWN
 };
 
+typedef struct _fir_filter
+{
+    float * taps;
+    uint32   length;
+    float *  buffer;
+    uint32   buf_len;
+    uint32   pointer;
+}fir_filter, * FIR_FILTER ;
+
 /* Used to hold state information for a GMSK Demodulator object */
 typedef struct _gmsk_demod
 {
     uint32  m_pll;
     BOOL    m_prev;
     BOOL    m_invert;
+
+    FIR_FILTER filter;
 } gmsk_demod, * GMSK_DEMOD;
 
 typedef struct _gmsk_mod
 {
     BOOL m_invert;
+
+    FIR_FILTER filter;
 } gmsk_mod, * GMSK_MOD;
+
 
 uint32 gmsk_encode(GMSK_MOD mod, BOOL bit, float * buffer, unsigned int length);
 enum DEMOD_STATE gmsk_decode(GMSK_DEMOD demod, float val);
 
 void gmskDemod_reset(GMSK_DEMOD demod );
+
+GMSK_MOD gmsk_createModulator(void);
+GMSK_DEMOD gmsk_createDemodulator(void);
+void gmsk_destroyModulator(GMSK_MOD mod );
+void gmsk_destroyDemodulator(GMSK_DEMOD demod );
 
 #endif /* THUMBDV_GMSK_MODEM_H_ */
