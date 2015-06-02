@@ -57,8 +57,8 @@ typedef int16 VITAtemp_trunc;
 
 typedef uint32 ant_port_id_type;
 
-#define TRUE (uint32)1
-#define FALSE (uint32)0
+#define TRUE (uint8)1
+#define FALSE (uint8)0
 
 #define INVALID -1
 
