@@ -28,9 +28,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "common.h"
 #include "DStarDefines.h"
 #include "gmsk_modem.h"
-#include "common.h"
+#include "bit_pattern_matcher.h"
+
 
 /* Filters */
 
@@ -402,9 +404,14 @@ void gmsk_destroyModulator(GMSK_MOD mod )
 
 void gmsk_testBitsAndEncodeDecode(void)
 {
-
     GMSK_DEMOD _gmsk_demod = gmsk_createDemodulator();
     GMSK_MOD _gmsk_mod = gmsk_createModulator();
+
+    unsigned char pattern = 0xAA;
+    BOOL pattern_bits[8] = {0};
+    gmsk_bytesToBits(&pattern, pattern_bits, 8);
+
+    BIT_PM _bit_pm  = bitPM_create(pattern_bits, 8);
 
     float test_buffer[160*2];
     unsigned char test_coded[8] =  {0xAA,0xAA,0xFF,0x00,0xFF,0x00,0xFF,0x00};
@@ -412,7 +419,7 @@ void gmsk_testBitsAndEncodeDecode(void)
     uint32 i = 0;
 
 
-  BOOL bits[32] = {0};
+  BOOL bits[64] = {0};
   gmsk_bytesToBits(test_coded, bits, 32);
   gmsk_byteToBits(0xF0, bits, 8);
   output("0xF0 = ");
@@ -428,7 +435,7 @@ void gmsk_testBitsAndEncodeDecode(void)
       gmsk_bitsToByte(&bits[i*8], &output_bytes[i]);
       output("Byte = 0x%02X\n", output_bytes[i]);
   }
-//
+
     gmsk_encodeBuffer(_gmsk_mod, test_coded, 32*2, test_buffer, 160*2);
   FILE * dat = fopen("gmsk.dat", "w");
   for ( i = 0 ; i < 160*2 ; i++ ) {
@@ -439,6 +446,18 @@ void gmsk_testBitsAndEncodeDecode(void)
 
     gmsk_decodeBuffer(_gmsk_demod, test_buffer, 160*2, output_bytes, 32*2);
 
+    gmsk_bytesToBits(output_bytes, bits, 32*2);
+    output("STARTING PATTERN MATCH TEST \n");
+    for ( i = 0 ; i < 32*2; i++ ) {
+        output("%d ", bits[i]);
+        if ( bitPM_addBit(_bit_pm, bits[i]) ) {
+            output("MATCH!\n");
+            bitPM_reset(_bit_pm);
+        }
+
+    }
+
+    bitPM_destroy(_bit_pm);
     gmsk_destroyDemodulator(_gmsk_demod);
     gmsk_destroyModulator(_gmsk_mod);
 

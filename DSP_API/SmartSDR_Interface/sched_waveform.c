@@ -587,6 +587,9 @@ static void* _sched_waveform_thread(void* param)
 	}
 	_waveform_thread_abort = TRUE;
 
+	gmsk_destroyDemodulator(_gmsk_demod);
+	gmsk_destroyModulator(_gmsk_mod);
+
 	return NULL;
 }
 
@@ -613,7 +616,8 @@ void sched_waveform_Init(void)
 	fifo_param.sched_priority = 30;
 	pthread_setschedparam(_waveform_thread, SCHED_FIFO, &fifo_param);
 
-	//gmsk_testBitsAndEncodeDecode();
+	gmsk_testBitsAndEncodeDecode();
+	exit(0);
 
 }
 
