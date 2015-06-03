@@ -58,6 +58,9 @@ typedef struct _gmsk_mod
 
     FIR_FILTER filter;
 } gmsk_mod, * GMSK_MOD;
+
+void gmsk_testBitsAndEncodeDecode(void);
+
 void gmsk_bitsToByte(BOOL * bits, unsigned char * byte);
 void gmsk_byteToBits(unsigned char byte, BOOL * bits, uint32 num_bits);
 void gmsk_bytesToBits(unsigned char * bytes, BOOL * bits, uint32 num_bits);
