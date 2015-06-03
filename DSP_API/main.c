@@ -100,7 +100,7 @@ void segfault_sigaction(int signal, siginfo_t *si, void *arg)
 
     	// Get's line number of fault
     	char syscom[256];
-    	sprintf(syscom,"eu-addr2line -e %s %p","./freedv" , array[i]);
+    	sprintf(syscom,"eu-addr2line -e %s %p","./thumbdv" , array[i]);
     	system(syscom);
     }
 
