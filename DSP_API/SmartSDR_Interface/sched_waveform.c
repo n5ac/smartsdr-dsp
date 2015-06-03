@@ -139,6 +139,8 @@ void sched_waveform_signal()
 #include "circular_buffer.h"
 #include "resampler.h"
 
+#include "gmsk_modem.h"
+
 #define PACKET_SAMPLES  128
 #define DV_PACKET_SAMPLES 160
 
@@ -196,6 +198,9 @@ circular_float_buffer tx4_cb;
 Circular_Float_Buffer TX4_cb = &tx4_cb;
 
 static int _dv_serial_fd = 0;
+
+static GMSK_DEMOD _gmsk_demod = NULL;
+static GMSK_MOD   _gmsk_mod = NULL;
 
 static void* _sched_waveform_thread(void* param)
 {
@@ -603,6 +608,44 @@ void sched_waveform_Init(void)
 	struct sched_param fifo_param;
 	fifo_param.sched_priority = 30;
 	pthread_setschedparam(_waveform_thread, SCHED_FIFO, &fifo_param);
+
+	_gmsk_demod = gmsk_createDemodulator();
+	_gmsk_mod = gmsk_createModulator();
+
+	float test_buffer[160*2];
+	unsigned char test_coded[8] =  {0xAA,0xAA,0xFF,0x00,0xFF,0x00,0xFF,0x00};
+	unsigned char output_bytes[8] = {0};
+	uint32 i = 0;
+
+//
+//	BOOL bits[32] = {0};
+//	gmsk_bytesToBits(test_coded, bits, 32);
+//	gmsk_byteToBits(0xF0, bits, 8);
+//	output("0xF0 = ");
+//
+//	for ( i = 0 ; i < 8; i++ ){
+//	    output("%d ", bits[i]);
+//	}
+//	output("\n");
+//	unsigned char test[4] = {0xAA, 0xAA, 0xAA, 0xAA};
+//	gmsk_bytesToBits(test, bits, 32);
+//
+//	for ( i = 0 ; i < 32/8 ; i++ ) {
+//	    gmsk_bitsToByte(&bits[i*8], &output_bytes[i]);
+//	    output("Byte = 0x%02X\n", output_bytes[i]);
+//	}
+//
+	gmsk_encodeBuffer(_gmsk_mod, test_coded, 32*2, test_buffer, 160*2);
+//	FILE * dat = fopen("gmsk.dat", "w");
+//	for ( i = 0 ; i < 160*2 ; i++ ) {
+//	    fprintf(dat, "%d %.12f\n", i, test_buffer[i]);
+//	    //output("%.12f,", test_buffer[i]);
+//	}
+//	fclose(dat);
+
+	gmsk_decodeBuffer(_gmsk_demod, test_buffer, 160*2, output_bytes, 32*2);
+
+	exit(0);
 }
 
 void sched_waveformThreadExit()

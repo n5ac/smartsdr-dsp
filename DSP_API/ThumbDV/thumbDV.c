@@ -326,7 +326,7 @@ int thumbDV_openSerial(const char * tty_name)
         return -1;
     }
 
-    output("opened %s - fd = %d\n", tty_name, fd);
+    //output("opened %s - fd = %d\n", tty_name, fd);
     return fd;
 }
 
@@ -378,7 +378,7 @@ int thumbDV_processSerial(int serial_fd)
     packet_type = buffer[3];
     //dump("Serial data", buffer, respLen);
     if ( packet_type == AMBE3000_CTRL_PKT_TYPE ) {
-        dump("Serial data", buffer, respLen);
+    //    dump("Serial data", buffer, respLen);
     } else if ( packet_type == AMBE3000_CHAN_PKT_TYPE ) {
         desc = hal_BufferRequest(respLen, sizeof(unsigned char) );
         memcpy(desc->buf_ptr, buffer, respLen);

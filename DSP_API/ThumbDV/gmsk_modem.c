@@ -32,6 +32,110 @@
 #include "gmsk_modem.h"
 #include "common.h"
 
+/* Filters */
+
+void gmsk_bitsToByte(BOOL * bits, unsigned char * byte)
+{
+    if ( bits == NULL || byte == NULL) {
+            output(ANSI_RED "NULL Pointer in bitsToByte\n" ANSI_WHITE);
+            return;
+    }
+
+    unsigned char new_byte = 0x0;
+    uint32 i = 0;
+    for ( i = 0 ; i < 8; i++ ) {
+        new_byte <<= 1;
+        if ( bits[i] ) {
+            new_byte |= 0x01;
+        }
+    }
+    *byte = new_byte;
+}
+
+void gmsk_byteToBits(unsigned char byte, BOOL * bits, uint32 num_bits)
+{
+    if ( bits == NULL ) {
+            output(ANSI_RED "NULL Pointer in byteToBits\n" ANSI_WHITE);
+            return;
+        }
+
+    uint32 i = 0;
+    unsigned char mask = 0x80;
+    for ( i = 0; i < num_bits; i++ , mask >>= 1) {
+        bits[i] = (byte & mask) ? TRUE : FALSE;
+    }
+}
+
+void gmsk_bytesToBits(unsigned char * bytes, BOOL * bits, uint32 num_bits)
+{
+    if ( bytes == NULL || bits == NULL ) {
+        output(ANSI_RED "NULL pointers in bytesToBits\n" ANSI_WHITE);
+        return;
+    }
+
+    uint32 bits_left = num_bits;
+    uint32 byte_idx = 0;
+    while ( bits_left != 0 ) {
+        gmsk_byteToBits(bytes[byte_idx], &bits[byte_idx * 8], bits_left > 8 ? 8 : bits_left);
+        byte_idx++;
+        bits_left -= 8;
+    }
+
+    uint32 i = 0;
+    output("Bytes: ");
+    for ( i = 0 ; i < num_bits / 8U ; i++ ) {
+        output(" 0x%02X", bytes[i]);
+    }
+    output("\nBits: ");
+    for ( i = 0 ; i < num_bits ; i++ ) {
+        output("%s ", bits[i] ? "1":"0");
+        if ( (i+1) % 4 == 0 ) {
+            output("   ");
+        }
+    }
+    output("\n");
+
+}
+
+float gmsk_FilterProcessSingle(FIR_FILTER filter, float val)
+{
+    if ( filter == NULL ) {
+         output(ANSI_RED "NULL FIlter object\n"ANSI_WHITE ) ;
+         return val;
+     }
+    float * ptr = filter->buffer + filter->pointer++;
+
+    *ptr = val;
+
+    float * a = ptr - filter->length;
+    float * b = filter->taps;
+
+    float out = 0.0F;
+    uint32 i = 0;
+    for ( i = 0U; i < filter->length; i++)
+        out += (*a++) * (*b++);
+
+    if (filter->pointer == filter->buf_len) {
+        memcpy(filter->buffer, filter->buffer + filter->buf_len - filter->length, filter->length * sizeof(float));
+        filter->pointer = filter->length;
+    }
+
+    return out;
+}
+
+void gmsk_FilterProcessBuffer(FIR_FILTER filter, float * buffer, uint32 buffer_len)
+{
+    if ( filter == NULL ) {
+         output(ANSI_RED "NULL FIlter object\n"ANSI_WHITE ) ;
+         return;
+     }
+
+    uint32 i = 0;
+    for ( i = 0 ; i < buffer_len; i++ ) {
+        buffer[i] = gmsk_FilterProcessSingle(filter, buffer[i]);
+    }
+}
+
 /* Demod Section */
 
 const float DEMOD_COEFFS_TABLE[] = {
@@ -66,7 +170,7 @@ const float DEMOD_COEFFS_TABLE[] = {
 #define DEMOD_COEFFS_LENGTH 103U
 
 #define PLLMAX  0x10000U
-#define PLLINC      ( PLLMAX / DSTAR_RADIO_BIT_LENGTH)
+#define PLLINC      ( PLLMAX / DSTAR_RADIO_BIT_LENGTH) // 2000
 #define INC  32U
 
 
@@ -75,15 +179,14 @@ enum DEMOD_STATE gmsk_decode(GMSK_DEMOD demod, float val)
     enum DEMOD_STATE state = DEMOD_UNKNOWN;
 
     /* FIlter process */
-    float out = 0;//m_filter.process(val);
+    float out = val;//gmsk_FilterProcessSingle(demod->filter, val);
 
     BOOL bit = out > 0.0F;
 
     if (bit != demod->m_prev) {
         if (demod->m_pll < (PLLMAX / 2U) ) {
             demod->m_pll += PLLINC / INC;
-        }
-        else {
+        } else {
             demod->m_pll -= PLLINC / INC;
         }
     }
@@ -108,6 +211,47 @@ void gmskDemod_reset(GMSK_DEMOD demod )
 {
     demod->m_pll  = 0U;
     demod->m_prev = FALSE;
+}
+
+void gmsk_decodeBuffer(GMSK_DEMOD demod, float * buffer,uint32 buf_len, unsigned char * bytes, uint32 num_bits)
+{
+    if ( num_bits * DSTAR_RADIO_BIT_LENGTH != buf_len ) {
+            output(ANSI_RED "Mismatched buf_len to number of encoded bits. buf_len = %d, required %d\n" ANSI_WHITE, buf_len, num_bits * DSTAR_RADIO_BIT_LENGTH);
+            return;
+    }
+
+    BOOL bits[num_bits];
+    uint32 i = 0;
+    uint32 bit = 0;
+    enum DEMOD_STATE state;
+    for ( i = 0; i < buf_len ; i++) {
+        state = gmsk_decode(demod, buffer[i]);
+        if ( state == DEMOD_TRUE ) {
+            bits[bit] = TRUE;
+            bit++;
+        } else if ( state == DEMOD_FALSE ) {
+            bits[bit] = FALSE;
+            bit++;
+        } else {
+            //output("UNKNOWN DEMOD STATE");
+            //bits[bit] = 0x00;
+        }
+    }
+
+    for ( i = 0; i < bit; i++ ) {
+        output("%d", bits[i] ? 1:0);
+        if ( (i+1) % 4 == 0 ) output("  ");
+    } output("\n");
+
+//    FILE * f = fopen("gmsk_demod.dat", "w");
+//    for ( i = 0 ; i < num_bits ; i++ ) {
+//        fprintf(f,"%d %d\n", i, bits[i]);
+//    }
+//    fclose(f);
+
+    for ( i = 0 ; i < num_bits / 8 ; i++ ) {
+        gmsk_bitsToByte(&bits[i*8], &bytes[i]);
+    }
 }
 
 /* Mod Section */
@@ -136,7 +280,7 @@ const float MOD_COEFFS_TABLE[] = {
 uint32 gmsk_encode(GMSK_MOD mod, BOOL bit, float * buffer, unsigned int length)
 {
 
-    if ( length == DSTAR_RADIO_BIT_LENGTH ) {
+    if ( length != DSTAR_RADIO_BIT_LENGTH ) {
         output(ANSI_RED "Length!= DSTAR_RADIO_BIT_LENGTH" ANSI_WHITE);
     }
 
@@ -147,14 +291,38 @@ uint32 gmsk_encode(GMSK_MOD mod, BOOL bit, float * buffer, unsigned int length)
 
     for (i = 0; i < DSTAR_RADIO_BIT_LENGTH; i++) {
         if (bit) {
-            buffer[i] = 0;//m_filter.process(-0.5F);
+            //buffer[i] = -0.5f;//gmsk_FilterProcessSingle(mod->filter, -0.5f);
+            buffer[i] = gmsk_FilterProcessSingle(mod->filter, -0.5f);
         } else {
-            buffer[i] = 0;//m_filter.process(0.5F);
+            //buffer[i] = 0.5f;//gmsk_FilterProcessSingle(mod->filter, 0.5f);
+            buffer[i] = gmsk_FilterProcessSingle(mod->filter, 0.5f);
         }
     }
 
     return DSTAR_RADIO_BIT_LENGTH;
 }
+
+BOOL gmsk_encodeBuffer(GMSK_MOD mod, unsigned char * bytes, uint32 num_bits, float * buffer, uint32 buf_len)
+{
+    if ( num_bits * DSTAR_RADIO_BIT_LENGTH != buf_len ) {
+            output(ANSI_RED "Mismatched buf_len to number of encoded bits. buf_len = %d, required %d\n" ANSI_WHITE, buf_len, num_bits * DSTAR_RADIO_BIT_LENGTH);
+            return FALSE;
+        }
+
+    uint32 i = 0;
+    float * idx = &buffer[0];
+
+    BOOL bits[num_bits];
+
+    gmsk_bytesToBits(bytes, bits, num_bits);
+
+    for ( i = 0 ; i < num_bits ; i++, idx += DSTAR_RADIO_BIT_LENGTH ) {
+        gmsk_encode(mod, bits[i], idx, DSTAR_RADIO_BIT_LENGTH);
+    }
+
+    return TRUE;
+}
+
 
 /* Init */
 
@@ -176,9 +344,9 @@ FIR_FILTER gmsk_createFilter(const float * taps, uint32 length)
 void gmsk_destroyFilter(FIR_FILTER filter)
 {
     if ( filter == NULL ) {
-        output(ANSI_RED "NULL FIlter object\n"ANSI_WHITE ) ;
-        return;
-    }
+         output(ANSI_RED "NULL FIlter object\n"ANSI_WHITE ) ;
+         return;
+     }
 
     safe_free(filter->taps);
     safe_free(filter->buffer);
