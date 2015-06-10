@@ -32,6 +32,10 @@
  *
  * ************************************************************************** */
 
+
+#ifndef THUMBDV_BIT_PATTERN_MATCHER_H_
+#define THUMBDV_BIT_PATTERN_MATCHER_H_
+
 #include "datatypes.h"
 
 typedef struct _bit_pattern_matcher
@@ -47,3 +51,5 @@ BIT_PM bitPM_create(BOOL * to_match, uint32 length);
 
 BOOL bitPM_addBit(BIT_PM bpm, BOOL bit);
 void bitPM_reset(BIT_PM bpm);
+
+#endif /* THUMBDV_BIT_PATTERN_MATCHER_H_ */

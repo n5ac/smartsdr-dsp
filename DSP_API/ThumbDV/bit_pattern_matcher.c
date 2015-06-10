@@ -55,6 +55,14 @@ BIT_PM bitPM_create(BOOL * to_match, uint32 length)
     for ( i = 0 ; i < length; i++ ) {
         bpm->pattern[n--] = to_match[i];
     }
+    output("Creating pattern matcher !!!!!\n");
+    for ( i = 0 ; i < length ; i++ ) {
+            output("%d", bpm->pattern[i]);
+    } output("\n");
+    for ( i = 0 ; i < length ; i++ ) {
+            output("%d", to_match[i]);
+    } output("\n");
+
 
     memset(bpm->data, 0, length * sizeof(BOOL));
 
@@ -99,12 +107,12 @@ BOOL bitPM_addBit(BIT_PM bpm, BOOL bit)
         }
     }
 
-#ifdef DEBUG_BIT_PM
+//#ifdef DEBUG_BIT_PM
     output(ANSI_GREEN "Match Found\n");
     for ( i = 0; i < bpm->length ; i++ ) {
         output("Pat: %d   Data %d\n", bpm->pattern[i], bpm->data[i]);
     }
-#endif
+//#endif
 
     /* If we make it here all checks have passed */
     return TRUE;

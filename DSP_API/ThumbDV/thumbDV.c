@@ -631,7 +631,4 @@ void thumbDV_init(const char * serial_device_name, int * serial_fd)
 
     thumbDV_writeSerial(*serial_fd, test_coded, 15);
 
-
-
-
 }

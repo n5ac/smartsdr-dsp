@@ -44,6 +44,8 @@
 #include "sched_waveform.h"
 #include "vita_output.h"
 #include "thumbDV.h"
+#include "bit_pattern_matcher.h"
+
 
 //static Queue sched_fft_queue;
 static pthread_rwlock_t _list_lock;
@@ -201,6 +203,7 @@ static int _dv_serial_fd = 0;
 
 static GMSK_DEMOD _gmsk_demod = NULL;
 static GMSK_MOD   _gmsk_mod = NULL;
+static BIT_PM   _syn_pm = NULL;
 
 static void* _sched_waveform_thread(void* param)
 {
@@ -348,10 +351,29 @@ static void* _sched_waveform_thread(void* param)
 						//	Convert to shorts and move to RX2_cb.
 						if(cfbContains(RX1_cb) >= DV_PACKET_SAMPLES * DECIMATION_FACTOR)
 						{
+						    enum DEMOD_STATE state = DEMOD_UNKNOWN;
 							for(i=0 ; i< DV_PACKET_SAMPLES * DECIMATION_FACTOR ; i++)
 							{
 								float_in_24k[i + MEM_24] = cbReadFloat(RX1_cb);
+							    state = gmsk_decode(_gmsk_demod, float_in_24k[i+MEM_24]);
+							    BOOL found_syn_bits = FALSE;
+							    if ( state == DEMOD_TRUE ) {
+							        found_syn_bits = bitPM_addBit(_syn_pm, TRUE);
+							        //output("%d ", 1);
+							    } else if ( state == DEMOD_FALSE ) {
+                                   found_syn_bits = bitPM_addBit(_syn_pm, FALSE);
+                                  //output("%d ", 0);
+                               } else {
+                                   //output("UNKNOWN DEMOD STATE");
+                                   //bits[bit] = 0x00;
+                               }
+
+							    if ( found_syn_bits ) {
+							        output("FOUND SYN BITS");
+							        bitPM_reset(_syn_pm);
+							    }
 							}
+
 
 							fdmdv_24_to_8(float_out_8k, &float_in_24k[MEM_24], DV_PACKET_SAMPLES);
 
@@ -386,13 +408,13 @@ static void* _sched_waveform_thread(void* param)
 //                                nout = thumbDV_decode(_dv_serial_fd, packet_out, speech_out, nout);
 //                                if (nout == 0 ) output("y");
 //                            }
-                            nout = thumbDV_decode(_dv_serial_fd, NULL, speech_out, nout);
+                            //nout = thumbDV_decode(_dv_serial_fd, NULL, speech_out, nout);
 
 
                             for( i=0 ; i < nout ; i++)
                             {
-                                cbWriteShort(RX3_cb, speech_out[i]);
-                                //cbWriteShort(RX3_cb, demod_in[i]);
+                                //cbWriteShort(RX3_cb, speech_out[i]);
+                                cbWriteShort(RX3_cb, demod_in[i]);
                             }
 
                         }
@@ -589,6 +611,7 @@ static void* _sched_waveform_thread(void* param)
 
 	gmsk_destroyDemodulator(_gmsk_demod);
 	gmsk_destroyModulator(_gmsk_mod);
+	bitPM_destroy(_syn_pm);
 
 	return NULL;
 }
@@ -598,6 +621,24 @@ void sched_waveform_Init(void)
 
     _gmsk_demod = gmsk_createDemodulator();
     _gmsk_mod = gmsk_createModulator();
+    BOOL syn_bits[64 + 15] = {0};
+    uint32 i = 0;
+    uint32 j = 0;
+    for ( i = 0 ; i < 64 -1 ; i += 2 ) {
+        syn_bits[i] = TRUE;
+        syn_bits[i+1] = FALSE;
+    }
+
+    BOOL frame_bits[] = {TRUE, TRUE,  TRUE, FALSE, TRUE,  TRUE,  FALSE, FALSE,
+            TRUE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE};
+
+    for ( i = 64, j = 0 ; i < 64 + 15 ; i++,j++ ) {
+        syn_bits[i] = frame_bits[j];
+    }
+
+    _syn_pm = bitPM_create( syn_bits, 64+15);
+
+
 
 	pthread_rwlock_init(&_list_lock, NULL);
 
@@ -616,8 +657,8 @@ void sched_waveform_Init(void)
 	fifo_param.sched_priority = 30;
 	pthread_setschedparam(_waveform_thread, SCHED_FIFO, &fifo_param);
 
-	gmsk_testBitsAndEncodeDecode();
-	exit(0);
+//	gmsk_testBitsAndEncodeDecode();
+	//exit(0);
 
 }
 
