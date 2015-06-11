@@ -37,6 +37,9 @@
 #include <semaphore.h>
 #include <string.h>		// for memset
 #include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <ctype.h>
 
 #include "common.h"
 #include "datatypes.h"
@@ -45,6 +48,7 @@
 #include "vita_output.h"
 #include "thumbDV.h"
 #include "bit_pattern_matcher.h"
+#include "dstar.h"
 
 
 //static Queue sched_fft_queue;
@@ -126,7 +130,6 @@ void sched_waveform_signal()
 {
 	sem_post(&sched_waveform_sem);
 }
-
 
 /* *********************************************************************************************
  * *********************************************************************************************
@@ -282,6 +285,10 @@ static void* _sched_waveform_thread(void* param)
 	initial_tx = TRUE;
 	initial_rx = TRUE;
 
+	BOOL dstar_header[660] = {0};
+	uint32 header_count = 0;
+	BOOL found_syn_bits = FALSE;
+
 	// show that we are running
 	BufferDescriptor buf_desc;
 
@@ -356,21 +363,60 @@ static void* _sched_waveform_thread(void* param)
 							{
 								float_in_24k[i + MEM_24] = cbReadFloat(RX1_cb);
 							    state = gmsk_decode(_gmsk_demod, float_in_24k[i+MEM_24]);
-							    BOOL found_syn_bits = FALSE;
-							    if ( state == DEMOD_TRUE ) {
-							        found_syn_bits = bitPM_addBit(_syn_pm, TRUE);
-							        //output("%d ", 1);
-							    } else if ( state == DEMOD_FALSE ) {
-                                   found_syn_bits = bitPM_addBit(_syn_pm, FALSE);
-                                  //output("%d ", 0);
-                               } else {
-                                   //output("UNKNOWN DEMOD STATE");
-                                   //bits[bit] = 0x00;
-                               }
 
-							    if ( found_syn_bits ) {
-							        output("FOUND SYN BITS");
-							        bitPM_reset(_syn_pm);
+							    if ( !found_syn_bits ) {
+                                    if ( state == DEMOD_TRUE ) {
+                                        found_syn_bits = bitPM_addBit(_syn_pm, TRUE);
+                                        //output("%d ", 1);
+                                    } else if ( state == DEMOD_FALSE ) {
+                                       found_syn_bits = bitPM_addBit(_syn_pm, FALSE);
+                                      //output("%d ", 0);
+                                   } else {
+                                       //output("UNKNOWN DEMOD STATE");
+                                       //bits[bit] = 0x00;
+                                   }
+
+                                    if ( found_syn_bits ) {
+                                        output("FOUND SYN BITS\n");
+                                        bitPM_reset(_syn_pm);
+                                    }
+							    } else {
+							        /* We have already found syn-bits accumulate 660 bits */
+							        if ( state == DEMOD_TRUE ) {
+							            dstar_header[header_count++] = TRUE;
+							        } else if ( state == DEMOD_FALSE ) {
+							            dstar_header[header_count++] = FALSE;
+							        } else {
+							            /* Do nothing */
+							        }
+
+							        if ( header_count == 660 ) {
+							            output("Found 660 bits - descrambling\n");
+							            /* Found 660 bits of header */
+							            unsigned char bytes[660/8 +1];
+							            gmsk_bitsToBytes(dstar_header, bytes, 660);
+							            thumbDV_dump("RAW:", bytes, 660/8);
+							            uint32 scramble_count = 0;
+							            BOOL descrambled[660] = {0};
+							            dstar_scramble(dstar_header, descrambled, header_count, &scramble_count);
+
+							            gmsk_bitsToBytes(descrambled, bytes, 660);
+							            thumbDV_dump("DESCRAMBLE:", bytes, 660/8);
+							            BOOL out[660] = {0};
+							            dstar_deinterleave(descrambled, out, 660);
+							            gmsk_bitsToBytes(out, bytes, 660);
+							            thumbDV_dump("DEINTERLEAVE:", bytes, 660/8);
+							            dstar_fec fec;
+							            memset(&fec, 0, sizeof(dstar_fec));
+							            unsigned int outLen = 0;
+							            dstar_FECdecode(&fec, out, dstar_header, 660, &outLen);
+							            output("outLen = %d\n" ,outLen);
+							            gmsk_bitsToBytes(dstar_header, bytes, outLen);
+							            thumbDV_dump("FEC: ", dstar_header, outLen/8);
+
+							            header_count = 0;
+							            found_syn_bits = FALSE;
+							        }
 							    }
 							}
 
@@ -618,6 +664,8 @@ static void* _sched_waveform_thread(void* param)
 
 void sched_waveform_Init(void)
 {
+    //dstar_FECTest();
+    //exit(0);
 
     _gmsk_demod = gmsk_createDemodulator();
     _gmsk_mod = gmsk_createModulator();
@@ -658,7 +706,7 @@ void sched_waveform_Init(void)
 	pthread_setschedparam(_waveform_thread, SCHED_FIFO, &fifo_param);
 
 //	gmsk_testBitsAndEncodeDecode();
-	//exit(0);
+//	exit(0);
 
 }
 
