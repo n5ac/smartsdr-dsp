@@ -107,7 +107,7 @@ BOOL bitPM_addBit(BIT_PM bpm, BOOL bit)
         }
     }
 
-//#ifdef DEBUG_BIT_PM
+#ifdef DEBUG_BIT_PM
     output(ANSI_GREEN "Match Found\nPat: ");
     for ( i = 0; i < bpm->length ; i++ ) {
        output("%d ", bpm->pattern[i]);
@@ -118,7 +118,7 @@ BOOL bitPM_addBit(BIT_PM bpm, BOOL bit)
     } output("\n");
 
 
-//#endif
+#endif
 
     /* If we make it here all checks have passed */
     return TRUE;
