@@ -375,53 +375,23 @@ static void* _sched_waveform_thread(void* param)
                                } else {
                                    /* Nothing to do since we have not "locked" a bit out yet */
                                }
+
+                               if ( ambe_packet_out == TRUE ) {
+                                   nout = 0;
+                                   nout = thumbDV_decode(_dv_serial_fd, ambe_out, speech_out, DV_PACKET_SAMPLES);
+                                   //if (nout) output(" %d \n", speech_out[i]);
+                                   for( i=0 ; i < nout ; i++)
+                                       cbWriteShort(RX3_cb, speech_out[i]);
+                               }
+
+
+
+
 							}
 
 
-
-							fdmdv_24_to_8(float_out_8k, &float_in_24k[MEM_24], DV_PACKET_SAMPLES);
-
-							for(i=0 ; i< DV_PACKET_SAMPLES ; i++)
-							{
-								cbWriteShort(RX2_cb, (short) (float_out_8k[i]*SCALE_RX_IN));
-
-							}
 
 						}
-
-//						// Check for >= 320 samples in RX2_cb and spin vocoder
-						// 	Move output to RX3_cb.
-							nin = DV_PACKET_SAMPLES;
-
-                        if ( csbContains(RX2_cb) >= nin )
-                        {
-//
-                            for( i=0 ; i< nin ; i++)
-                            {
-                                demod_in[i] = cbReadShort(RX2_cb);
-                            }
-                            nout = DV_PACKET_SAMPLES;
-                            /********* ENCODE *///////////////
-                            //nout = freedv_rx(_freedvS, speech_out, demod_in);
-//
-                            //nout = thumbDV_encode(_dv_serial_fd, demod_in, packet_out, nin);
-                            //nout = 0;
-//                            if (nout == 0 ) {
-//                                output("x");
-//                            } else {
-//                                nout = thumbDV_decode(_dv_serial_fd, packet_out, speech_out, nout);
-//                                if (nout == 0 ) output("y");
-//                            }
-                            //nout = thumbDV_decode(_dv_serial_fd, NULL, speech_out, nout);
-
-
-                            for( i=0 ; i < nout ; i++)
-                            {
-                                //cbWriteShort(RX3_cb, speech_out[i]);
-                                cbWriteShort(RX3_cb, demod_in[i]);
-                            }
-
-                        }
 
 						// Check for >= 128 samples in RX3_cb, convert to floats
 						//	and spin the upsampler. Move output to RX4_cb.

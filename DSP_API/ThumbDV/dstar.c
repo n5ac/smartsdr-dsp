@@ -453,8 +453,10 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
     BOOL found_end_bits = FALSE;
     static BOOL header[FEC_SECTION_LENGTH_BITS];
     static BOOL voice_bits[72];
+    //static BOOL data_bits[(24+72) * 50];
     static BOOL data_bits[24];
 
+    //unsigned char bytes[((24+72) * 50)/8 + 1];
     unsigned char bytes[FEC_SECTION_LENGTH_BITS/8 + 1];
 
     switch(machine->state)
@@ -513,9 +515,21 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
 
             if ( machine->bit_count == VOICE_FRAME_LENGTH_BITS ) {
                 gmsk_bitsToBytes(voice_bits, bytes, VOICE_FRAME_LENGTH_BITS);
-                thumbDV_dump("Voice Frame:", bytes, VOICE_FRAME_LENGTH_BITS / 8);
-                memcpy(ambe_out, bytes, VOICE_FRAME_LENGTH_BITS / 8);
-                have_audio_packet = TRUE;
+                //thumbDV_dump("Voice Frame:", bytes, VOICE_FRAME_LENGTH_BITS / 8);
+
+                uint32 f_count = 0;
+                uint32 i = 0;
+                for ( i = 0 ; i < 9 ; i++ ) {
+                    if ( bytes[i] == 0xFF )
+                        f_count++;
+                }
+
+                if ( f_count < 2 ) {
+                    memcpy(ambe_out, bytes, VOICE_FRAME_LENGTH_BITS / 8);
+                    have_audio_packet = TRUE;
+                }
+
+
 
                 /* STATE CHANGE */
                 if ( machine->frame_count % 21 == 0 ) {
@@ -538,7 +552,7 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
                 machine->bit_count = 0;
             } else if ( machine->bit_count == DATA_FRAME_LENGTH_BITS ) {
                 gmsk_bitsToBytes(data_bits, bytes, DATA_FRAME_LENGTH_BITS);
-                thumbDV_dump("Data Frame:", bytes, DATA_FRAME_LENGTH_BITS/8);
+                //thumbDV_dump("Data Frame:", bytes, DATA_FRAME_LENGTH_BITS/8);
 
                 machine->frame_count++;
 
@@ -566,7 +580,7 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
             } else if ( found_end_bits ) {
                 machine->state = END_PATTERN_FOUND;
                 machine->bit_count = 0;
-            } else if ( machine->bit_count > 25 * 2 ) {
+            } else if ( machine->bit_count > ((24+72) * 42) ) {
                 /* Function as a timeout if we don't find the sync bits */
                 output("Could not find SYNC\n");
 
