@@ -408,6 +408,227 @@ void dstar_FECencode(const BOOL * in, BOOL * out, unsigned int inLen, unsigned i
     }
 }
 
+DSTAR_MACHINE dstar_createMachine(void)
+{
+    DSTAR_MACHINE machine = safe_malloc(sizeof(dstar_machine));
+    memset(machine, 0, sizeof(dstar_machine));
+
+    machine->state = BIT_FRAME_SYNC_WAIT;
+
+    BOOL syn_bits[64 + 15] = {0};
+    uint32 i = 0;
+    uint32 j = 0;
+    for ( i = 0 ; i < 64 -1 ; i += 2 ) {
+        syn_bits[i] = TRUE;
+        syn_bits[i+1] = FALSE;
+    }
+
+    BOOL frame_bits[] = {TRUE, TRUE,  TRUE, FALSE, TRUE,  TRUE,  FALSE, FALSE,
+            TRUE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE};
+
+    for ( i = 64, j = 0 ; i < 64 + 15 ; i++,j++ ) {
+        syn_bits[i] = frame_bits[j];
+    }
+
+    machine->syn_pm = bitPM_create( syn_bits, 64+15);
+    machine->data_sync_pm = bitPM_create( DATA_SYNC_BITS, 24);
+    machine->end_pm = bitPM_create(END_PATTERN_BITS, END_PATTERN_LENGTH_BITS);
+
+    return machine;
+}
+
+void dstar_destroyMachine(DSTAR_MACHINE machine)
+{
+    bitPM_destroy(machine->syn_pm);
+    bitPM_destroy(machine->data_sync_pm);
+    bitPM_destroy(machine->end_pm);
+
+    safe_free(machine);
+}
+
+BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len)
+{
+    BOOL have_audio_packet = FALSE;
+    BOOL found_syn_bits = FALSE;
+    BOOL found_end_bits = FALSE;
+    static BOOL header[FEC_SECTION_LENGTH_BITS];
+    static BOOL voice_bits[72];
+    static BOOL data_bits[24];
+
+    unsigned char bytes[FEC_SECTION_LENGTH_BITS/8 + 1];
+
+    switch(machine->state)
+    {
+        case BIT_FRAME_SYNC_WAIT:
+            found_syn_bits = bitPM_addBit(machine->syn_pm, in_bit);
+
+            if ( found_syn_bits ) {
+                output("FOUND SYN BITS\n");
+                bitPM_reset(machine->syn_pm);
+                machine->state = HEADER_PROCESSING;
+                machine->bit_count = 0;
+            }
+            break;
+        case HEADER_PROCESSING:
+            header[machine->bit_count++] = in_bit;
+
+            if ( machine->bit_count == FEC_SECTION_LENGTH_BITS ) {
+                output("Found 660 bits - descrambling\n");
+                /* Found 660 bits of header */
+
+                gmsk_bitsToBytes(header, bytes, FEC_SECTION_LENGTH_BITS);
+                thumbDV_dump("RAW:", bytes, FEC_SECTION_LENGTH_BITS/8);
+
+
+                uint32 scramble_count = 0;
+                BOOL descrambled[FEC_SECTION_LENGTH_BITS] = {0};
+                dstar_scramble(header, descrambled, FEC_SECTION_LENGTH_BITS, &scramble_count);
+                gmsk_bitsToBytes(descrambled, bytes, FEC_SECTION_LENGTH_BITS);
+                thumbDV_dump("DESCRAMBLE:", bytes, FEC_SECTION_LENGTH_BITS/8);
+
+
+                BOOL out[FEC_SECTION_LENGTH_BITS] = {0};
+                dstar_deinterleave(descrambled, out, FEC_SECTION_LENGTH_BITS);
+                gmsk_bitsToBytes(out, bytes, FEC_SECTION_LENGTH_BITS);
+                thumbDV_dump("DEINTERLEAVE:", bytes, FEC_SECTION_LENGTH_BITS/8);
+                dstar_fec fec;
+                memset(&fec, 0, sizeof(dstar_fec));
+                unsigned int outLen = FEC_SECTION_LENGTH_BITS;
+                BOOL decoded[FEC_SECTION_LENGTH_BITS / 2] = {0};
+                dstar_FECdecode(&fec, out, decoded, FEC_SECTION_LENGTH_BITS, &outLen);
+                output("outLen = %d\n" ,outLen);
+                gmsk_bitsToBytes(decoded, bytes, outLen);
+                thumbDV_dump("FEC: ", bytes, outLen/8);
+
+
+                /* STATE CHANGE */
+                machine->state = VOICE_FRAME;
+                machine->bit_count = 0;
+                machine->frame_count = 0;
+            }
+
+            break;
+        case VOICE_FRAME:
+            voice_bits[machine->bit_count++] = in_bit;
+
+            if ( machine->bit_count == VOICE_FRAME_LENGTH_BITS ) {
+                gmsk_bitsToBytes(voice_bits, bytes, VOICE_FRAME_LENGTH_BITS);
+                thumbDV_dump("Voice Frame:", bytes, VOICE_FRAME_LENGTH_BITS / 8);
+                memcpy(ambe_out, bytes, VOICE_FRAME_LENGTH_BITS / 8);
+                have_audio_packet = TRUE;
+
+                /* STATE CHANGE */
+                if ( machine->frame_count % 21 == 0 ) {
+                    /* Expecting a SYNC FRAME */
+                    machine->state = DATA_SYNC_FRAME;
+                } else {
+                    machine->state = DATA_FRAME;
+                }
+                machine->bit_count = 0;
+            }
+
+            break;
+        case DATA_FRAME:
+            data_bits[machine->bit_count++] = in_bit;
+
+            found_end_bits = bitPM_addBit(machine->end_pm, in_bit);
+
+            if ( found_end_bits ) {
+                machine->state = END_PATTERN_FOUND;
+                machine->bit_count = 0;
+            } else if ( machine->bit_count == DATA_FRAME_LENGTH_BITS ) {
+                gmsk_bitsToBytes(data_bits, bytes, DATA_FRAME_LENGTH_BITS);
+                thumbDV_dump("Data Frame:", bytes, DATA_FRAME_LENGTH_BITS/8);
+
+                machine->frame_count++;
+
+                /* STATE CHANGE */
+                machine->state = VOICE_FRAME;
+                machine->bit_count = 0;
+            }
+            break;
+        case DATA_SYNC_FRAME: {
+            BOOL found_sync = FALSE;
+            found_sync = bitPM_addBit(machine->data_sync_pm, in_bit);
+            machine->bit_count++;
+
+            found_end_bits = bitPM_addBit(machine->end_pm, in_bit);
+
+            if ( found_sync ) {
+                output("Found Sync\n");
+
+                machine->frame_count++;
+
+                bitPM_reset(machine->data_sync_pm);
+                /* STATE CHANGE */
+                machine->state = VOICE_FRAME;
+                machine->bit_count = 0;
+            } else if ( found_end_bits ) {
+                machine->state = END_PATTERN_FOUND;
+                machine->bit_count = 0;
+            } else if ( machine->bit_count > 25 * 2 ) {
+                /* Function as a timeout if we don't find the sync bits */
+                output("Could not find SYNC\n");
+
+                bitPM_reset(machine->data_sync_pm);
+
+                /* STATE CHANGE */
+                machine->state = BIT_FRAME_SYNC_WAIT;
+                machine->bit_count = 0;
+            }
+
+            break;
+        }
+        case END_PATTERN_FOUND:
+
+            output("Found end patter bits\n");
+            bitPM_reset(machine->end_pm);
+            bitPM_reset(machine->syn_pm);
+
+            /* STATE CHANGE */
+            machine->state = BIT_FRAME_SYNC_WAIT;
+            machine->bit_count = 0;
+
+            break;
+        default:
+            output(ANSI_YELLOW "Unhandled state - dstar_stateMachine. State = 0x%08X" ANSI_WHITE, machine->state);
+            break;
+    }
+
+    return have_audio_packet;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void dstar_FECTest(void)
 {
     unsigned char bytes[660/8] = {0};
