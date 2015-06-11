@@ -43,4 +43,5 @@ int thumbDV_processSerial(int serial_fd);
 int thumbDV_encode(int serial_fd, short * speech_in, unsigned char * packet_out, uint8 num_of_samples );
 int thumbDV_decode(int serial_fd, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet);
 
+void thumbDV_dump(char *text, unsigned char *data, unsigned int length);
 #endif /* THUMBDV_THUMBDV_ */

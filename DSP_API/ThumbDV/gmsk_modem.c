@@ -33,7 +33,6 @@
 #include "gmsk_modem.h"
 #include "bit_pattern_matcher.h"
 
-
 /* Filters */
 
 void gmsk_bitsToByte(BOOL * bits, unsigned char * byte)
@@ -52,6 +51,20 @@ void gmsk_bitsToByte(BOOL * bits, unsigned char * byte)
         }
     }
     *byte = new_byte;
+}
+
+void gmsk_bitsToBytes(BOOL * bits, unsigned char * bytes, uint32 num_of_bits)
+{
+    if ( bits == NULL || bytes == NULL) {
+        output(ANSI_RED "NULL Pointer in bitsToBytes\n" ANSI_WHITE);
+        return;
+    }
+
+    uint32 i = 0;
+    for ( i = 0 ; i < num_of_bits / 8 ; i++ ) {
+        gmsk_bitsToByte(&bits[i*8], &bytes[i]);
+    }
+
 }
 
 void gmsk_byteToBits(unsigned char byte, BOOL * bits, uint32 num_bits)

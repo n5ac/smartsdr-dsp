@@ -62,6 +62,7 @@ typedef struct _gmsk_mod
 void gmsk_testBitsAndEncodeDecode(void);
 
 void gmsk_bitsToByte(BOOL * bits, unsigned char * byte);
+void gmsk_bitsToBytes(BOOL * bits, unsigned char * bytes, uint32 num_of_bits);
 void gmsk_byteToBits(unsigned char byte, BOOL * bits, uint32 num_bits);
 void gmsk_bytesToBits(unsigned char * bytes, BOOL * bits, uint32 num_bits);
 

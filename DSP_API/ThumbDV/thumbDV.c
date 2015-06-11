@@ -219,13 +219,13 @@ static void delay(unsigned int delay) {
     nanosleep(&tim, &tim2);
 };
 
-static void dump(char *text, unsigned char *data, unsigned int length)
+void thumbDV_dump(char *text, unsigned char *data, unsigned int length)
 {
     unsigned int offset = 0U;
     unsigned int i;
 
-    fputs(text, stdout);
-    fputc('\n', stdout);
+    output("%s", text);
+    output("\n");
 
     while (length > 0U) {
         unsigned int bytes = (length > 16U) ? 16U : length;
@@ -233,23 +233,23 @@ static void dump(char *text, unsigned char *data, unsigned int length)
         output( "%04X:  ", offset);
 
         for (i = 0U; i < bytes; i++)
-            fprintf(stdout, "%02X ", data[offset + i]);
+            output( "%02X ", data[offset + i]);
 
         for (i = bytes; i < 16U; i++)
-            fputs("   ", stdout);
+            output("   ");
 
-        fputs("   *", stdout);
+        output("   *");
 
         for (i = 0U; i < bytes; i++) {
             unsigned char c = data[offset + i];
 
             if (isprint(c))
-                fputc(c, stdout);
+                output("%c",c);
             else
-                fputc('.', stdout);
+                output(".");
         }
 
-        fputs("*\n", stdout);
+        output("*\n");
 
         offset += 16U;
 
@@ -379,7 +379,7 @@ int thumbDV_processSerial(int serial_fd)
     packet_type = buffer[3];
     //dump("Serial data", buffer, respLen);
     if ( packet_type == AMBE3000_CTRL_PKT_TYPE ) {
-        dump("Serial data", buffer, respLen);
+        thumbDV_dump("Serial data", buffer, respLen);
     } else if ( packet_type == AMBE3000_CHAN_PKT_TYPE ) {
         desc = hal_BufferRequest(respLen, sizeof(unsigned char) );
         memcpy(desc->buf_ptr, buffer, respLen);

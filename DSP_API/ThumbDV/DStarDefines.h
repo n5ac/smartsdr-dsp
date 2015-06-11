@@ -22,20 +22,20 @@
 #define DSTAR_GMSK_SYMBOL_RATE  4800U
 #define DSTAR_GMSK_BT           0.5F
 
-const BOOL BIT_SYNC_BITS[]    = {TRUE, FALSE, TRUE, FALSE};
+static const BOOL BIT_SYNC_BITS[]    = {TRUE, FALSE, TRUE, FALSE};
 #define BIT_SYNC_LENGTH_BITS = 4U;
 
-const BOOL FRAME_SYNC_BITS[]  = {TRUE, TRUE,  TRUE, FALSE, TRUE,  TRUE,  FALSE, FALSE,
+static const BOOL FRAME_SYNC_BITS[]  = {TRUE, TRUE,  TRUE, FALSE, TRUE,  TRUE,  FALSE, FALSE,
                                  TRUE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE};
 #define FRAME_SYNC_LENGTH_BITS  15U
 
-const unsigned char DATA_SYNC_BYTES[] = {0x55, 0x2D, 0x16};
-const BOOL DATA_SYNC_BITS[]   = {TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
+static const unsigned char DATA_SYNC_BYTES[] = {0x55, 0x2D, 0x16};
+static const BOOL DATA_SYNC_BITS[]   = {TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
                                  TRUE,  FALSE, TRUE,  TRUE,  FALSE, TRUE,  FALSE, FALSE,
                                  FALSE, TRUE,  TRUE,  FALSE, TRUE,  FALSE, FALSE, FALSE};
 
-const unsigned char END_PATTERN_BYTES[] = {0x55, 0x55, 0x55, 0x55, 0xC8, 0x7A};
-const BOOL END_PATTERN_BITS[] = {TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
+static const unsigned char END_PATTERN_BYTES[] = {0x55, 0x55, 0x55, 0x55, 0xC8, 0x7A};
+static const BOOL END_PATTERN_BITS[] = {TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
                                  TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
                                  TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
                                  TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
@@ -45,8 +45,8 @@ const BOOL END_PATTERN_BITS[] = {TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,
 #define END_PATTERN_LENGTH_BITS  48U
 #define END_PATTERN_LENGTH_BYTES (END_PATTERN_LENGTH_BITS / 8U)
 
-const unsigned char NULL_AMBE_DATA_BYTES[] = {0x9E, 0x8D, 0x32, 0x88, 0x26, 0x1A, 0x3F, 0x61, 0xE8};
-const BOOL NULL_AMBE_DATA_BITS[] = {FALSE, TRUE,  TRUE,  TRUE,  TRUE,  FALSE, FALSE, TRUE,
+static const unsigned char NULL_AMBE_DATA_BYTES[] = {0x9E, 0x8D, 0x32, 0x88, 0x26, 0x1A, 0x3F, 0x61, 0xE8};
+static const BOOL NULL_AMBE_DATA_BITS[] = {FALSE, TRUE,  TRUE,  TRUE,  TRUE,  FALSE, FALSE, TRUE,
                                     TRUE,  FALSE, TRUE,  TRUE,  FALSE, FALSE, FALSE, TRUE,
                                     FALSE, TRUE,  FALSE, FALSE, TRUE,  TRUE,  FALSE, FALSE,
                                     FALSE, FALSE, FALSE, TRUE,  FALSE, FALSE, FALSE, TRUE,
@@ -57,7 +57,7 @@ const BOOL NULL_AMBE_DATA_BITS[] = {FALSE, TRUE,  TRUE,  TRUE,  TRUE,  FALSE, FA
                                     FALSE, FALSE, FALSE, TRUE,  FALSE, TRUE,  TRUE,  TRUE};
 
 // Note that these are already scrambled, 0x66 0x66 0x66 otherwise
-const BOOL NULL_SLOW_DATA_BITS[] = {FALSE, FALSE, FALSE, TRUE,  FALSE, TRUE,  TRUE,  FALSE,
+static const BOOL NULL_SLOW_DATA_BITS[] = {FALSE, FALSE, FALSE, TRUE,  FALSE, TRUE,  TRUE,  FALSE,
                                     FALSE, FALSE, TRUE,  FALSE, TRUE,  FALSE, FALSE, TRUE,
                                     TRUE,  TRUE,  TRUE,  TRUE,  FALSE, TRUE,  FALSE, TRUE};
 
