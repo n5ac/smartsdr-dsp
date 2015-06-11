@@ -404,38 +404,20 @@ int thumbDV_processSerial(int serial_fd)
 
 int thumbDV_decode(int serial_fd, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet)
 {
-//
-//    unsigned char * idx = &packet_in[0];
-//
-//    if ( *idx != AMBE3000_START_BYTE ) {
-//        output(ANSI_RED "packet_in does not have valid start byte\n" ANSI_WHITE);
-//        return -1;
-//    }
-//    idx++;
-//
-//    uint16 length = ( *idx << 8 ) + ( *(idx+1) );
-//    //output("Packet length decode is 0x%02X", length);
-//
-//    if ( length != (bytes_in_packet - AMBE3000_HEADER_LEN)) {
-//        output("Mismatched length %d expected %d\n", length, bytes_in_packet - AMBE3000_HEADER_LEN );
-//    }
-//
-//    idx += 2;
-//
-//    if ( *idx != AMBE3000_CHAN_PKT_TYPE ) {
-//        output(ANSI_RED "Invalid packet type for decode 0x%02X\n", *idx);
-//        return -1;
-//    }
-//
-//    idx++;
-//
-//    thumbDV_writeSerial(serial_fd, packet_in, bytes_in_packet);
-
-    BufferDescriptor desc2  = _thumbDVEncodedList_UnlinkHead();
-
-    if ( desc2 != NULL ) {
-        thumbDV_writeSerial(serial_fd, desc2->buf_ptr, desc2->num_samples * desc2->sample_size);
+    uint32 i = 0;
+    unsigned char full_packet[15] = {0};
+    full_packet[0] = 0x61;
+    full_packet[1] = 0x00;
+    full_packet[2] = 0x0B;
+    full_packet[3] = 0x01;
+    full_packet[4] = 0x01;
+    full_packet[5] = 0x48;
+    for ( i = 0 ; i < 9 ; i++ ) {
+        full_packet[i+6] = packet_in[i];
     }
+
+    thumbDV_writeSerial(serial_fd, full_packet, 15);
+
 
     int32 samples_returned = 0;
     BufferDescriptor desc = _thumbDVDecodedList_UnlinkHead();
