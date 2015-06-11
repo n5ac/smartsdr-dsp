@@ -47,7 +47,7 @@ typedef struct _bit_pattern_matcher
 } bit_pm, * BIT_PM;
 
 void bitPM_destroy(BIT_PM bpm);
-BIT_PM bitPM_create(BOOL * to_match, uint32 length);
+BIT_PM bitPM_create(const BOOL * to_match, uint32 length);
 
 BOOL bitPM_addBit(BIT_PM bpm, BOOL bit);
 void bitPM_reset(BIT_PM bpm);

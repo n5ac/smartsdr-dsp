@@ -38,7 +38,7 @@
 #include "common.h"
 #include "bit_pattern_matcher.h"
 
-BIT_PM bitPM_create(BOOL * to_match, uint32 length)
+BIT_PM bitPM_create( const BOOL * to_match, uint32 length)
 {
     BIT_PM bpm = (BIT_PM) safe_malloc(sizeof(bit_pm));
 
@@ -108,10 +108,16 @@ BOOL bitPM_addBit(BIT_PM bpm, BOOL bit)
     }
 
 //#ifdef DEBUG_BIT_PM
-    output(ANSI_GREEN "Match Found\n");
+    output(ANSI_GREEN "Match Found\nPat: ");
     for ( i = 0; i < bpm->length ; i++ ) {
-        output("Pat: %d   Data %d\n", bpm->pattern[i], bpm->data[i]);
+       output("%d ", bpm->pattern[i]);
     }
+    output("\nMat: ");
+    for ( i = 0; i < bpm->length ; i++ ) {
+            output("%d ", bpm->data[i]);
+    } output("\n");
+
+
 //#endif
 
     /* If we make it here all checks have passed */

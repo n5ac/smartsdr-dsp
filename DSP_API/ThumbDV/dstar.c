@@ -141,8 +141,6 @@ static const unsigned int INTERLEAVE_TABLE[] = {
     362, 389, 416, 443, 470, 497, 524, 551, 578, 605, 632, 659, 27, 55, 83, 111, 139,
     167, 195, 223, 251, 279, 307, 335};
 
-
-
 void dstar_scramble(BOOL * in, BOOL * out, uint32 length, uint32 * scramble_count)
 {
     if ( out == NULL || in == NULL || scramble_count == NULL) {
@@ -168,15 +166,14 @@ void dstar_interleave(const BOOL * in, BOOL * out, unsigned int length)
         return;
     }
 
-//    if ( length != FEC_SECTION_LENGTH_BITS ) {
-//        output(ANSI_RED "length not correct interleave\n" ANSI_WHITE);
-//        return;
-//    }
+    if ( length != FEC_SECTION_LENGTH_BITS ) {
+        output(ANSI_RED "Wrong leangth in interleave\n" ANSI_WHITE);
+    }
 
     memset(out, 0, FEC_SECTION_LENGTH_BITS * sizeof(BOOL));
     uint32 i = 0;
     for ( i = 0 ; i < FEC_SECTION_LENGTH_BITS ; i++ ) {
-        if (in[i]) {
+        if ( in[i] ) {
             unsigned int newi = INTERLEAVE_TABLE[i];
 
             if ( newi >= FEC_SECTION_LENGTH_BITS ) {
@@ -185,6 +182,7 @@ void dstar_interleave(const BOOL * in, BOOL * out, unsigned int length)
 
             out[newi] = TRUE;
         }
+
     }
 }
 
@@ -202,6 +200,8 @@ void dstar_deinterleave(const BOOL * in, BOOL * out, unsigned int length)
 
         if (in[i])
             out[k] = TRUE;
+        else
+            out[k] = FALSE;
 
         k += 24U;
         if (k >= 672U)
@@ -420,16 +420,17 @@ void dstar_FECTest(void)
     BOOL decoded[330] = {0};
     uint32 i = 0;
     for ( i = 0 ; i < 327- 1 ; i += 2 ) {
-        test[i] = TRUE;
-        test[i+1] = FALSE;
+        test[i] = TRUE;//(rand() & 0x01) ? TRUE:FALSE;
+        test[i+1] = FALSE;//( rand() & 0x01 ) ? TRUE:FALSE ;
     }
 
     gmsk_bitsToBytes(test, bytes, 330);
     thumbDV_dump("TEST FEC IN:", bytes, 330/8); memset(bytes,0, 660/8 * sizeof(unsigned char));
 
     uint32 outLen = 0;
-    dstar_FECencode(test, encoded, 327, &outLen);
+    dstar_FECencode(test, encoded, 300, &outLen);
     output("Encode outLen = %d\n", outLen);
+    outLen = 660;
     gmsk_bitsToBytes(encoded, bytes, outLen);
     thumbDV_dump("TEST FEC ENCODE", bytes, outLen/8);memset(bytes,0, 660/8 * sizeof(unsigned char));
 
@@ -454,17 +455,31 @@ void dstar_FECTest(void)
 
     dstar_fec fec;
     memset(&fec, 0, sizeof(dstar_fec));
+    output("outLen = %d\n", outLen);
     dstar_FECdecode(&fec, deinterleaved, decoded, outLen, &outLen);
     output("Decode outLen = %d\n", outLen);
     gmsk_bitsToBytes(decoded, bytes, outLen);
     thumbDV_dump("TEST FEC Decode", bytes, outLen/8);memset(bytes,0, 660/8 * sizeof(unsigned char));
-
-
-    output("True ^ True = %d\n", TRUE ^ TRUE);
-    output("True ^ False = %d\n", TRUE ^ FALSE);
-    output("False ^ True = %d\n", FALSE ^ TRUE);
-    output("False ^ False = %d\n", FALSE ^ FALSE);
-
-
+//
+//
+//    output("True ^ True = %d\n", TRUE ^ TRUE);
+//    output("True ^ False = %d\n", TRUE ^ FALSE);
+//    output("False ^ True = %d\n", FALSE ^ TRUE);
+//    output("False ^ False = %d\n", FALSE ^ FALSE);
+//
+//    output("Generating Interleave Table\n");
+//
+//    uint32 j = 0;
+//    uint32 limit = 28;
+//    for ( j = 0 ; j < 24; j++ ) {
+//
+//        if ( j < 12 ) limit = 28;
+//        else limit = 27;
+//        for ( i = 0; i < limit; i++ ) {
+//
+//            output("%d,", j + (i * 24));
+//        }
+//    }
+//    output("\nDONE\n");
 
 }

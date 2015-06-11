@@ -49,6 +49,7 @@
 #include "thumbDV.h"
 #include "bit_pattern_matcher.h"
 #include "dstar.h"
+#include "DStarDefines.h"
 
 
 //static Queue sched_fft_queue;
@@ -207,6 +208,7 @@ static int _dv_serial_fd = 0;
 static GMSK_DEMOD _gmsk_demod = NULL;
 static GMSK_MOD   _gmsk_mod = NULL;
 static BIT_PM   _syn_pm = NULL;
+static BIT_PM   _data_sync_pm = NULL;
 
 static void* _sched_waveform_thread(void* param)
 {
@@ -288,6 +290,7 @@ static void* _sched_waveform_thread(void* param)
 	BOOL dstar_header[660] = {0};
 	uint32 header_count = 0;
 	BOOL found_syn_bits = FALSE;
+	BOOL found_data_sync_bits = FALSE;
 
 	// show that we are running
 	BufferDescriptor buf_desc;
@@ -380,7 +383,7 @@ static void* _sched_waveform_thread(void* param)
                                         output("FOUND SYN BITS\n");
                                         bitPM_reset(_syn_pm);
                                     }
-							    } else {
+							    } else if ( header_count < 660 ){
 							        /* We have already found syn-bits accumulate 660 bits */
 							        if ( state == DEMOD_TRUE ) {
 							            dstar_header[header_count++] = TRUE;
@@ -394,29 +397,49 @@ static void* _sched_waveform_thread(void* param)
 							            output("Found 660 bits - descrambling\n");
 							            /* Found 660 bits of header */
 							            unsigned char bytes[660/8 +1];
+
 							            gmsk_bitsToBytes(dstar_header, bytes, 660);
 							            thumbDV_dump("RAW:", bytes, 660/8);
+
 							            uint32 scramble_count = 0;
 							            BOOL descrambled[660] = {0};
 							            dstar_scramble(dstar_header, descrambled, header_count, &scramble_count);
-
 							            gmsk_bitsToBytes(descrambled, bytes, 660);
 							            thumbDV_dump("DESCRAMBLE:", bytes, 660/8);
+
+
 							            BOOL out[660] = {0};
 							            dstar_deinterleave(descrambled, out, 660);
 							            gmsk_bitsToBytes(out, bytes, 660);
 							            thumbDV_dump("DEINTERLEAVE:", bytes, 660/8);
 							            dstar_fec fec;
 							            memset(&fec, 0, sizeof(dstar_fec));
-							            unsigned int outLen = 0;
-							            dstar_FECdecode(&fec, out, dstar_header, 660, &outLen);
+							            unsigned int outLen = 660;
+							            BOOL decoded[330] = {0};
+							            dstar_FECdecode(&fec, out, decoded, 660, &outLen);
 							            output("outLen = %d\n" ,outLen);
-							            gmsk_bitsToBytes(dstar_header, bytes, outLen);
-							            thumbDV_dump("FEC: ", dstar_header, outLen/8);
+							            gmsk_bitsToBytes(decoded, bytes, outLen);
+							            thumbDV_dump("FEC: ", bytes, outLen/8);
 
-							            header_count = 0;
-							            found_syn_bits = FALSE;
 							        }
+							    } else {
+							        if ( state == DEMOD_TRUE ) {
+                                        found_data_sync_bits = bitPM_addBit(_data_sync_pm, TRUE);
+                                        //output("%d ", 1);
+                                    } else if ( state == DEMOD_FALSE ) {
+                                       found_data_sync_bits = bitPM_addBit(_data_sync_pm, FALSE);
+                                      //output("%d ", 0);
+                                   } else {
+                                       //output("UNKNOWN DEMOD STATE");
+                                       //bits[bit] = 0x00;
+                                   }
+
+                                    if ( found_data_sync_bits ) {
+                                        output("FOUND DATA SYNC BITS\n");
+                                        bitPM_reset(_syn_pm);
+                                        header_count = 0;
+                                        found_syn_bits = FALSE;
+                                    }
 							    }
 							}
 
@@ -664,7 +687,7 @@ static void* _sched_waveform_thread(void* param)
 
 void sched_waveform_Init(void)
 {
-    //dstar_FECTest();
+    dstar_FECTest();
     //exit(0);
 
     _gmsk_demod = gmsk_createDemodulator();
@@ -685,6 +708,7 @@ void sched_waveform_Init(void)
     }
 
     _syn_pm = bitPM_create( syn_bits, 64+15);
+    _data_sync_pm = bitPM_create( DATA_SYNC_BITS, 24);
 
 
 
