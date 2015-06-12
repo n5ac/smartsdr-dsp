@@ -422,9 +422,9 @@ void gmsk_testBitsAndEncodeDecode(void)
     GMSK_DEMOD _gmsk_demod = gmsk_createDemodulator();
     GMSK_MOD _gmsk_mod = gmsk_createModulator();
 
-    unsigned char pattern = 0xAA;
+    unsigned char pattern[1] = {0xAA};
     BOOL pattern_bits[8] = {0};
-    gmsk_bytesToBits(&pattern, pattern_bits, 8);
+    gmsk_bytesToBits(pattern, pattern_bits, 8);
 
     BIT_PM _bit_pm  = bitPM_create(pattern_bits, 8);
 
