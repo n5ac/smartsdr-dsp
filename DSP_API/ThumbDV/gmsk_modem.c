@@ -236,6 +236,7 @@ void gmsk_decodeBuffer(GMSK_DEMOD demod, float * buffer,uint32 buf_len, unsigned
     }
 
     BOOL bits[num_bits];
+    memset(bits, 0, num_bits * sizeof(BOOL));
     uint32 i = 0;
     uint32 bit = 0;
     enum DEMOD_STATE state;
@@ -328,6 +329,7 @@ BOOL gmsk_encodeBuffer(GMSK_MOD mod, unsigned char * bytes, uint32 num_bits, flo
     float * idx = &buffer[0];
 
     BOOL bits[num_bits];
+    memset(bits, 0, num_bits * sizeof(BOOL));
 
     gmsk_bytesToBits(bytes, bits, num_bits);
 
