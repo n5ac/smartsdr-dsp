@@ -141,7 +141,6 @@ void sched_waveform_signal()
  * ****************************************************************************************** */
 
 #include <stdio.h>
-#include "freedv_api.h"
 #include "circular_buffer.h"
 #include "resampler.h"
 
@@ -208,6 +207,8 @@ static int _dv_serial_fd = 0;
 static GMSK_DEMOD _gmsk_demod = NULL;
 static GMSK_MOD   _gmsk_mod = NULL;
 static DSTAR_MACHINE _dstar = NULL;
+
+#define FREEDV_NSAMPLES 160
 
 static void* _sched_waveform_thread(void* param)
 {
