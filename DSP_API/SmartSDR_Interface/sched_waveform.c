@@ -211,7 +211,7 @@ static DSTAR_MACHINE _dstar = NULL;
 
 static void* _sched_waveform_thread(void* param)
 {
-    int 	nin, nout;
+    int 	nout;
 
     int		i;			// for loop counter
     float	fsample;	// a float sample
@@ -224,14 +224,14 @@ static void* _sched_waveform_thread(void* param)
 	// VOCODER I/O BUFFERS
     short	speech_in[FREEDV_NSAMPLES];
     short 	speech_out[FREEDV_NSAMPLES];
-    short 	demod_in[FREEDV_NSAMPLES];
+    //short 	demod_in[FREEDV_NSAMPLES];
     short 	mod_out[FREEDV_NSAMPLES];
 
-    unsigned char packet_out[FREEDV_NSAMPLES];
+    //unsigned char packet_out[FREEDV_NSAMPLES];
 
     // RX RESAMPLER I/O BUFFERS
     float 	float_in_8k[DV_PACKET_SAMPLES + FILTER_TAPS];
-    float 	float_out_8k[DV_PACKET_SAMPLES];
+    //float 	float_out_8k[DV_PACKET_SAMPLES];
 
     float 	float_in_24k[DV_PACKET_SAMPLES * DECIMATION_FACTOR + FILTER_TAPS];
     float 	float_out_24k[DV_PACKET_SAMPLES * DECIMATION_FACTOR ];
@@ -285,11 +285,6 @@ static void* _sched_waveform_thread(void* param)
 
 	initial_tx = TRUE;
 	initial_rx = TRUE;
-
-	BOOL dstar_header[660] = {0};
-	uint32 header_count = 0;
-	BOOL found_syn_bits = FALSE;
-	BOOL found_data_sync_bits = FALSE;
 
 	// show that we are running
 	BufferDescriptor buf_desc;
@@ -363,8 +358,7 @@ static void* _sched_waveform_thread(void* param)
 						    enum DEMOD_STATE state = DEMOD_UNKNOWN;
 							for(i=0 ; i< DV_PACKET_SAMPLES * DECIMATION_FACTOR ; i++)
 							{
-								float_in_24k[i + MEM_24] = cbReadFloat(RX1_cb);
-							    state = gmsk_decode(_gmsk_demod, float_in_24k[i+MEM_24]);
+							    state = gmsk_decode(_gmsk_demod, cbReadFloat(RX1_cb));
 
 							    unsigned char ambe_out[9] = {0};
 							    BOOL ambe_packet_out = FALSE;
@@ -380,17 +374,10 @@ static void* _sched_waveform_thread(void* param)
                                    nout = 0;
                                    nout = thumbDV_decode(_dv_serial_fd, ambe_out, speech_out, DV_PACKET_SAMPLES);
                                    //if (nout) output(" %d \n", speech_out[i]);
-                                   for( i=0 ; i < nout ; i++)
+                                   for( i = 0 ; i < nout ; i++)
                                        cbWriteShort(RX3_cb, speech_out[i]);
                                }
-
-
-
-
 							}
-
-
-
 						}
 
 						// Check for >= 128 samples in RX3_cb, convert to floats
