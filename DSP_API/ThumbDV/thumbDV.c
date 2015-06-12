@@ -568,8 +568,13 @@ void thumbDV_init(const char * serial_device_name, int * serial_fd)
     pthread_rwlock_unlock(&_decoded_list_lock);
 
 
-
-    *serial_fd = thumbDV_openSerial("/dev/ttyUSB0");
+    do {
+        *serial_fd = thumbDV_openSerial("/dev/ttyUSB0");
+        if ( *serial_fd < 0 ) {
+            output("Could not open serial. Waiting 1 second before trying again.\n");
+            usleep(1000 * 1000);
+        }
+    } while ( *serial_fd < 0 ) ;
 
     unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
     thumbDV_writeSerial(*serial_fd, reset, 5);
