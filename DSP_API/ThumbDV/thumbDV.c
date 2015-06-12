@@ -327,6 +327,7 @@ int thumbDV_openSerial(const char * tty_name)
 
     if (tcsetattr(fd, TCSANOW, &tty) != 0) {
         output("ThumbDV: error %d from tcsetattr\n", errno);
+        close(fd);
         return -1;
     }
 
