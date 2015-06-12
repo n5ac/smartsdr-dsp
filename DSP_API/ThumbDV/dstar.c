@@ -446,6 +446,37 @@ void dstar_destroyMachine(DSTAR_MACHINE machine)
     safe_free(machine);
 }
 
+void dstar_dumpHeader( DSTAR_HEADER header )
+{
+    output("HEADER:\n");
+    output("Flag1: 0x%08X\n", header->flag1);
+    output("Flag2: 0x%08X\n", header->flag2);
+    output("Flag3: 0x%08X\n", header->flag3);
+    output("Destination RPTR: %s\n", header->destination_rptr);
+    output("Departure RPTR: %s\n", header->departure_rptr);
+    output("Companion Call: %s\n", header->companion_call);
+    output("Own Call 1: %s\n", header->own_call1);
+    output("Own Call 2: %s\n", header->own_call2);
+}
+
+void dstar_processHeader(unsigned char * bytes, DSTAR_HEADER header)
+{
+    /* Takes in an array of bytes and parses out each header field */
+    memset(header, 0, sizeof(dstar_header));
+
+    header->flag1 = bytes[0];
+    header->flag2 = bytes[1];
+    header->flag3 = bytes[2];
+
+    memcpy(header->destination_rptr, &bytes[3], 8);
+    memcpy(header->departure_rptr, &bytes[3+8], 8);
+    memcpy(header->companion_call, &bytes[3+8+8], 8);
+    memcpy(header->own_call1, &bytes[3+8+8+8], 8);
+    memcpy(header->own_call2, &bytes[3+8+8+8+8], 4);
+
+    dstar_dumpHeader(header);
+}
+
 BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len)
 {
     BOOL have_audio_packet = FALSE;
@@ -478,29 +509,32 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
                 output("Found 660 bits - descrambling\n");
                 /* Found 660 bits of header */
 
-                gmsk_bitsToBytes(header, bytes, FEC_SECTION_LENGTH_BITS);
-                thumbDV_dump("RAW:", bytes, FEC_SECTION_LENGTH_BITS/8);
+//                gmsk_bitsToBytes(header, bytes, FEC_SECTION_LENGTH_BITS);
+//                thumbDV_dump("RAW:", bytes, FEC_SECTION_LENGTH_BITS/8);
 
 
                 uint32 scramble_count = 0;
                 BOOL descrambled[FEC_SECTION_LENGTH_BITS] = {0};
                 dstar_scramble(header, descrambled, FEC_SECTION_LENGTH_BITS, &scramble_count);
-                gmsk_bitsToBytes(descrambled, bytes, FEC_SECTION_LENGTH_BITS);
-                thumbDV_dump("DESCRAMBLE:", bytes, FEC_SECTION_LENGTH_BITS/8);
+//                gmsk_bitsToBytes(descrambled, bytes, FEC_SECTION_LENGTH_BITS);
+//                thumbDV_dump("DESCRAMBLE:", bytes, FEC_SECTION_LENGTH_BITS/8);
 
 
                 BOOL out[FEC_SECTION_LENGTH_BITS] = {0};
                 dstar_deinterleave(descrambled, out, FEC_SECTION_LENGTH_BITS);
-                gmsk_bitsToBytes(out, bytes, FEC_SECTION_LENGTH_BITS);
-                thumbDV_dump("DEINTERLEAVE:", bytes, FEC_SECTION_LENGTH_BITS/8);
+//                gmsk_bitsToBytes(out, bytes, FEC_SECTION_LENGTH_BITS);
+//                thumbDV_dump("DEINTERLEAVE:", bytes, FEC_SECTION_LENGTH_BITS/8);
                 dstar_fec fec;
                 memset(&fec, 0, sizeof(dstar_fec));
                 unsigned int outLen = FEC_SECTION_LENGTH_BITS;
                 BOOL decoded[FEC_SECTION_LENGTH_BITS / 2] = {0};
                 dstar_FECdecode(&fec, out, decoded, FEC_SECTION_LENGTH_BITS, &outLen);
-                output("outLen = %d\n" ,outLen);
+//                output("outLen = %d\n" ,outLen);
                 gmsk_bitsToBytes(decoded, bytes, outLen);
-                thumbDV_dump("FEC: ", bytes, outLen/8);
+//                thumbDV_dump("FEC: ", bytes, outLen/8);
+
+
+                dstar_processHeader(bytes, &machine->incoming_header);
 
 
                 /* STATE CHANGE */
@@ -517,19 +551,9 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
                 gmsk_bitsToBytes(voice_bits, bytes, VOICE_FRAME_LENGTH_BITS);
                 //thumbDV_dump("Voice Frame:", bytes, VOICE_FRAME_LENGTH_BITS / 8);
 
-                uint32 f_count = 0;
-                uint32 i = 0;
-                for ( i = 0 ; i < 9 ; i++ ) {
-                    if ( bytes[i] == 0xFF )
-                        f_count++;
-                }
 
-                if ( f_count < 2 ) {
-                    memcpy(ambe_out, bytes, VOICE_FRAME_LENGTH_BITS / 8);
-                    have_audio_packet = TRUE;
-                }
-
-
+                memcpy(ambe_out, bytes, VOICE_FRAME_LENGTH_BITS / 8);
+                have_audio_packet = TRUE;
 
                 /* STATE CHANGE */
                 if ( machine->frame_count % 21 == 0 ) {

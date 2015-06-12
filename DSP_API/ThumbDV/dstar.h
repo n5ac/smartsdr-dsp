@@ -46,11 +46,11 @@ typedef struct _dstar_header
     unsigned char flag1;
     unsigned char flag2;
     unsigned char flag3;
-    unsigned char destination_rptr[8];
-    unsigned char departure_rptr[8];
-    unsigned char companion_call[8];
-    unsigned char own_call1[8];
-    unsigned char own_call2[4];
+    unsigned char destination_rptr[9];
+    unsigned char departure_rptr[9];
+    unsigned char companion_call[9];
+    unsigned char own_call1[9];
+    unsigned char own_call2[5];
     uint16  p_fcs;
 } dstar_header, * DSTAR_HEADER;
 
