@@ -493,10 +493,10 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
     BOOL have_audio_packet = FALSE;
     BOOL found_syn_bits = FALSE;
     BOOL found_end_bits = FALSE;
-    static BOOL header[FEC_SECTION_LENGTH_BITS];
-    static BOOL voice_bits[72];
-    //static BOOL data_bits[(24+72) * 50];
-    static BOOL data_bits[24];
+    BOOL * header = machine->header;
+    BOOL * voice_bits = machine->voice_bits;
+    BOOL * data_bits = machine->data_bits;
+
 
     //unsigned char bytes[((24+72) * 50)/8 + 1];
     unsigned char bytes[FEC_SECTION_LENGTH_BITS/8 + 1];

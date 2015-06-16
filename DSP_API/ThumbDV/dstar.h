@@ -64,9 +64,15 @@ typedef struct _dstar_machine
     uint32 bit_count;
     uint32 frame_count;
 
+    /* BIT Pattern Matcher */
     BIT_PM  syn_pm;
     BIT_PM  data_sync_pm;
     BIT_PM  end_pm;
+
+    /* Bit Buffers */
+    BOOL header[FEC_SECTION_LENGTH_BITS];
+    BOOL voice_bits[VOICE_FRAME_LENGTH_BITS];
+    BOOL data_bits[DATA_FRAME_LENGTH_BITS];
 
 } dstar_machine, * DSTAR_MACHINE;
 
