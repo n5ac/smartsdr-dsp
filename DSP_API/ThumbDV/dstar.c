@@ -415,22 +415,17 @@ DSTAR_MACHINE dstar_createMachine(void)
 
     machine->state = BIT_FRAME_SYNC_WAIT;
 
-    BOOL syn_bits[64 + 15] = {0};
+    BOOL syn_bits[15] = {0};
     uint32 i = 0;
-    uint32 j = 0;
-    for ( i = 0 ; i < 64 -1 ; i += 2 ) {
-        syn_bits[i] = TRUE;
-        syn_bits[i+1] = FALSE;
-    }
 
     BOOL frame_bits[] = {TRUE, TRUE,  TRUE, FALSE, TRUE,  TRUE,  FALSE, FALSE,
             TRUE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE};
 
-    for ( i = 64, j = 0 ; i < 64 + 15 ; i++,j++ ) {
-        syn_bits[i] = frame_bits[j];
+    for ( i = 0 ; i < 15 ; i++ ) {
+        syn_bits[i] = frame_bits[i];
     }
 
-    machine->syn_pm = bitPM_create( syn_bits, 64+15);
+    machine->syn_pm = bitPM_create( syn_bits, 15);
     machine->data_sync_pm = bitPM_create( DATA_SYNC_BITS, 24);
     machine->end_pm = bitPM_create(END_PATTERN_BITS, END_PATTERN_LENGTH_BITS);
 
@@ -510,12 +505,21 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
     {
         case BIT_FRAME_SYNC_WAIT:
             found_syn_bits = bitPM_addBit(machine->syn_pm, in_bit);
+            BOOL found_data_sync = bitPM_addBit(machine->data_sync_pm, in_bit);
 
             if ( found_syn_bits ) {
                 output("FOUND SYN BITS\n");
                 bitPM_reset(machine->syn_pm);
+                bitPM_reset(machine->data_sync_pm);
                 machine->state = HEADER_PROCESSING;
                 machine->bit_count = 0;
+            } else if ( found_data_sync ) {
+                output("FOUND DATA SYNC BITS instead of header\n");
+                bitPM_reset(machine->syn_pm);
+                bitPM_reset(machine->data_sync_pm);
+                machine->state = VOICE_FRAME;
+                machine->bit_count = 0;
+                machine->frame_count++;
             }
             break;
         case HEADER_PROCESSING:
@@ -549,9 +553,7 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
                 gmsk_bitsToBytes(decoded, bytes, outLen);
 //                thumbDV_dump("FEC: ", bytes, outLen/8);
 
-
                 dstar_processHeader(bytes, &machine->incoming_header);
-
 
                 /* STATE CHANGE */
                 machine->state = VOICE_FRAME;
@@ -644,7 +646,7 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
         }
         case END_PATTERN_FOUND:
 
-            output("Found end patter bits\n");
+            output("Found end pattern bits\n");
             bitPM_reset(machine->end_pm);
             bitPM_reset(machine->syn_pm);
 

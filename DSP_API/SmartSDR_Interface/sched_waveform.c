@@ -579,7 +579,7 @@ static void* _sched_waveform_thread(void* param)
 
 void sched_waveform_Init(void)
 {
-    dstar_FECTest();
+    //dstar_FECTest();
     //exit(0);
 
     _dstar = dstar_createMachine();
