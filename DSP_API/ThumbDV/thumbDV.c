@@ -381,7 +381,7 @@ int thumbDV_processSerial(int serial_fd)
 
     BufferDescriptor desc = NULL;
     packet_type = buffer[3];
-    //dump("Serial data", buffer, respLen);
+    //thumbDV_dump("Serial data", buffer, respLen);
     if ( packet_type == AMBE3000_CTRL_PKT_TYPE ) {
         thumbDV_dump(ANSI_YELLOW "Serial data" ANSI_WHITE, buffer, respLen);
     } else if ( packet_type == AMBE3000_CHAN_PKT_TYPE ) {
@@ -409,6 +409,7 @@ int thumbDV_processSerial(int serial_fd)
 int thumbDV_decode(int serial_fd, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet)
 {
     uint32 i = 0;
+
     unsigned char full_packet[15] = {0};
     if ( packet_in != NULL ) {
         full_packet[0] = 0x61;
@@ -417,19 +418,27 @@ int thumbDV_decode(int serial_fd, unsigned char * packet_in, short * speech_out,
         full_packet[3] = 0x01;
         full_packet[4] = 0x01;
         full_packet[5] = 0x48;
-        for ( i = 0 ; i < 9 ; i++ ) {
-            full_packet[i+6] = packet_in[i];
+        uint32 j = 0;
+        for ( i = 0, j = 8  ; i < 9 ; i++ , j--) {
+                full_packet[i+6] = packet_in[i];
         }
-
-        //thumbDV_dump("Encoded packet:", full_packet, 15);
+//        thumbDV_dump("Just AMBE", packet_in, 9);
+//        thumbDV_dump("Encoded packet:", full_packet, 15);
         thumbDV_writeSerial(serial_fd, full_packet, 15);
     }
 
     int32 samples_returned = 0;
     BufferDescriptor desc = _thumbDVDecodedList_UnlinkHead();
     uint32 samples_in_speech_packet = 0;
+    uint32 length = 0;
 
     if ( desc != NULL ) {
+        length =  (((unsigned char * )desc->buf_ptr)[1] << 8 ) +  ((unsigned char * )desc->buf_ptr)[2];;
+        if ( length != 0x142 ) {
+            output(ANSI_YELLOW, "WARNING LENGHT DOESN'T Match %d " ANSI_WHITE, length);
+            thumbDV_dump("MISMATHCED", ((unsigned char * ) desc->buf_ptr), desc->num_samples);
+        }
+
         samples_in_speech_packet = ((unsigned char * )desc->buf_ptr)[5];
 
         unsigned char * idx = &(((unsigned char * )desc->buf_ptr)[6]);
@@ -608,7 +617,7 @@ void thumbDV_init(const char * serial_device_name, int * serial_fd)
     thumbDV_writeSerial(*serial_fd, read_cfg, 5);
     thumbDV_writeSerial(*serial_fd, dstar_mode, 17);
 
-    /* Init */
+////    /* Init */
     unsigned char pkt_init[6] = { 0x61, 0x00, 0x02, 0x00, 0x0B, 0x07 };
     thumbDV_writeSerial(*serial_fd, pkt_init, 6);
 
@@ -620,8 +629,11 @@ void thumbDV_init(const char * serial_device_name, int * serial_fd)
     unsigned char pkt_compand[6] = { 0x61, 0x00, 0x02, 0x00, 0x32, 0x00 };
     thumbDV_writeSerial(*serial_fd, pkt_compand, 6);
 
-    //unsigned char test_coded[15] =  {0x61, 0x00 ,0x0B ,0x01 ,0x01 ,0x48 ,0x5E ,0x83 ,0x12 ,0x3B ,0x98 ,0x79 ,0xDE ,0x13 ,0x90};
+    unsigned char test_coded[15] =  {0x61, 0x00 ,0x0B ,0x01 ,0x01 ,0x48 ,0x5E ,0x83 ,0x12 ,0x3B ,0x98 ,0x79 ,0xDE ,0x13 ,0x90};
 
-    //thumbDV_writeSerial(*serial_fd, test_coded, 15);
+    thumbDV_writeSerial(*serial_fd, test_coded, 15);
+
+    unsigned char pkt_fmt[7] = {0x61, 0x00, 0x3, 0x00, 0x15, 0x00, 0x00};
+    thumbDV_writeSerial(*serial_fd, pkt_fmt, 7);
 
 }

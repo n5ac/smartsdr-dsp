@@ -477,6 +477,22 @@ void dstar_processHeader(unsigned char * bytes, DSTAR_HEADER header)
     dstar_dumpHeader(header);
 }
 
+static unsigned char icom_bitsToByte(const BOOL * bits)
+{
+    uint32 l = 0;
+
+    unsigned char val = 0x00;
+
+    for ( l = 0 ; l < 8 ; l++ ) {
+        val >>= 1;
+        if ( bits[l] ) {
+            val |= 0x80;
+        }
+    }
+
+    return val;
+}
+
 BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len)
 {
     BOOL have_audio_packet = FALSE;
@@ -506,7 +522,7 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
             header[machine->bit_count++] = in_bit;
 
             if ( machine->bit_count == FEC_SECTION_LENGTH_BITS ) {
-                output("Found 660 bits - descrambling\n");
+               // output("Found 660 bits - descrambling\n");
                 /* Found 660 bits of header */
 
 //                gmsk_bitsToBytes(header, bytes, FEC_SECTION_LENGTH_BITS);
@@ -548,10 +564,14 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
             voice_bits[machine->bit_count++] = in_bit;
 
             if ( machine->bit_count == VOICE_FRAME_LENGTH_BITS ) {
-                gmsk_bitsToBytes(voice_bits, bytes, VOICE_FRAME_LENGTH_BITS);
-                //thumbDV_dump("Voice Frame:", bytes, VOICE_FRAME_LENGTH_BITS / 8);
+                memset(bytes, 0, VOICE_FRAME_LENGTH_BYTES);
+                uint32 n = 0;
+                uint32 i = 0 ;
+                for ( i = 0, n = 0 ; i < 9 ; i++, n += 8) {
+                    bytes[i] = icom_bitsToByte(voice_bits + n);
+                }
 
-
+                //thumbDV_dump("ICOM Order: " , bytes, VOICE_FRAME_LENGTH_BITS / 8);
                 memcpy(ambe_out, bytes, VOICE_FRAME_LENGTH_BITS / 8);
                 have_audio_packet = TRUE;
 
@@ -575,7 +595,12 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
                 machine->state = END_PATTERN_FOUND;
                 machine->bit_count = 0;
             } else if ( machine->bit_count == DATA_FRAME_LENGTH_BITS ) {
-                gmsk_bitsToBytes(data_bits, bytes, DATA_FRAME_LENGTH_BITS);
+
+                BOOL out[DATA_FRAME_LENGTH_BITS] = {0};
+                uint32 scramble_count = 0;
+                dstar_scramble(data_bits, out,  DATA_FRAME_LENGTH_BITS, &scramble_count);
+
+                gmsk_bitsToBytes(out, bytes, DATA_FRAME_LENGTH_BITS);
                 //thumbDV_dump("Data Frame:", bytes, DATA_FRAME_LENGTH_BITS/8);
 
                 machine->frame_count++;
