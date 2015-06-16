@@ -30,6 +30,7 @@
 #ifndef THUMBDV_DSTAR_H_
 #define THUMBDV_DSTAR_H_
 
+#include "DStarDefines.h"
 
 enum DSTAR_STATE
 {

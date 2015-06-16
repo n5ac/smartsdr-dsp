@@ -353,7 +353,7 @@ BOOL dstar_FECdecode(DSTAR_FEC fec,const BOOL * in, BOOL * out, unsigned int inL
         fec->metric[i] = 0;
 
     unsigned int n = 0U;
-    for ( i = 0U; i < 660U; i += 2U, n++) {
+    for ( i = 0U; i < FEC_SECTION_LENGTH_BITS; i += 2U, n++) {
         int data[2];
 
         if (in[i + 0U])
@@ -372,7 +372,7 @@ BOOL dstar_FECdecode(DSTAR_FEC fec,const BOOL * in, BOOL * out, unsigned int inL
     dstar_FECtraceBack(fec, out, outLen);
 
     // Swap endian-ness
-    for ( i = 0U; i < 330U; i += 8U) {
+    for ( i = 0U; i < RADIO_HEADER_LENGTH_BITS; i += 8U) {
         BOOL temp;
         temp = out[i + 0U]; out[i + 0U] = out[i + 7U]; out[i + 7U] = temp;
         temp = out[i + 1U]; out[i + 1U] = out[i + 6U]; out[i + 6U] = temp;
@@ -569,7 +569,7 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
                 memset(bytes, 0, VOICE_FRAME_LENGTH_BYTES);
                 uint32 n = 0;
                 uint32 i = 0 ;
-                for ( i = 0, n = 0 ; i < 9 ; i++, n += 8) {
+                for ( i = 0, n = 0 ; i < VOICE_FRAME_LENGTH_BYTES ; i++, n += 8) {
                     bytes[i] = icom_bitsToByte(voice_bits + n);
                 }
 
@@ -631,7 +631,7 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
             } else if ( found_end_bits ) {
                 machine->state = END_PATTERN_FOUND;
                 machine->bit_count = 0;
-            } else if ( machine->bit_count > ((24+72) * 42) ) {
+            } else if ( machine->bit_count > ((DATA_FRAME_LENGTH_BITS + VOICE_FRAME_LENGTH_BITS) * 42) ) {
                 /* Function as a timeout if we don't find the sync bits */
                 output("Could not find SYNC\n");
 
