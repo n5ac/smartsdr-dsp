@@ -98,10 +98,14 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
 
 void dstar_pfcsUpdate(DSTAR_PFCS pfcs, BOOL * bits );
 BOOL dstar_pfcsCheck(DSTAR_PFCS pfcs, BOOL * bits );
+void dstar_pfcsResult(DSTAR_PFCS pfcs, unsigned char * chksum);
+void dstar_pfcsResultBits( DSTAR_PFCS pfcs, BOOL * bits );
+void dstar_pfcsUpdateBuffer(DSTAR_PFCS pfcs, unsigned char * bytes, uint32 length);
 
 void dstar_FECTest(void);
 void dstar_scramble(BOOL * in, BOOL * out, uint32 length, uint32 * scramble_count);
 void dstar_interleave(const BOOL * in, BOOL * out, unsigned int length);
 void dstar_deinterleave(const BOOL * in, BOOL * out, unsigned int length);
 BOOL dstar_FECdecode(DSTAR_FEC fec, const BOOL * in, BOOL * out, unsigned int inLen, unsigned int * outLen);
+void dstar_FECencode(const BOOL * in, BOOL * out, unsigned int inLen, unsigned int * outLen);
 #endif /* THUMBDV_DSTAR_H_ */

@@ -387,7 +387,7 @@ int thumbDV_processSerial(int serial_fd)
     } else if ( packet_type == AMBE3000_CHAN_PKT_TYPE ) {
         desc = hal_BufferRequest(respLen, sizeof(unsigned char) );
         memcpy(desc->buf_ptr, buffer, respLen);
-        thumbDV_dump(ANSI_BLUE "Coded Packet" ANSI_WHITE, buffer, respLen);
+        //thumbDV_dump(ANSI_BLUE "Coded Packet" ANSI_WHITE, buffer, respLen);
         /* Encoded data */
         _thumbDVEncodedList_LinkTail(desc);
     } else if ( packet_type == AMBE3000_SPEECH_PKT_TYPE ) {

@@ -95,20 +95,20 @@ void gmsk_bytesToBits(unsigned char * bytes, BOOL * bits, uint32 num_bits)
         byte_idx++;
         bits_left -= 8;
     }
-
-    uint32 i = 0;
-    output("Bytes: ");
-    for ( i = 0 ; i < num_bits / 8U ; i++ ) {
-        output(" 0x%02X", bytes[i]);
-    }
-    output("\nBits: ");
-    for ( i = 0 ; i < num_bits ; i++ ) {
-        output("%s ", bits[i] ? "1":"0");
-        if ( (i+1) % 4 == 0 ) {
-            output("   ");
-        }
-    }
-    output("\n");
+//
+//    uint32 i = 0;
+//    output("Bytes: ");
+//    for ( i = 0 ; i < num_bits / 8U ; i++ ) {
+//        output(" 0x%02X", bytes[i]);
+//    }
+//    output("\nBits: ");
+//    for ( i = 0 ; i < num_bits ; i++ ) {
+//        output("%s ", bits[i] ? "1":"0");
+//        if ( (i+1) % 4 == 0 ) {
+//            output("   ");
+//        }
+//    }
+//    output("\n");
 
 }
 
@@ -307,9 +307,9 @@ uint32 gmsk_encode(GMSK_MOD mod, BOOL bit, float * buffer, unsigned int length)
 
     for (i = 0; i < DSTAR_RADIO_BIT_LENGTH; i++) {
         if (bit) {
-            buffer[i] = gmsk_FilterProcessSingle(mod->filter, -0.5f);
+            buffer[i] = gmsk_FilterProcessSingle(mod->filter, -1.0f);
         } else {
-            buffer[i] = gmsk_FilterProcessSingle(mod->filter, 0.5f);
+            buffer[i] = gmsk_FilterProcessSingle(mod->filter, 1.0f);
         }
     }
 

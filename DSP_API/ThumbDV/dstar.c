@@ -711,6 +711,14 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
     return have_audio_packet;
 }
 
+void dstar_pfcsUpdateBuffer(DSTAR_PFCS pfcs, unsigned char * bytes, uint32 length)
+{
+    uint32 i = 0;
+    for ( i = 0 ; i < length ; i++ ) {
+        pfcs->crc16 = (uint16)(pfcs->crc8[1]) ^ ccittTab[pfcs->crc8[0] ^ bytes[i]];
+    }
+}
+
 void dstar_pfcsUpdate(DSTAR_PFCS pfcs, BOOL * bits )
 {
     unsigned char byte;
@@ -719,7 +727,16 @@ void dstar_pfcsUpdate(DSTAR_PFCS pfcs, BOOL * bits )
     pfcs->crc16 = (uint16)pfcs->crc8[1] ^ ccittTab[ pfcs->crc8[0] ^ byte ];
 }
 
-void dstar_pfcsResult( DSTAR_PFCS pfcs, BOOL * bits )
+void dstar_pfcsResult( DSTAR_PFCS pfcs, unsigned char * chksum )
+{
+    pfcs->crc16 = ~ pfcs->crc16;
+
+    chksum[0] = pfcs->crc8[0];
+    chksum[1] = pfcs->crc8[1];
+
+}
+
+void dstar_pfcsResultBits( DSTAR_PFCS pfcs, BOOL * bits )
 {
     pfcs->crc16 = ~pfcs->crc16;
 
@@ -739,7 +756,7 @@ BOOL dstar_pfcsCheck(DSTAR_PFCS pfcs, BOOL * bits )
 {
     uint32 i = 0;
     BOOL sum[16];
-    dstar_pfcsResult(pfcs, sum);
+    dstar_pfcsResultBits(pfcs, sum);
 
     for ( i = 0 ; i < 16 ; i++ ) {
         if ( sum[i] != bits[i] ) {
