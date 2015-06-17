@@ -488,6 +488,21 @@ void dstar_dumpHeader( DSTAR_HEADER header )
     output("Own Call 2: %s\n", header->own_call2);
 }
 
+void dstar_headerToBytes(DSTAR_HEADER header, unsigned char * bytes)
+{
+    memset(bytes, 0, 39 * sizeof(unsigned char));
+
+    bytes[0] = header->flag1;
+    bytes[1] = header->flag2;
+    bytes[2] = header->flag3;
+
+    memcpy(&bytes[3], header->destination_rptr, 8);
+    memcpy(&bytes[3+8], header->departure_rptr, 8);
+    memcpy(&bytes[3+8+8], header->companion_call, 8);
+    memcpy(&bytes[3+8+8+8], header->own_call1, 8);
+    memcpy(&bytes[3+8+8+8+8], header->own_call2, 4);
+}
+
 void dstar_processHeader(unsigned char * bytes, DSTAR_HEADER header)
 {
     /* Takes in an array of bytes and parses out each header field */

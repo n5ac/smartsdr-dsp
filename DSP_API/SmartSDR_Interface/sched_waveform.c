@@ -546,80 +546,63 @@ static void* _sched_waveform_thread(void* param)
 
 //                            fclose(dat);
 
-//                            dstar_header tmp_h;
-//                            tmp_h.flag1 = 0;
-//                            tmp_h.flag2 = 0;
-//                            tmp_h.flag3 = 0;
-//
-//                            strncpy((char*)tmp_h.destination_rptr, "DIRECT", 9);
-//                            strncpy((char*)tmp_h.departure_rptr, "DIRECT", 9);
-//                            strncpy((char*)tmp_h.companion_call, "CQCQCQ", 9);
-//                            strncpy((char*)tmp_h.own_call1, "K5SDR", 9);
-//                            strncpy((char*)tmp_h.own_call1, "K5SDR", 9);
-//
-//                            dstar_pfcs pfcs;
-//                            pfcs.crc16 = 0xFFFF;
-//                            dstar_pfcsUpdateBuffer(&pfcs, (unsigned char * ) &tmp_h, 312);
-//                            dstar_pfcsResult(&pfcs, (unsigned char * )&(tmp_h.p_fcs));
-//
-//                            BOOL bits[FEC_SECTION_LENGTH_BITS] = {0};
-//
-//                            gmsk_bytesToBits((unsigned char *) &tmp_h, bits, 328);
-//                            BOOL encoded[330*2] = {0};
-//                            BOOL interleaved[330*2] = {0};
-//                            BOOL scrambled[330*2] = {0};
-//                            uint32 outLen = 0;
-//                            dstar_FECencode(bits, encoded, 330, &outLen);
-//                            //output("Encode outLen = %d\n", outLen);
-//
-//                            outLen = 660;
-//                            dstar_interleave(encoded, interleaved, outLen);
-//
-//                            uint32 count = 0;
-//                            dstar_scramble(interleaved, scrambled, outLen, &count);
-                            //output("Count = %d\n", count);
-//                            for ( i = 0 ; i < count ; i++ ) {
-//                                gmsk_encode(_gmsk_mod, scrambled[i], buf, DSTAR_RADIO_BIT_LENGTH);
-//                                for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
-//                                    cbWriteFloat(TX4_cb, buf[j]);
-//                                    //fprintf(dat, "%d %.12f\n", data_i++, buf[j]);
-//                                }
-//                            }
+                            dstar_header tmp_h;
+                            tmp_h.flag1 = 0;
+                            tmp_h.flag2 = 0;
+                            tmp_h.flag3 = 0;
 
-                            //fclose(dat);
+                            strncpy((char*)tmp_h.destination_rptr, "DIRECT", 9);
+                            strncpy((char*)tmp_h.departure_rptr, "DIRECT", 9);
+                            strncpy((char*)tmp_h.companion_call, "CQCQCQ", 9);
+                            strncpy((char*)tmp_h.own_call1, "K5SDR", 9);
+                            strncpy((char*)tmp_h.own_call2, "WOOT", 5);
+
+                            dstar_pfcs pfcs;
+                            pfcs.crc16 = 0xFFFF;
+
+                            unsigned char header_bytes[330] = {0};
+                            dstar_headerToBytes(&tmp_h, header_bytes);
+                            dstar_pfcsUpdateBuffer(&pfcs, header_bytes, 312/8);
+                            dstar_pfcsResult(&pfcs, header_bytes + 312/8);
+
+                            BOOL bits[FEC_SECTION_LENGTH_BITS] = {0};
+
+                            gmsk_bytesToBits(header_bytes, bits, 328);
+                            BOOL encoded[330*2] = {0};
+                            BOOL interleaved[330*2] = {0};
+                            BOOL scrambled[330*2] = {0};
+                            uint32 outLen = 0;
+                            dstar_FECencode(bits, encoded, 330, &outLen);
+                            //output("Encode outLen = %d\n", outLen);
+
+                            outLen = 660;
+                            dstar_interleave(encoded, interleaved, outLen);
+
+                            uint32 count = 0;
+                            dstar_scramble(interleaved, scrambled, outLen, &count);
+                            output("Count = %d\n", count);
+                            for ( i = 0 ; i < count ; i++ ) {
+                                gmsk_encode(_gmsk_mod, scrambled[i], buf, DSTAR_RADIO_BIT_LENGTH);
+                                for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
+                                    cbWriteFloat(TX4_cb, buf[j]);
+                                }
+                            }
+
+                            for ( i = 0 ; i < 10 ; i += 2 ) {
+                                gmsk_encode(_gmsk_mod, FALSE, buf, DSTAR_RADIO_BIT_LENGTH);
+                                for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
+                                    cbWriteFloat(TX4_cb, buf[j]);
+                                }
+                                gmsk_encode(_gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH);
+                                for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
+                                    cbWriteFloat(TX4_cb, buf[j]);
+                                }
+
+                            }
 
                         }
 
 						uint32 tx_check_samples = PACKET_SAMPLES;
-
-						if ( !initial_tx &&  cfbContains(TX4_cb) < PACKET_SAMPLES * 5)  {
-                            for ( i = 0 ; i < 13 ; i++ ) {
-                                float buf[5];
-                                uint32 j = 0;
-                                gmsk_encode(_gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH);
-
-                                 for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
-                                     cbWriteFloat(TX4_cb, buf[j]);
-//                                     if ( write_dat )  fprintf(dat, "%d %.12f\n", data_i++, buf[j]);
-                                 }
-
-                                 gmsk_encode(_gmsk_mod, FALSE, buf, DSTAR_RADIO_BIT_LENGTH);
-
-                                 for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
-                                     cbWriteFloat(TX4_cb, buf[j]);
-//                                     if ( write_dat ) fprintf(dat, "%d %.12f\n", data_i++, buf[j]);
-                                 }
-                            }
-
-//                            if ( write_dat )  {
-//                                fclose(dat);
-//
-//                                sync();
-//                                write_dat = FALSE;
-//                            }
-
-						}
-
 
 						if(cfbContains(TX4_cb) >= tx_check_samples )
 						{

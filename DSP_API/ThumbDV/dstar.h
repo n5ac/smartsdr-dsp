@@ -101,6 +101,7 @@ BOOL dstar_pfcsCheck(DSTAR_PFCS pfcs, BOOL * bits );
 void dstar_pfcsResult(DSTAR_PFCS pfcs, unsigned char * chksum);
 void dstar_pfcsResultBits( DSTAR_PFCS pfcs, BOOL * bits );
 void dstar_pfcsUpdateBuffer(DSTAR_PFCS pfcs, unsigned char * bytes, uint32 length);
+void dstar_headerToBytes(DSTAR_HEADER header, unsigned char * bytes);
 
 void dstar_FECTest(void);
 void dstar_scramble(BOOL * in, BOOL * out, uint32 length, uint32 * scramble_count);
