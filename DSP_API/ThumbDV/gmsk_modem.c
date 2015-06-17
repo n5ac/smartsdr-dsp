@@ -307,10 +307,8 @@ uint32 gmsk_encode(GMSK_MOD mod, BOOL bit, float * buffer, unsigned int length)
 
     for (i = 0; i < DSTAR_RADIO_BIT_LENGTH; i++) {
         if (bit) {
-            //buffer[i] = -0.5f;//gmsk_FilterProcessSingle(mod->filter, -0.5f);
             buffer[i] = gmsk_FilterProcessSingle(mod->filter, -0.5f);
         } else {
-            //buffer[i] = 0.5f;//gmsk_FilterProcessSingle(mod->filter, 0.5f);
             buffer[i] = gmsk_FilterProcessSingle(mod->filter, 0.5f);
         }
     }
