@@ -182,7 +182,7 @@ float RX4_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX4 Packet output Buffer
 float TX1_buff[(DV_PACKET_SAMPLES * 12) +1];		// TX1 Packet Input Buffer
 short TX2_buff[(DV_PACKET_SAMPLES * 12)+1];		// TX2 Vocoder input buffer
 short TX3_buff[(DV_PACKET_SAMPLES * 12)+1];		// TX3 Vocoder output buffer
-float TX4_buff[(DV_PACKET_SAMPLES * 12)+1];		// TX4 Packet output Buffer
+float TX4_buff[(DV_PACKET_SAMPLES * 12 * 10)+1];		// TX4 Packet output Buffer
 
 circular_float_buffer rx1_cb;
 Circular_Float_Buffer RX1_cb = &rx1_cb;
@@ -284,7 +284,7 @@ static void* _sched_waveform_thread(void* param)
 	TX3_cb->start = 0;
 	TX3_cb->end	  = 0;
 	TX3_cb->elems = TX3_buff;
-	TX4_cb->size  = PACKET_SAMPLES *12 +1;		// size = no.elements in array+1
+	TX4_cb->size  = PACKET_SAMPLES * (12*10) +1;		// size = no.elements in array+1
 	TX4_cb->start = 0;
 	TX4_cb->end	  = 0;
 	TX4_cb->elems = TX4_buff;
