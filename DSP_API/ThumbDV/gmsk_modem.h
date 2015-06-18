@@ -48,8 +48,6 @@ typedef struct _gmsk_demod
     uint32  m_pll;
     BOOL    m_prev;
     BOOL    m_invert;
-
-    FIR_FILTER filter;
 } gmsk_demod, * GMSK_DEMOD;
 
 typedef struct _gmsk_mod

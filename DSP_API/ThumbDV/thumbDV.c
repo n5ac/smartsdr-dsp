@@ -508,12 +508,14 @@ int thumbDV_encode(int serial_fd, short * speech_in, unsigned char * packet_out,
     thumbDV_writeSerial(serial_fd, packet, length + AMBE3000_HEADER_LEN);
 
     int32 samples_returned = 0;
-    BufferDescriptor desc = NULL;//_thumbDVEncodedList_UnlinkHead();
+    BufferDescriptor desc = _thumbDVEncodedList_UnlinkHead();
 
     if ( desc != NULL ) {
-        memcpy(packet_out, desc->buf_ptr, desc->sample_size * desc->num_samples);
-        samples_returned = desc->num_samples;
+        memcpy(packet_out, desc->buf_ptr + 6, desc->sample_size * (desc->num_samples - 6) );
+        samples_returned = desc->num_samples - 6;
         safe_free(desc);
+        //thumbDV_dump(ANSI_BLUE "Coded Packet" ANSI_WHITE, packet_out, desc->num_samples - 6);
+
     } else {
         /* Do nothing for now */
     }

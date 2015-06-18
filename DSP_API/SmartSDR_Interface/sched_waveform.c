@@ -177,12 +177,12 @@ void sched_waveform_signal()
 float RX1_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX1 Packet Input Buffer
 short RX2_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX2 Vocoder input buffer
 short RX3_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX3 Vocoder output buffer
-float RX4_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX4 Packet output Buffer
+float RX4_buff[(DV_PACKET_SAMPLES * 12 * 40)+1];		// RX4 Packet output Buffer
 
 float TX1_buff[(DV_PACKET_SAMPLES * 12) +1];		// TX1 Packet Input Buffer
 short TX2_buff[(DV_PACKET_SAMPLES * 12)+1];		// TX2 Vocoder input buffer
 short TX3_buff[(DV_PACKET_SAMPLES * 12)+1];		// TX3 Vocoder output buffer
-float TX4_buff[(DV_PACKET_SAMPLES * 12 * 10)+1];		// TX4 Packet output Buffer
+float TX4_buff[(DV_PACKET_SAMPLES * 12 * 40)+1];		// TX4 Packet output Buffer
 
 circular_float_buffer rx1_cb;
 Circular_Float_Buffer RX1_cb = &rx1_cb;
@@ -208,10 +208,16 @@ static GMSK_DEMOD _gmsk_demod = NULL;
 static GMSK_MOD   _gmsk_mod = NULL;
 static DSTAR_MACHINE _dstar = NULL;
 
-static BOOL write_dat = TRUE;
-static uint32 data_i = 0;
-
 #define FREEDV_NSAMPLES 160
+
+static void icom_byteToBits(unsigned char byte, BOOL * bits )
+{
+    unsigned char mask = 0x01;
+    uint32 i = 0;
+    for ( i = 0 ; i < 8 ; i++, mask <<= 1 ) {
+        bits[i] = ( byte & mask ) ? TRUE : FALSE;
+    }
+}
 
 static void* _sched_waveform_thread(void* param)
 {
@@ -226,10 +232,10 @@ static void* _sched_waveform_thread(void* param)
     int		initial_rx = 1;			// Flags for RX circular buffer, clear if starting receive
 
 	// VOCODER I/O BUFFERS
-    short	speech_in[FREEDV_NSAMPLES];
-    short 	speech_out[FREEDV_NSAMPLES];
+    short	speech_in[DV_PACKET_SAMPLES];
+    short 	speech_out[DV_PACKET_SAMPLES];
     //short 	demod_in[FREEDV_NSAMPLES];
-    short 	mod_out[FREEDV_NSAMPLES];
+    unsigned char 	mod_out[DV_PACKET_SAMPLES];
 
     //unsigned char packet_out[FREEDV_NSAMPLES];
 
@@ -245,8 +251,6 @@ static void* _sched_waveform_thread(void* param)
     float 	tx_float_out_8k[DV_PACKET_SAMPLES];
 
     float 	tx_float_in_24k[DV_PACKET_SAMPLES * DECIMATION_FACTOR + FILTER_TAPS];
-    float 	tx_float_out_24k[DV_PACKET_SAMPLES * DECIMATION_FACTOR ];
-
 
 
     // =======================  Initialization Section =========================
@@ -254,43 +258,58 @@ static void* _sched_waveform_thread(void* param)
     thumbDV_init("/dev/ttyUSB0", &_dv_serial_fd);
 
     // Initialize the Circular Buffers
-
-	RX1_cb->size  = PACKET_SAMPLES*6 +1;		// size = no.elements in array+1
+	RX1_cb->size  = DV_PACKET_SAMPLES * 12 +1;		// size = no.elements in array+1
 	RX1_cb->start = 0;
 	RX1_cb->end	  = 0;
 	RX1_cb->elems = RX1_buff;
-	RX2_cb->size  = PACKET_SAMPLES*6 +1;		// size = no.elements in array+1
+	strncpy(RX1_cb->name,   "RX1", 4);
+
+	RX2_cb->size  = DV_PACKET_SAMPLES * 12 +1;		// size = no.elements in array+1
 	RX2_cb->start = 0;
 	RX2_cb->end	  = 0;
 	RX2_cb->elems = RX2_buff;
-	RX3_cb->size  = PACKET_SAMPLES*6 +1;		// size = no.elements in array+1
+	strncpy(RX2_cb->name, "RX2", 4);
+
+	RX3_cb->size  = DV_PACKET_SAMPLES * 12 +1;		// size = no.elements in array+1
 	RX3_cb->start = 0;
 	RX3_cb->end	  = 0;
 	RX3_cb->elems = RX3_buff;
-	RX4_cb->size  = PACKET_SAMPLES*12 +1;		// size = no.elements in array+1
+	strncpy(RX3_cb->name, "RX3", 4);
+
+	RX4_cb->size  = DV_PACKET_SAMPLES*(12*40) +1;		// size = no.elements in array+1
 	RX4_cb->start = 0;
 	RX4_cb->end	  = 0;
 	RX4_cb->elems = RX4_buff;
+	strncpy(RX4_cb->name, "RX4", 4);
 
-	TX1_cb->size  = PACKET_SAMPLES*6 +1;		// size = no.elements in array+1
+	TX1_cb->size  = DV_PACKET_SAMPLES * 12 +1;		// size = no.elements in array+1
 	TX1_cb->start = 0;
 	TX1_cb->end	  = 0;
 	TX1_cb->elems = TX1_buff;
-	TX2_cb->size  = PACKET_SAMPLES*6 +1;		// size = no.elements in array+1
+    strncpy(TX1_cb->name, "TX1", 4);
+
+	TX2_cb->size  = DV_PACKET_SAMPLES * 12 +1;		// size = no.elements in array+1
 	TX2_cb->start = 0;
 	TX2_cb->end	  = 0;
 	TX2_cb->elems = TX2_buff;
-	TX3_cb->size  = PACKET_SAMPLES *6 +1;		// size = no.elements in array+1
+    strncpy(TX2_cb->name, "TX2", 4);
+
+	TX3_cb->size  = DV_PACKET_SAMPLES * 12 +1;		// size = no.elements in array+1
 	TX3_cb->start = 0;
 	TX3_cb->end	  = 0;
 	TX3_cb->elems = TX3_buff;
-	TX4_cb->size  = PACKET_SAMPLES * (12*10) +1;		// size = no.elements in array+1
+    strncpy(TX3_cb->name, "TX3", 4);
+
+	TX4_cb->size  = DV_PACKET_SAMPLES * (12*40) +1;		// size = no.elements in array+1
 	TX4_cb->start = 0;
 	TX4_cb->end	  = 0;
 	TX4_cb->elems = TX4_buff;
+    strncpy(TX4_cb->name, "TX4", 4);
 
 	initial_tx = TRUE;
 	initial_rx = TRUE;
+
+	uint32 dstar_tx_frame_count = 0;
 
 	// show that we are running
 	BufferDescriptor buf_desc;
@@ -343,7 +362,6 @@ static void* _sched_waveform_thread(void* param)
 
 						//	Set the transmit 'initial' flag
 						initial_tx = TRUE;
-						write_dat = TRUE;
 
 						// Check for new receiver input packet & move to RX1_cb.
 						// TODO - If transmit packet, discard here?
@@ -412,26 +430,19 @@ static void* _sched_waveform_thread(void* param)
 
 						uint32 check_samples = PACKET_SAMPLES;
 
-						if(initial_rx)
-							check_samples = PACKET_SAMPLES * 3;
-
-
 						if(cfbContains(RX4_cb) >= check_samples )
 						{
 							for( i=0 ; i< PACKET_SAMPLES ; i++)
 							{
-								//output("Fetching from end buffer \n");
 								// Set up the outbound packet
 								fsample = cbReadFloat(RX4_cb);
 //								// put the fsample into the outbound packet
-//
+
 								((Complex*)buf_desc->buf_ptr)[i].real = fsample;
 								((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
 
 							}
 						} else {
-							//output("RX Starved buffer out\n");
-
 							memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
 
 							if(initial_rx)
@@ -496,7 +507,7 @@ static void* _sched_waveform_thread(void* param)
 //						// Check for >= 320 samples in TX2_cb and spin vocoder
 						// 	Move output to TX3_cb.
 
-
+						uint32 decode_out  = 0;
                         if ( csbContains(TX2_cb) >= DV_PACKET_SAMPLES )
                         {
                             for( i=0 ; i< DV_PACKET_SAMPLES ; i++)
@@ -504,25 +515,19 @@ static void* _sched_waveform_thread(void* param)
                                 speech_in[i] = cbReadShort(TX2_cb);
                             }
 
-                            //output("Speech in = %d", speech_in[0]);
-
                             /* DECODE */
-                            uint32 decode_out = 0;
-                            decode_out = thumbDV_encode(_dv_serial_fd, speech_in, (unsigned char * )mod_out, DV_PACKET_SAMPLES);
+                            decode_out = thumbDV_encode(_dv_serial_fd, speech_in, mod_out, DV_PACKET_SAMPLES);
                         }
 
-                        FILE * dat = NULL;
-
-                        if ( write_dat ) {
-                            dat = fopen("gmsk_txNew2.dat", "a");
-                        }
+                        float buf[5];
+                        uint32 j = 0;
                         if ( initial_tx ) {
 
                             initial_tx = FALSE;
-                            float buf[5];
-                            uint32 j = 0;
+                            zero_cfb(TX4_cb);
+
                             /* Create Sync */
-                            for ( i = 0 ; i < 64 * 2 ; i += 2 ) {
+                            for ( i = 0 ; i < 64 * 10 ; i += 2 ) {
                                 gmsk_encode(_gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH);
 
                                 for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
@@ -543,8 +548,6 @@ static void* _sched_waveform_thread(void* param)
                                     cbWriteFloat(TX4_cb, buf[j]);
                                 }
                             }
-
-//                            fclose(dat);
 
                             dstar_header tmp_h;
                             tmp_h.flag1 = 0;
@@ -588,16 +591,51 @@ static void* _sched_waveform_thread(void* param)
                                 }
                             }
 
-                            for ( i = 0 ; i < 10 ; i += 2 ) {
-                                gmsk_encode(_gmsk_mod, FALSE, buf, DSTAR_RADIO_BIT_LENGTH);
-                                for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
-                                    cbWriteFloat(TX4_cb, buf[j]);
-                                }
-                                gmsk_encode(_gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH);
-                                for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
-                                    cbWriteFloat(TX4_cb, buf[j]);
+                            dstar_tx_frame_count = 0;
+                        } else {
+                            /* Data and Voice */
+                            float voice_buf[VOICE_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH] = {0};
+                            float data_buf[DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH] = {0};
+
+                            if ( decode_out != 0 ) {
+                                BOOL bits[8] = {0} ;
+                                uint32 k = 0;
+                                for ( i = 0 ; i < VOICE_FRAME_LENGTH_BYTES ; i++ ) {
+                                    icom_byteToBits(mod_out[i], bits );
+                                    for ( j = 0 ; j < 8 ; j++ ) {
+                                        gmsk_encode(_gmsk_mod, bits[j], buf, DSTAR_RADIO_BIT_LENGTH);
+
+                                        for ( k = 0 ; k < DSTAR_RADIO_BIT_LENGTH ; k++ ) {
+                                            cbWriteFloat(TX4_cb, buf[k]);
+                                        }
+                                    }
                                 }
 
+                                if ( dstar_tx_frame_count % 21 == 0 ) {
+                                    /* Sync Bits */
+                                    unsigned char sync_bytes[3] = {0};
+                                    memcpy(sync_bytes, DATA_SYNC_BYTES, 3);
+                                    gmsk_encodeBuffer(_gmsk_mod, sync_bytes, DATA_FRAME_LENGTH_BITS, data_buf, DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH);
+
+                                    for ( i = 0 ; i < DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
+                                        cbWriteFloat(TX4_cb, data_buf[i]);
+                                    }
+                                } else {
+                                    unsigned char dummy_bytes[DATA_FRAME_LENGTH_BYTES] = {0xFF, 0x00, 0xFF };
+                                    BOOL dummy_bits[DATA_FRAME_LENGTH_BITS] = {0};
+                                    BOOL dummy_bits_out[DATA_FRAME_LENGTH_BITS] = {0};
+                                    uint32 dummy_count = 0;
+                                    gmsk_bytesToBits(dummy_bytes, dummy_bits, DATA_FRAME_LENGTH_BITS);
+                                    dstar_scramble(dummy_bits, dummy_bits_out, DATA_FRAME_LENGTH_BITS, &dummy_count);
+
+                                    gmsk_bitsToBytes(dummy_bits_out, dummy_bytes, DATA_FRAME_LENGTH_BITS);
+
+                                    gmsk_encodeBuffer(_gmsk_mod, dummy_bytes, DATA_FRAME_LENGTH_BITS, data_buf, DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH);
+                                    for ( i = 0 ; i < DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
+                                        cbWriteFloat(TX4_cb, data_buf[i]);
+                                    }
+                                }
+                               dstar_tx_frame_count++;
                             }
 
                         }
@@ -608,7 +646,6 @@ static void* _sched_waveform_thread(void* param)
 						{
 							for( i = 0 ; i < PACKET_SAMPLES ; i++)
 							{
-							//output("Fetching from end buffer \n");
 								// Set up the outbound packet
 								fsample = cbReadFloat(TX4_cb);
 
@@ -617,17 +654,12 @@ static void* _sched_waveform_thread(void* param)
 								((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
 							}
 						} else {
-							//output("TX Starved buffer out\n");
-
 							memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
-
-
 						}
 
 						initial_tx = FALSE;
 
 					}
-
 
 					emit_waveform_output(buf_desc);
 
@@ -640,14 +672,13 @@ static void* _sched_waveform_thread(void* param)
 
 	gmsk_destroyDemodulator(_gmsk_demod);
 	gmsk_destroyModulator(_gmsk_mod);
+	dstar_destroyMachine(_dstar);
 
 	return NULL;
 }
 
 void sched_waveform_Init(void)
 {
-    //dstar_FECTest();
-    //exit(0);
 
     _dstar = dstar_createMachine();
 
@@ -671,10 +702,6 @@ void sched_waveform_Init(void)
 	struct sched_param fifo_param;
 	fifo_param.sched_priority = 30;
 	pthread_setschedparam(_waveform_thread, SCHED_FIFO, &fifo_param);
-
-//	gmsk_testBitsAndEncodeDecode();
-//	exit(0);
-
 }
 
 void sched_waveformThreadExit()

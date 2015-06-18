@@ -37,6 +37,7 @@ typedef struct {
     unsigned int   start;   // Index of oldest element
     unsigned int   end;     // Index at which to write new element
     short         *elems;   // Vector of elements
+    char name[20];
 } circular_short_buffer, *Circular_Short_Buffer;
 
 typedef struct {
@@ -44,6 +45,7 @@ typedef struct {
     unsigned int   start;   // Index of oldest element
     unsigned int   end;     // Index at which to write new element
     float         *elems;   // Vector of elements
+    char name[20];
 } circular_float_buffer, *Circular_Float_Buffer;
 
 

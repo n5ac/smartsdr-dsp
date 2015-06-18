@@ -65,6 +65,7 @@
 #include <stdio.h>
 
 #include "circular_buffer.h"
+#include "utils.h"
 
 
 
@@ -102,8 +103,10 @@ void cbWriteFloat(Circular_Float_Buffer cb, float sample)
 {
 	cb->elems[cb->end] = sample;
 	cb->end = (cb->end + 1) % cb->size;
-	if (cb->end == cb->start)
+	if (cb->end == cb->start) {
 		cb->start = (cb->start + 1) % cb->size;		/* full, overwrite */
+		output(ANSI_RED "Overwrite! in Circular Float Buffer - Name %s\n" ANSI_WHITE, cb->name);
+	}
 }
 
 
@@ -194,8 +197,10 @@ void cbWriteShort(Circular_Short_Buffer cb, short sample)
 {
 	cb->elems[cb->end] = sample;
 	cb->end = (cb->end + 1) % cb->size;
-	if (cb->end == cb->start)
+	if (cb->end == cb->start) {
 		cb->start = (cb->start + 1) % cb->size;		/* full, overwrite */
+		output(ANSI_RED "Overwrite! in Circular Short Buffer - Name %s\n" ANSI_WHITE, cb->name);
+	}
 }
 
 

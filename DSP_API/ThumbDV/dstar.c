@@ -546,6 +546,8 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
     BOOL * voice_bits = machine->voice_bits;
     BOOL * data_bits = machine->data_bits;
 
+    static unsigned char data_bytes[3 * 40] = {0};
+    static uint32 long_data_bytes_idx = 0;
 
     //unsigned char bytes[((24+72) * 50)/8 + 1];
     unsigned char bytes[FEC_SECTION_LENGTH_BITS/8 + 1];
@@ -665,8 +667,20 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
                 uint32 scramble_count = 0;
                 dstar_scramble(data_bits, out,  DATA_FRAME_LENGTH_BITS, &scramble_count);
 
-                gmsk_bitsToBytes(out, bytes, DATA_FRAME_LENGTH_BITS);
-                //thumbDV_dump("Data Frame:", bytes, DATA_FRAME_LENGTH_BITS/8);
+                //gmsk_bitsToBytes(out, bytes, DATA_FRAME_LENGTH_BITS);
+                uint32 i = 0 ;
+                uint32 n = 0;
+                for ( i = 0, n = 0  ; i < DATA_FRAME_LENGTH_BYTES ; i++, n += 8 ) {
+                    bytes[i]  = icom_bitsToByte(out + n);
+                }
+                //thumbDV_dump("Data Frame:", bytes, DATA_FRAME_LENGTH_BYTES);
+
+                memcpy(data_bytes + long_data_bytes_idx, bytes, 3);
+                long_data_bytes_idx += 3;
+                if ( long_data_bytes_idx >= 3 * 40 ) {
+                    thumbDV_dump("Long Data: ", data_bytes, 3 * 40);
+                    long_data_bytes_idx = 0;
+                }
 
                 machine->frame_count++;
 

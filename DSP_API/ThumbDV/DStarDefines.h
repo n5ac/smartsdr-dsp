@@ -29,7 +29,9 @@ static const BOOL FRAME_SYNC_BITS[]  = {TRUE, TRUE,  TRUE, FALSE, TRUE,  TRUE,  
                                  TRUE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE};
 #define FRAME_SYNC_LENGTH_BITS  15U
 
-static const unsigned char DATA_SYNC_BYTES[] = {0x55, 0x2D, 0x16};
+//static const unsigned char DATA_SYNC_BYTES[] = {0x55, 0x2D, 0x16};
+static const unsigned char DATA_SYNC_BYTES[] = {0xAA, 0xB4, 0x68};
+
 static const BOOL DATA_SYNC_BITS[]   = {TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
                                  TRUE,  FALSE, TRUE,  TRUE,  FALSE, TRUE,  FALSE, FALSE,
                                  FALSE, TRUE,  TRUE,  FALSE, TRUE,  FALSE, FALSE, FALSE};
