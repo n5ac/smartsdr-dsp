@@ -174,8 +174,6 @@ void sched_waveform_signal()
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //	Circular Buffer Declarations
 
-float RX1_buff[(DV_PACKET_SAMPLES * 12 * 40)+1];		// RX1 Packet Input Buffer
-short RX2_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX2 Vocoder input buffer
 short RX3_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX3 Vocoder output buffer
 float RX4_buff[(DV_PACKET_SAMPLES * 12 * 40)+1];		// RX4 Packet output Buffer
 
@@ -184,10 +182,6 @@ short TX2_buff[(DV_PACKET_SAMPLES * 12)+1];		// TX2 Vocoder input buffer
 short TX3_buff[(DV_PACKET_SAMPLES * 12)+1];		// TX3 Vocoder output buffer
 float TX4_buff[(DV_PACKET_SAMPLES * 12 * 40)+1];		// TX4 Packet output Buffer
 
-circular_float_buffer rx1_cb;
-Circular_Float_Buffer RX1_cb = &rx1_cb;
-circular_short_buffer rx2_cb;
-Circular_Short_Buffer RX2_cb = &rx2_cb;
 circular_short_buffer rx3_cb;
 Circular_Short_Buffer RX3_cb = &rx3_cb;
 circular_float_buffer rx4_cb;
@@ -258,17 +252,6 @@ static void* _sched_waveform_thread(void* param)
     thumbDV_init("/dev/ttyUSB0", &_dv_serial_fd);
 
     // Initialize the Circular Buffers
-	RX1_cb->size  = DV_PACKET_SAMPLES * (12 * 40) +1;		// size = no.elements in array+1
-	RX1_cb->start = 0;
-	RX1_cb->end	  = 0;
-	RX1_cb->elems = RX1_buff;
-	strncpy(RX1_cb->name,   "RX1", 4);
-
-	RX2_cb->size  = DV_PACKET_SAMPLES * 12 +1;		// size = no.elements in array+1
-	RX2_cb->start = 0;
-	RX2_cb->end	  = 0;
-	RX2_cb->elems = RX2_buff;
-	strncpy(RX2_cb->name, "RX2", 4);
 
 	RX3_cb->size  = DV_PACKET_SAMPLES * 12 +1;		// size = no.elements in array+1
 	RX3_cb->start = 0;
@@ -341,10 +324,6 @@ static void* _sched_waveform_thread(void* param)
 						//	If 'initial_rx' flag, clear buffers RX1, RX2, RX3, RX4
 						if(initial_rx)
 						{
-							RX1_cb->start = 0;	// Clear buffers RX1, RX2, RX3, RX4
-							RX1_cb->end	  = 0;
-							RX2_cb->start = 0;
-							RX2_cb->end	  = 0;
 							RX3_cb->start = 0;
 							RX3_cb->end	  = 0;
 							RX4_cb->start = 0;
@@ -388,7 +367,7 @@ static void* _sched_waveform_thread(void* param)
                         }
 
 
-						// Check for >= 128 samples in RX3_cb, convert to floats
+						// Check for >= 160 samples in RX3_cb, convert to floats
 						//	and spin the upsampler. Move output to RX4_cb.
 
 						if(csbContains(RX3_cb) >= DV_PACKET_SAMPLES)
@@ -405,7 +384,6 @@ static void* _sched_waveform_thread(void* param)
 							{
 								cbWriteFloat(RX4_cb, float_out_24k[i]);
 							}
-							//Sig2Noise = (_freedvS->fdmdv_stats.snr_est);
 						}
 
 						// Check for >= 128 samples in RX4_cb. Form packet and
@@ -576,7 +554,6 @@ static void* _sched_waveform_thread(void* param)
                             dstar_tx_frame_count = 0;
                         } else {
                             /* Data and Voice */
-                            float voice_buf[VOICE_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH] = {0};
                             float data_buf[DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH] = {0};
 
                             if ( decode_out != 0 ) {
