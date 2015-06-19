@@ -105,7 +105,9 @@ void cbWriteFloat(Circular_Float_Buffer cb, float sample)
 	cb->end = (cb->end + 1) % cb->size;
 	if (cb->end == cb->start) {
 		cb->start = (cb->start + 1) % cb->size;		/* full, overwrite */
-		output(ANSI_RED "Overwrite! in Circular Float Buffer - Name %s\n" ANSI_WHITE, cb->name);
+		output(ANSI_RED "Overwrite! in Circular Float Buffer - Name %s\n"
+		        "Size %d Start %d End %d\n "ANSI_WHITE, cb->name, cb->size, cb->start, cb->end);
+
 	}
 }
 
