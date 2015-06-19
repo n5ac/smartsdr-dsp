@@ -546,7 +546,7 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
     BOOL * voice_bits = machine->voice_bits;
     BOOL * data_bits = machine->data_bits;
 
-    static unsigned char data_bytes[3 * 40] = {0};
+    static unsigned char data_bytes[3 * 40 * 4] = {0};
     static uint32 long_data_bytes_idx = 0;
 
     //unsigned char bytes[((24+72) * 50)/8 + 1];
@@ -677,8 +677,8 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
 
                 memcpy(data_bytes + long_data_bytes_idx, bytes, 3);
                 long_data_bytes_idx += 3;
-                if ( long_data_bytes_idx >= 3 * 40 ) {
-                    thumbDV_dump("Long Data: ", data_bytes, 3 * 40);
+                if ( long_data_bytes_idx >= 3 * 40 * 4 ) {
+                    thumbDV_dump("Long Data: ", data_bytes, 3 * 40 * 4);
                     long_data_bytes_idx = 0;
                 }
 

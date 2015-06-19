@@ -174,7 +174,7 @@ void sched_waveform_signal()
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //	Circular Buffer Declarations
 
-float RX1_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX1 Packet Input Buffer
+float RX1_buff[(DV_PACKET_SAMPLES * 12 * 40)+1];		// RX1 Packet Input Buffer
 short RX2_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX2 Vocoder input buffer
 short RX3_buff[(DV_PACKET_SAMPLES * 12)+1];		// RX3 Vocoder output buffer
 float RX4_buff[(DV_PACKET_SAMPLES * 12 * 40)+1];		// RX4 Packet output Buffer
@@ -228,8 +228,8 @@ static void* _sched_waveform_thread(void* param)
 //    float   Sig2Noise;	// Signal to noise ratio
 
     // Flags ...
-    int		initial_tx = 1; 		// Flags for TX circular buffer, clear if starting transmit
-    int		initial_rx = 1;			// Flags for RX circular buffer, clear if starting receive
+    int		initial_tx = TRUE; 		// Flags for TX circular buffer, clear if starting transmit
+    int		initial_rx = TRUE;			// Flags for RX circular buffer, clear if starting receive
 
 	// VOCODER I/O BUFFERS
     short	speech_in[DV_PACKET_SAMPLES];
@@ -258,7 +258,7 @@ static void* _sched_waveform_thread(void* param)
     thumbDV_init("/dev/ttyUSB0", &_dv_serial_fd);
 
     // Initialize the Circular Buffers
-	RX1_cb->size  = DV_PACKET_SAMPLES * 12 +1;		// size = no.elements in array+1
+	RX1_cb->size  = DV_PACKET_SAMPLES * (12 * 40) +1;		// size = no.elements in array+1
 	RX1_cb->start = 0;
 	RX1_cb->end	  = 0;
 	RX1_cb->elems = RX1_buff;
@@ -363,47 +363,30 @@ static void* _sched_waveform_thread(void* param)
 						//	Set the transmit 'initial' flag
 						initial_tx = TRUE;
 
-						// Check for new receiver input packet & move to RX1_cb.
-						// TODO - If transmit packet, discard here?
+                        enum DEMOD_STATE state = DEMOD_UNKNOWN;
+                        for(i=0 ; i < PACKET_SAMPLES ; i++)
+                        {
+                            state = gmsk_decode(_gmsk_demod, ((Complex*)buf_desc->buf_ptr)[i].real);
 
+                            unsigned char ambe_out[9] = {0};
+                            BOOL ambe_packet_out = FALSE;
+                            if ( state == DEMOD_TRUE ) {
+                                ambe_packet_out = dstar_stateMachine(_dstar, TRUE, ambe_out, 9);
+                            } else if ( state == DEMOD_FALSE ) {
+                                ambe_packet_out = dstar_stateMachine(_dstar, FALSE, ambe_out, 9);
+                           } else {
+                               /* Nothing to do since we have not "locked" a bit out yet */
+                           }
 
-						for( i = 0 ; i < PACKET_SAMPLES ; i++)
-						{
-							//output("Outputting ")
-							//	fsample = Get next float from packet;
-							cbWriteFloat(RX1_cb, ((Complex*)buf_desc->buf_ptr)[i].real);
+                           if ( ambe_packet_out == TRUE ) {
+                               nout = 0;
+                               nout = thumbDV_decode(_dv_serial_fd, ambe_out, speech_out, DV_PACKET_SAMPLES);
+                               uint32 j = 0;
+                               for( j = 0 ; j < nout ; j++)
+                                   cbWriteShort(RX3_cb, speech_out[j]);
+                           }
+                        }
 
-						}
-
-
-						// Check for >= 384 samples in RX1_cb and spin downsampler
-						//	Convert to shorts and move to RX2_cb.
-						if(cfbContains(RX1_cb) >= DV_PACKET_SAMPLES * DECIMATION_FACTOR)
-						{
-						    enum DEMOD_STATE state = DEMOD_UNKNOWN;
-							for(i=0 ; i< DV_PACKET_SAMPLES * DECIMATION_FACTOR ; i++)
-							{
-							    state = gmsk_decode(_gmsk_demod, cbReadFloat(RX1_cb));
-
-							    unsigned char ambe_out[9] = {0};
-							    BOOL ambe_packet_out = FALSE;
-                                if ( state == DEMOD_TRUE ) {
-                                    ambe_packet_out = dstar_stateMachine(_dstar, TRUE, ambe_out, 9);
-                                } else if ( state == DEMOD_FALSE ) {
-                                    ambe_packet_out = dstar_stateMachine(_dstar, FALSE, ambe_out, 9);
-                               } else {
-                                   /* Nothing to do since we have not "locked" a bit out yet */
-                               }
-
-                               if ( ambe_packet_out == TRUE ) {
-                                   nout = 0;
-                                   nout = thumbDV_decode(_dv_serial_fd, ambe_out, speech_out, DV_PACKET_SAMPLES);
-                                   //if (nout) output(" %d \n", speech_out[i]);
-                                   for( i = 0 ; i < nout ; i++)
-                                       cbWriteShort(RX3_cb, speech_out[i]);
-                               }
-							}
-						}
 
 						// Check for >= 128 samples in RX3_cb, convert to floats
 						//	and spin the upsampler. Move output to RX4_cb.
@@ -524,7 +507,6 @@ static void* _sched_waveform_thread(void* param)
                         if ( initial_tx ) {
 
                             initial_tx = FALSE;
-                            zero_cfb(TX4_cb);
 
                             /* Create Sync */
                             for ( i = 0 ; i < 64 * 10 ; i += 2 ) {
@@ -621,11 +603,59 @@ static void* _sched_waveform_thread(void* param)
                                         cbWriteFloat(TX4_cb, data_buf[i]);
                                     }
                                 } else {
-                                    unsigned char dummy_bytes[DATA_FRAME_LENGTH_BYTES] = {0xFF, 0x00, 0xFF };
+                                    dstar_header tmp_h;
+                                    tmp_h.flag1 = 0;
+                                    tmp_h.flag2 = 0;
+                                    tmp_h.flag3 = 0;
+
+                                    strncpy((char*)tmp_h.destination_rptr, "DIRECT  ", 9);
+                                    strncpy((char*)tmp_h.departure_rptr, "DIRECT  ", 9);
+                                    strncpy((char*)tmp_h.companion_call, "CQCQCQ  ", 9);
+                                    strncpy((char*)tmp_h.own_call1, "K5SDR   ", 9);
+                                    strncpy((char*)tmp_h.own_call2, "WOOT", 5);
+
+                                    dstar_pfcs pfcs;
+                                    pfcs.crc16 = 0xFFFF;
+
+                                    unsigned char header_bytes[41] = {0};
+                                    dstar_headerToBytes(&tmp_h, header_bytes);
+                                    dstar_pfcsUpdateBuffer(&pfcs, header_bytes, 312/8);
+                                    dstar_pfcsResult(&pfcs, header_bytes + 312/8);
+
+                                    unsigned char icom_bytes[41 + 4 + 9] = { 0 } ;
+
+                                    /* Interleave SLOW_DATA_HEADER */
+                                    uint32 icom_idx = 0;
+                                    uint32 header_idx = 0;
+
+                                    for ( i = 0 ; i < 8 ; i++ ) {
+                                        icom_bytes[icom_idx++] = 0x55;
+                                        for ( j = 0 ; j < 5 ; j++ ) {
+                                            icom_bytes[icom_idx++] = header_bytes[header_idx++];
+                                        }
+                                    }
+                                    icom_bytes[icom_idx++] = 0x55;
+                                    icom_bytes[icom_idx++] = header_bytes[header_idx++];
+                                    for ( i = 0 ; i < 4 ; i++ )
+                                        icom_bytes[icom_idx++] = 'f';
+
+
+                                    unsigned char * dummy_bytes = NULL;
+                                    static uint32 dbytes_idx = 0;
+                                    dummy_bytes = icom_bytes + dbytes_idx;
+                                    dbytes_idx += DATA_FRAME_LENGTH_BYTES;
+                                    if ( dbytes_idx >= 41 + 4 + 9 ) {
+                                        dbytes_idx = 0;
+                                    }
+                                    thumbDV_dump("Data: ", dummy_bytes, DATA_FRAME_LENGTH_BYTES);
                                     BOOL dummy_bits[DATA_FRAME_LENGTH_BITS] = {0};
                                     BOOL dummy_bits_out[DATA_FRAME_LENGTH_BITS] = {0};
                                     uint32 dummy_count = 0;
-                                    gmsk_bytesToBits(dummy_bytes, dummy_bits, DATA_FRAME_LENGTH_BITS);
+                                    //gmsk_bytesToBits(dummy_bytes, dummy_bits, DATA_FRAME_LENGTH_BITS);
+                                    uint32 n = 0;
+                                    for ( i = 0 , n = 0 ; i < DATA_FRAME_LENGTH_BYTES ; i++ , n += 8) {
+                                        icom_byteToBits(dummy_bytes[i], dummy_bits + n);
+                                    }
                                     dstar_scramble(dummy_bits, dummy_bits_out, DATA_FRAME_LENGTH_BITS, &dummy_count);
 
                                     gmsk_bitsToBytes(dummy_bits_out, dummy_bytes, DATA_FRAME_LENGTH_BITS);
