@@ -514,10 +514,10 @@ static void* _sched_waveform_thread(void* param)
                             tmp_h.flag2 = 0;
                             tmp_h.flag3 = 0;
 
-                            strncpy((char*)tmp_h.destination_rptr, "DIRECT", 9);
-                            strncpy((char*)tmp_h.departure_rptr, "DIRECT", 9);
-                            strncpy((char*)tmp_h.companion_call, "CQCQCQ", 9);
-                            strncpy((char*)tmp_h.own_call1, "K5SDR", 9);
+                            strncpy((char*)tmp_h.destination_rptr, "DIRECT  ", 9);
+                            strncpy((char*)tmp_h.departure_rptr, "DIRECT  ", 9);
+                            strncpy((char*)tmp_h.companion_call, "K5SDR   ", 9);
+                            strncpy((char*)tmp_h.own_call1, "K5SDR   ", 9);
                             strncpy((char*)tmp_h.own_call2, "WOOT", 5);
 
                             dstar_pfcs pfcs;
@@ -527,6 +527,8 @@ static void* _sched_waveform_thread(void* param)
                             dstar_headerToBytes(&tmp_h, header_bytes);
                             dstar_pfcsUpdateBuffer(&pfcs, header_bytes, 312/8);
                             dstar_pfcsResult(&pfcs, header_bytes + 312/8);
+
+                            output("Main: PFCS Bytes: 0x%08X 0x%08X\n", *(header_bytes + 312/8), *(header_bytes + 320/8));
 
                             BOOL bits[FEC_SECTION_LENGTH_BITS] = {0};
 
@@ -587,17 +589,19 @@ static void* _sched_waveform_thread(void* param)
 
                                     strncpy((char*)tmp_h.destination_rptr, "DIRECT  ", 9);
                                     strncpy((char*)tmp_h.departure_rptr, "DIRECT  ", 9);
-                                    strncpy((char*)tmp_h.companion_call, "CQCQCQ  ", 9);
+                                    strncpy((char*)tmp_h.companion_call, "K5SDR   ", 9);
                                     strncpy((char*)tmp_h.own_call1, "K5SDR   ", 9);
                                     strncpy((char*)tmp_h.own_call2, "WOOT", 5);
 
                                     dstar_pfcs pfcs;
                                     pfcs.crc16 = 0xFFFF;
 
-                                    unsigned char header_bytes[41] = {0};
+                                    unsigned char header_bytes[330] = {0};
                                     dstar_headerToBytes(&tmp_h, header_bytes);
                                     dstar_pfcsUpdateBuffer(&pfcs, header_bytes, 312/8);
                                     dstar_pfcsResult(&pfcs, header_bytes + 312/8);
+
+                                    output("PFCS Bytes: 0x%08X 0x%08X\n", *(header_bytes + 312/8), *(header_bytes + 320/8));
 
                                     unsigned char icom_bytes[41 + 4 + 9] = { 0 } ;
 
@@ -611,7 +615,7 @@ static void* _sched_waveform_thread(void* param)
                                             icom_bytes[icom_idx++] = header_bytes[header_idx++];
                                         }
                                     }
-                                    icom_bytes[icom_idx++] = 0x55;
+                                    icom_bytes[icom_idx++] = 0x51;
                                     icom_bytes[icom_idx++] = header_bytes[header_idx++];
                                     for ( i = 0 ; i < 4 ; i++ )
                                         icom_bytes[icom_idx++] = 'f';
@@ -624,7 +628,7 @@ static void* _sched_waveform_thread(void* param)
                                     if ( dbytes_idx >= 41 + 4 + 9 ) {
                                         dbytes_idx = 0;
                                     }
-                                    thumbDV_dump("Data: ", dummy_bytes, DATA_FRAME_LENGTH_BYTES);
+                                   // thumbDV_dump("Data: ", dummy_bytes, DATA_FRAME_LENGTH_BYTES);
                                     BOOL dummy_bits[DATA_FRAME_LENGTH_BITS] = {0};
                                     BOOL dummy_bits_out[DATA_FRAME_LENGTH_BITS] = {0};
                                     uint32 dummy_count = 0;
