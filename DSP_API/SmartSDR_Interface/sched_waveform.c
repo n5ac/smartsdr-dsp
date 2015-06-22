@@ -403,7 +403,7 @@ static void* _sched_waveform_thread(void* param)
 						initial_tx = TRUE;
 
                         enum DEMOD_STATE state = DEMOD_UNKNOWN;
-                        for(i=0 ; i < PACKET_SAMPLES ; i++)
+                        for ( i = 0 ; i < PACKET_SAMPLES ; i++ )
                         {
                             state = gmsk_decode(_gmsk_demod, ((Complex*)buf_desc->buf_ptr)[i].real);
 
@@ -426,22 +426,18 @@ static void* _sched_waveform_thread(void* param)
                            }
                         }
 
-
 						// Check for >= 160 samples in RX3_cb, convert to floats
 						//	and spin the upsampler. Move output to RX4_cb.
 
 						if(csbContains(RX3_cb) >= DV_PACKET_SAMPLES)
 						{
-							for( i=0 ; i< DV_PACKET_SAMPLES ; i++)
-							{
+							for ( i = 0 ; i < DV_PACKET_SAMPLES ; i++ ) {
 								float_in_8k[i+MEM_8] = ((float)  (cbReadShort(RX3_cb) / SCALE_RX_OUT));
-
 							}
 
 							fdmdv_8_to_24(float_out_24k, &float_in_8k[MEM_8], DV_PACKET_SAMPLES);
 
-							for( i=0 ; i< DV_PACKET_SAMPLES * DECIMATION_FACTOR ; i++)
-							{
+							for( i=0 ; i< DV_PACKET_SAMPLES * DECIMATION_FACTOR ; i++ ) {
 								cbWriteFloat(RX4_cb, float_out_24k[i]);
 							}
 						}
@@ -451,10 +447,8 @@ static void* _sched_waveform_thread(void* param)
 
 						uint32 check_samples = PACKET_SAMPLES;
 
-						if(cfbContains(RX4_cb) >= check_samples )
-						{
-							for( i=0 ; i< PACKET_SAMPLES ; i++)
-							{
+						if(cfbContains(RX4_cb) >= check_samples ) {
+							for ( i = 0 ; i < PACKET_SAMPLES ; i++ ) {
 								// Set up the outbound packet
 								fsample = cbReadFloat(RX4_cb);
 //								// put the fsample into the outbound packet
@@ -465,10 +459,10 @@ static void* _sched_waveform_thread(void* param)
 							}
 						} else {
 							memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
-
-							if(initial_rx)
-								initial_rx = FALSE;
 						}
+
+                        if(initial_rx)
+                            initial_rx = FALSE;
 
 					} else if ( (buf_desc->stream_id & 1) == 1) { //TX BUFFER
 						//	If 'initial_rx' flag, clear buffers TX1, TX2, TX3, TX4
