@@ -94,9 +94,9 @@ static command_def commands[] =
 // #################################################################
 unsigned int command(void)
 {
-	char line[80];
+	char line[512];
 	char *pLine = line;
-	get_line(pLine, sizeof(line));
+	get_line(pLine, 512 * sizeof(char));
 
 	process_command(line);
 
