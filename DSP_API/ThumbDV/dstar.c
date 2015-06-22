@@ -449,17 +449,23 @@ DSTAR_MACHINE dstar_createMachine(void)
 
     machine->state = BIT_FRAME_SYNC_WAIT;
 
-    BOOL syn_bits[15] = {0};
+    BOOL syn_bits[15+4] = {0};
     uint32 i = 0;
+
+    syn_bits[0] = TRUE;
+    syn_bits[1] = FALSE;
+    syn_bits[2] = TRUE;
+    syn_bits[3] = FALSE;
+
 
     BOOL frame_bits[] = {TRUE, TRUE,  TRUE, FALSE, TRUE,  TRUE,  FALSE, FALSE,
             TRUE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE};
 
-    for ( i = 0 ; i < 15 ; i++ ) {
-        syn_bits[i] = frame_bits[i];
+    for ( i = 4 ; i < 15 + 4 ; i++ ) {
+        syn_bits[i] = frame_bits[i-4];
     }
 
-    machine->syn_pm = bitPM_create( syn_bits, 15);
+    machine->syn_pm = bitPM_create( syn_bits, 15 + 4);
     machine->data_sync_pm = bitPM_create( DATA_SYNC_BITS, 24);
     machine->end_pm = bitPM_create(END_PATTERN_BITS, END_PATTERN_LENGTH_BITS);
 
