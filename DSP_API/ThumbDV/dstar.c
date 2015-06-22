@@ -543,6 +543,36 @@ static unsigned char icom_bitsToByte(const BOOL * bits)
     return val;
 }
 
+void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice )
+{
+    if ( machine == NULL ) {
+        output(ANSI_RED "NULL dStar machine %s\n" ANSI_WHITE, __LINE__);
+        return;
+    }
+
+    char status[200] = {0};
+    char header_string[200] = {0};
+
+    /* Make copy to replace spaces with special char */
+    dstar_header h;
+    memcpy(&h, &(machine->incoming_header), sizeof(dstar_header) );
+
+    charReplace((char*)h.destination_rptr, ' ', (char) 0x7F );
+    charReplace((char*)h.departure_rptr, ' ', (char) 0x7F );
+    charReplace((char*)h.companion_call, ' ', (char) 0x7F );
+    charReplace((char*)h.own_call1, ' ', (char) 0x7F );
+    charReplace((char*)h.own_call2, ' ', (char) 0x7F );
+
+    sprintf(header_string, "destination_rptr=%s departure_rptr=%s companion_call=%s own_call1=%s own_call2=%s",
+            h.destination_rptr, h.departure_rptr, h.companion_call, h.own_call1, h.own_call2);
+
+    sprintf(status, "waveform status slice=%d %s", slice, header_string);
+
+    tc_sendSmartSDRcommand(status, FALSE, NULL);
+
+
+}
+
 BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len)
 {
     BOOL have_audio_packet = FALSE;
@@ -619,12 +649,18 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
                 BOOL pfcs_match = FALSE;
                 pfcs_match = dstar_pfcsCheck(&pfcs, decoded + 312);
                 if ( pfcs_match ) {
-                    output(ANSI_GREEN "P_FCS Mathces!\n" ANSI_WHITE);
+                    output(ANSI_GREEN "P_FCS Matches!\n" ANSI_WHITE);
+
+                    dstar_processHeader(bytes, &machine->incoming_header);
+
+                    dstar_updateStatus(machine, 0);
+
+
                 } else {
                     output(ANSI_RED "P_FCS Does Not Match!\n" ANSI_WHITE);
                 }
 
-                dstar_processHeader(bytes, &machine->incoming_header);
+
 
                 /* STATE CHANGE */
                 machine->state = VOICE_FRAME;

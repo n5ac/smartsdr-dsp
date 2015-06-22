@@ -213,6 +213,66 @@ static void icom_byteToBits(unsigned char byte, BOOL * bits )
     }
 }
 
+void sched_waveform_setDestinationRptr(uint32 slice , const char * destination_rptr )
+{
+    /* Ignore slice for now */
+
+    char string[10];
+    strncpy(string, destination_rptr, 9);
+    charReplace(string, ' ', (char) 0x7F);
+
+    strncpy((char *)_dstar->outgoing_header.destination_rptr, string, 9);
+    dstar_dumpHeader(&(_dstar->outgoing_header));
+}
+
+void sched_waveform_setDepartureRptr(uint32 slice , const char * departure_rptr )
+{
+    /* Ignore slice for now */
+
+    char string[10];
+    strncpy(string, departure_rptr, 9);
+    charReplace(string, ' ', (char) 0x7F);
+
+    strncpy((char*)_dstar->outgoing_header.departure_rptr, string, 9);
+    dstar_dumpHeader(&(_dstar->outgoing_header));
+}
+
+void sched_waveform_setCompanionCall( uint32 slice, const char * companion_call)
+{
+    /* Ignore slice for now */
+
+    char string[10];
+    strncpy(string, companion_call, 9);
+    charReplace(string, ' ', (char) 0x7F);
+
+    strncpy((char*)_dstar->outgoing_header.companion_call, string, 9);
+    dstar_dumpHeader(&(_dstar->outgoing_header));
+}
+
+void sched_waveform_setOwnCall1( uint32 slice , const char * owncall1 )
+{
+    /* Ignore slice for now */
+
+    char string[10];
+    strncpy(string, owncall1, 9);
+    charReplace(string, ' ', (char) 0x7F);
+
+    strncpy((char*)_dstar->outgoing_header.own_call1, string, 9);
+    dstar_dumpHeader(&(_dstar->outgoing_header));
+}
+
+void sched_waveform_setOwnCall2(uint32 slice , const char * owncall2 )
+{
+    /* Ignore slice for now */
+
+    char string[10];
+    strncpy(string, owncall2, 5);
+    charReplace(string, ' ', (char) 0x7F);
+
+    strncpy((char*)_dstar->outgoing_header.own_call2, string, 5);
+    dstar_dumpHeader(&(_dstar->outgoing_header));
+}
+
 static void* _sched_waveform_thread(void* param)
 {
     int 	nout;
@@ -509,22 +569,11 @@ static void* _sched_waveform_thread(void* param)
                                 }
                             }
 
-                            dstar_header tmp_h;
-                            tmp_h.flag1 = 0;
-                            tmp_h.flag2 = 0;
-                            tmp_h.flag3 = 0;
-
-                            strncpy((char*)tmp_h.destination_rptr, "DIRECT  ", 9);
-                            strncpy((char*)tmp_h.departure_rptr, "DIRECT  ", 9);
-                            strncpy((char*)tmp_h.companion_call, "K5SDR   ", 9);
-                            strncpy((char*)tmp_h.own_call1, "K5SDR   ", 9);
-                            strncpy((char*)tmp_h.own_call2, "WOOT", 5);
-
                             dstar_pfcs pfcs;
                             pfcs.crc16 = 0xFFFF;
 
                             unsigned char header_bytes[330] = {0};
-                            dstar_headerToBytes(&tmp_h, header_bytes);
+                            dstar_headerToBytes(&(_dstar->outgoing_header), header_bytes);
                             dstar_pfcsUpdateBuffer(&pfcs, header_bytes, 312/8);
                             dstar_pfcsResult(&pfcs, header_bytes + 312/8);
 
@@ -582,26 +631,16 @@ static void* _sched_waveform_thread(void* param)
                                         cbWriteFloat(TX4_cb, data_buf[i]);
                                     }
                                 } else {
-                                    dstar_header tmp_h;
-                                    tmp_h.flag1 = 0;
-                                    tmp_h.flag2 = 0;
-                                    tmp_h.flag3 = 0;
-
-                                    strncpy((char*)tmp_h.destination_rptr, "DIRECT  ", 9);
-                                    strncpy((char*)tmp_h.departure_rptr, "DIRECT  ", 9);
-                                    strncpy((char*)tmp_h.companion_call, "K5SDR   ", 9);
-                                    strncpy((char*)tmp_h.own_call1, "K5SDR   ", 9);
-                                    strncpy((char*)tmp_h.own_call2, "WOOT", 5);
 
                                     dstar_pfcs pfcs;
                                     pfcs.crc16 = 0xFFFF;
 
                                     unsigned char header_bytes[330] = {0};
-                                    dstar_headerToBytes(&tmp_h, header_bytes);
+                                    dstar_headerToBytes(&(_dstar->outgoing_header), header_bytes);
                                     dstar_pfcsUpdateBuffer(&pfcs, header_bytes, 312/8);
                                     dstar_pfcsResult(&pfcs, header_bytes + 312/8);
 
-                                    output("PFCS Bytes: 0x%08X 0x%08X\n", *(header_bytes + 312/8), *(header_bytes + 320/8));
+                                    //output("PFCS Bytes: 0x%08X 0x%08X\n", *(header_bytes + 312/8), *(header_bytes + 320/8));
 
                                     unsigned char icom_bytes[41 + 4 + 9] = { 0 } ;
 

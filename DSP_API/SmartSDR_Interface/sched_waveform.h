@@ -41,5 +41,9 @@ void sched_waveform_Init(void);
 void sched_waveform_signal(void);
 void sched_waveformTreadExit(void);
 
-
+void sched_waveform_setDestinationRptr(uint32 slice , const char * destination_rptr );
+void sched_waveform_setDepartureRptr(uint32 slice , const char * departure_rptr );
+void sched_waveform_setCompanionCall( uint32 slice, const char * companion_call);
+void sched_waveform_setOwnCall1( uint32 slice , const char * owncall1 );
+void sched_waveform_setOwnCall2(uint32 slice , const char * owncall2 );
 #endif /* SCHED_WAVEFORM_H_ */

@@ -96,6 +96,8 @@ DSTAR_MACHINE dstar_createMachine(void);
 void dstar_destroyMachine(DSTAR_MACHINE machine);
 BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len);
 
+void dstar_dumpHeader( DSTAR_HEADER header );
+
 void dstar_pfcsUpdate(DSTAR_PFCS pfcs, BOOL * bits );
 BOOL dstar_pfcsCheck(DSTAR_PFCS pfcs, BOOL * bits );
 void dstar_pfcsResult(DSTAR_PFCS pfcs, unsigned char * chksum);
