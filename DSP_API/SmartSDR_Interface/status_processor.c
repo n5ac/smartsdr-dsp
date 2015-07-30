@@ -74,10 +74,13 @@ static void _handle_status(char* string)
             {
                 errno = 0;
                 char* smode = argv[i]+strlen("mode")+1;
-                if (strncmp(smode,"FDV",3) == 0)
+                if (strncmp(smode,"D*FM",3) == 0)
                 {
                     // we are now in FDV mode
                     output(ANSI_MAGENTA "slice %d is now in FDV mode\n",slc);
+                    char cmd[512] = {0};
+                    sprintf(cmd, "slice s %d fm_deviation=1250 post_demod_low=0 post_demod_high=6000 dfm_pre_de_emphasis=0 post_demod_bypass=1 squelch=0", slc);
+                    tc_sendSmartSDRcommand(cmd,FALSE, NULL);
                 }
                 else
                 {
@@ -95,7 +98,7 @@ static void _handle_status(char* string)
 
                 }
             }
-            if(strncmp(argv[i], "tx", strlen("tx")) == 0)
+            if(strncmp(argv[i], "tx", strlen("tx")) == 0 && (strlen(argv[i]) == 2))
             {
                 errno = 0;
                 int tx = strtoul(argv[i]+strlen("tx")+1, NULL, 0);
