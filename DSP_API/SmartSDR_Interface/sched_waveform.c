@@ -534,7 +534,7 @@ static void* _sched_waveform_thread(void* param)
                             decode_out = thumbDV_encode(_dv_serial_fd, speech_in, mod_out, DV_PACKET_SAMPLES);
                         }
 
-                        float buf[5];
+                        float buf[DSTAR_RADIO_BIT_LENGTH];
                         uint32 j = 0;
                         if ( initial_tx ) {
 
