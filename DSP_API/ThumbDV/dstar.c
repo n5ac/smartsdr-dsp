@@ -500,11 +500,11 @@ void dstar_dumpHeader( DSTAR_HEADER header )
     output("Flag1: 0x%08X\n", header->flag1);
     output("Flag2: 0x%08X\n", header->flag2);
     output("Flag3: 0x%08X\n", header->flag3);
-    output("Destination RPTR: %s\n", header->destination_rptr);
-    output("Departure RPTR: %s\n", header->departure_rptr);
-    output("Companion Call: %s\n", header->companion_call);
-    output("Own Call 1: %s\n", header->own_call1);
-    output("Own Call 2: %s\n", header->own_call2);
+    output("Destination RPTR: '%s'\n", header->destination_rptr);
+    output("Departure RPTR: '%s'\n", header->departure_rptr);
+    output("Companion Call: '%s'\n", header->companion_call);
+    output("Own Call 1: '%s'\n", header->own_call1);
+    output("Own Call 2: '%s'\n", header->own_call2);
 }
 
 void dstar_headerToBytes(DSTAR_HEADER header, unsigned char * bytes)
