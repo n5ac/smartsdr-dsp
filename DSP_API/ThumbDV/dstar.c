@@ -720,7 +720,7 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
                 memcpy(data_bytes + long_data_bytes_idx, bytes, 3);
                 long_data_bytes_idx += 3;
                 if ( long_data_bytes_idx >= 3 * 40 * 4 ) {
-                    thumbDV_dump("Long Data: ", data_bytes, 3 * 40 * 4);
+                    //thumbDV_dump("Long Data: ", data_bytes, 3 * 40 * 4);
                     long_data_bytes_idx = 0;
                 }
 
