@@ -442,6 +442,16 @@ void dstar_FECencode(const BOOL * in, BOOL * out, unsigned int inLen, unsigned i
     }
 }
 
+
+void dstar_createTestHeader( DSTAR_HEADER header )
+{
+    strcpy(header->departure_rptr, "AAAAAAAA");
+    strcpy(header->destination_rptr, "BBBBBBBB");
+    strcpy(header->companion_call, "KG5FBT  ");
+    strcpy(header->own_call1, "KG5FBT  ");
+    strcpy(header->own_call2, "WOOT");
+}
+
 DSTAR_MACHINE dstar_createMachine(void)
 {
     DSTAR_MACHINE machine = safe_malloc(sizeof(dstar_machine));
@@ -468,6 +478,9 @@ DSTAR_MACHINE dstar_createMachine(void)
     machine->syn_pm = bitPM_create( syn_bits, 15 + 4);
     machine->data_sync_pm = bitPM_create( DATA_SYNC_BITS, 24);
     machine->end_pm = bitPM_create(END_PATTERN_BITS, END_PATTERN_LENGTH_BITS);
+
+
+    dstar_createTestHeader(&(machine->outgoing_header));
 
     return machine;
 }
