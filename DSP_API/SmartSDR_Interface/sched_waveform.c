@@ -219,9 +219,20 @@ void sched_waveform_setDestinationRptr(uint32 slice , const char * destination_r
 
     char string[10];
     strncpy(string, destination_rptr, 9);
-    charReplace(string, ' ', (char) 0x7F);
+    charReplace(string, (char) 0x7F, ' ');
 
-    strncpy((char *)_dstar->outgoing_header.destination_rptr, string, 9);
+    memset(_dstar->outgoing_header.destination_rptr, ' ', 8);
+    /* We limit the copy to the string length so that
+     * we can fill the rest of the string with spaces to
+     * comply with DSTAR
+     */
+    uint32 copy_len = strlen(destination_rptr);
+    if ( copy_len > 9 )
+        copy_len = 9;
+    strncpy(_dstar->outgoing_header.destination_rptr, string, copy_len);
+    /* Enforce termination */
+    _dstar->outgoing_header.destination_rptr[8] = '\0';
+
     dstar_dumpHeader(&(_dstar->outgoing_header));
 }
 
@@ -231,9 +242,22 @@ void sched_waveform_setDepartureRptr(uint32 slice , const char * departure_rptr 
 
     char string[10];
     strncpy(string, departure_rptr, 9);
-    charReplace(string, ' ', (char) 0x7F);
+    charReplace(string, (char) 0x7F, ' ');
 
-    strncpy((char*)_dstar->outgoing_header.departure_rptr, string, 9);
+    /* Replace all fields with spaces to meet DSTAR requirements for blanks */
+    memset(_dstar->outgoing_header.departure_rptr, ' ', 8);
+    /* We limit the copy to the string length so that
+     * we can fill the rest of the string with spaces to
+     * comply with DSTAR
+     */
+    uint32 copy_len = strlen(departure_rptr);
+    if ( copy_len > 9 )
+        copy_len = 9;
+
+    strncpy(_dstar->outgoing_header.departure_rptr, string, copy_len);
+    /* Terminate just in case */
+    _dstar->outgoing_header.departure_rptr[8] = '\0';
+
     dstar_dumpHeader(&(_dstar->outgoing_header));
 }
 
@@ -243,9 +267,21 @@ void sched_waveform_setCompanionCall( uint32 slice, const char * companion_call)
 
     char string[10];
     strncpy(string, companion_call, 9);
-    charReplace(string, ' ', (char) 0x7F);
+    charReplace(string,(char) 0x7F, ' ');
 
-    strncpy((char*)_dstar->outgoing_header.companion_call, string, 9);
+    memset(_dstar->outgoing_header.companion_call, ' ', 8);
+    /* We limit the copy to the string length so that
+     * we can fill the rest of the string with spaces to
+     * comply with DSTAR
+     */
+    uint32 copy_len = strlen(companion_call);
+    if ( copy_len > 9 )
+        copy_len = 9;
+
+    strncpy(_dstar->outgoing_header.companion_call, string, copy_len);
+
+    _dstar->outgoing_header.companion_call[8] = '\0';
+
     dstar_dumpHeader(&(_dstar->outgoing_header));
 }
 
@@ -255,9 +291,23 @@ void sched_waveform_setOwnCall1( uint32 slice , const char * owncall1 )
 
     char string[10];
     strncpy(string, owncall1, 9);
-    charReplace(string, ' ', (char) 0x7F);
+    charReplace(string, (char) 0x7F, ' ');
 
-    strncpy((char*)_dstar->outgoing_header.own_call1, string, 9);
+    memset(_dstar->outgoing_header.own_call1, ' ', 8);
+
+    /* We limit the copy to the string length so that
+     * we can fill the rest of the string with spaces to
+     * comply with DSTAR
+     */
+    uint32 copy_len = strlen(owncall1);
+    if ( copy_len > 9 )
+        copy_len = 9;
+
+    strncpy(_dstar->outgoing_header.own_call1, string, copy_len);
+
+    /* Enforce termination */
+    _dstar->outgoing_header.own_call1[8] = '\0';
+
     dstar_dumpHeader(&(_dstar->outgoing_header));
 }
 
@@ -268,8 +318,20 @@ void sched_waveform_setOwnCall2(uint32 slice , const char * owncall2 )
     char string[10];
     strncpy(string, owncall2, 5);
     charReplace(string, ' ', (char) 0x7F);
+    memset(_dstar->outgoing_header.own_call2, ' ', 4);
+    /* We limit the copy to the string length so that
+     * we can fill the rest of the string with spaces to
+     * comply with DSTAR
+     */
+    uint32 copy_len = strlen(owncall2);
+    if ( copy_len > 5 )
+        copy_len = 5;
 
-    strncpy((char*)_dstar->outgoing_header.own_call2, string, 5);
+    strncpy(_dstar->outgoing_header.own_call2, string, copy_len);
+
+    /* Enforce termination */
+    _dstar->outgoing_header.own_call2[4] = '\0';
+
     dstar_dumpHeader(&(_dstar->outgoing_header));
 }
 
