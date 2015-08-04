@@ -110,6 +110,7 @@ uint32 process_command(char* command_txt)
 	int argc;
 	char *argv[MAX_ARGC + 1];		//Add one extra so we can null terminate the array
 
+	output("CMD Received = '%s'\n", command_txt);
 
 	tokenize(command_txt, &argc, argv, MAX_ARGC);
 

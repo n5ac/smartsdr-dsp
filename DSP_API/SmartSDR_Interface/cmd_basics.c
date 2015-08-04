@@ -300,6 +300,10 @@ uint32 cmd_slice(int requester_fd, int argc, char **argv)
 
             return SUCCESS;
         }
+        else if (strncmp(argv[2], "status", strlen("status")) == 0 )
+        {
+            sched_waveform_sendStatus(slc);
+        }
     }
 
     return SUCCESS;

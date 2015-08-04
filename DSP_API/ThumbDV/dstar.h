@@ -42,6 +42,12 @@ enum DSTAR_STATE
     END_PATTERN_FOUND
 };
 
+enum STATUS_TYPE
+{
+    STATUS_RX = 0,
+    STATUS_TX
+};
+
 typedef struct _dstar_header
 {
     unsigned char flag1;
@@ -91,7 +97,7 @@ typedef union _dstar_pfcs
     uint8 crc8[2];
 } dstar_pfcs, * DSTAR_PFCS;
 
-
+void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice , enum STATUS_TYPE type);
 DSTAR_MACHINE dstar_createMachine(void);
 void dstar_destroyMachine(DSTAR_MACHINE machine);
 BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len);

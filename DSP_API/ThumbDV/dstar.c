@@ -556,7 +556,7 @@ static unsigned char icom_bitsToByte(const BOOL * bits)
     return val;
 }
 
-void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice )
+void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice,  enum STATUS_TYPE type)
 {
     if ( machine == NULL ) {
         output(ANSI_RED "NULL dStar machine %s\n" ANSI_WHITE, __LINE__);
@@ -566,24 +566,45 @@ void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice )
     char status[200] = {0};
     char header_string[200] = {0};
 
+
     /* Make copy to replace spaces with special char */
     dstar_header h;
-    memcpy(&h, &(machine->incoming_header), sizeof(dstar_header) );
+    switch(type) {
 
-    charReplace((char*)h.destination_rptr, ' ', (char) 0x7F );
-    charReplace((char*)h.departure_rptr, ' ', (char) 0x7F );
-    charReplace((char*)h.companion_call, ' ', (char) 0x7F );
-    charReplace((char*)h.own_call1, ' ', (char) 0x7F );
-    charReplace((char*)h.own_call2, ' ', (char) 0x7F );
+        case STATUS_RX:
+        memcpy(&h, &(machine->incoming_header), sizeof(dstar_header) );
 
-    sprintf(header_string, "destination_rptr=%s departure_rptr=%s companion_call=%s own_call1=%s own_call2=%s",
-            h.destination_rptr, h.departure_rptr, h.companion_call, h.own_call1, h.own_call2);
+        charReplace((char*)h.destination_rptr, ' ', (char) 0x7F );
+        charReplace((char*)h.departure_rptr, ' ', (char) 0x7F );
+        charReplace((char*)h.companion_call, ' ', (char) 0x7F );
+        charReplace((char*)h.own_call1, ' ', (char) 0x7F );
+        charReplace((char*)h.own_call2, ' ', (char) 0x7F );
 
-    sprintf(status, "waveform status slice=%d %s", slice, header_string);
+        sprintf(header_string, "destination_rptr_rx=%s departure_rptr_rx=%s companion_call_rx=%s own_call1_rx=%s own_call2_rx=%s",
+                h.destination_rptr, h.departure_rptr, h.companion_call, h.own_call1, h.own_call2);
 
-    tc_sendSmartSDRcommand(status, FALSE, NULL);
+        sprintf(status, "waveform status slice=%d %s", slice, header_string);
 
+        tc_sendSmartSDRcommand(status, FALSE, NULL);
+        break;
+        case STATUS_TX:
 
+        memcpy(&h, &(machine->outgoing_header), sizeof(dstar_header) );
+
+        charReplace((char*)h.destination_rptr, ' ', (char) 0x7F );
+        charReplace((char*)h.departure_rptr, ' ', (char) 0x7F );
+        charReplace((char*)h.companion_call, ' ', (char) 0x7F );
+        charReplace((char*)h.own_call1, ' ', (char) 0x7F );
+        charReplace((char*)h.own_call2, ' ', (char) 0x7F );
+
+        sprintf(header_string, "destination_rptr_tx=%s departure_rptr_tx=%s companion_call_tx=%s own_call1_tx=%s own_call2_tx=%s",
+                h.destination_rptr, h.departure_rptr, h.companion_call, h.own_call1, h.own_call2);
+
+        sprintf(status, "waveform status slice=%d %s", slice, header_string);
+
+        tc_sendSmartSDRcommand(status, FALSE, NULL);
+        break;
+    }
 }
 
 BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len)
@@ -666,7 +687,7 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
 
                     dstar_processHeader(bytes, &machine->incoming_header);
 
-                    dstar_updateStatus(machine, 0);
+                    dstar_updateStatus(machine, 0, STATUS_RX);
 
 
                 } else {

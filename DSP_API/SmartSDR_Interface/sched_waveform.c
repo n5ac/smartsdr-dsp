@@ -213,6 +213,11 @@ static void icom_byteToBits(unsigned char byte, BOOL * bits )
     }
 }
 
+void sched_waveform_sendStatus(uint32 slice)
+{
+    dstar_updateStatus(_dstar, slice, STATUS_TX);
+}
+
 void sched_waveform_setDestinationRptr(uint32 slice , const char * destination_rptr )
 {
     /* Ignore slice for now */
