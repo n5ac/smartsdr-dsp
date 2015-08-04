@@ -445,11 +445,11 @@ void dstar_FECencode(const BOOL * in, BOOL * out, unsigned int inLen, unsigned i
 
 void dstar_createTestHeader( DSTAR_HEADER header )
 {
-    strcpy(header->departure_rptr, "AAAAAAAA");
-    strcpy(header->destination_rptr, "BBBBBBBB");
-    strcpy(header->companion_call, "KG5FBT  ");
-    strcpy(header->own_call1, "KG5FBT  ");
-    strcpy(header->own_call2, "WOOT");
+    strcpy(header->departure_rptr, "DIRECT  ");
+    strcpy(header->destination_rptr, "DIRECT  ");
+    strcpy(header->companion_call, "CALLSIGN");
+    strcpy(header->own_call1, "CALLSIGN");
+    strcpy(header->own_call2, "    ");
 }
 
 DSTAR_MACHINE dstar_createMachine(void)
