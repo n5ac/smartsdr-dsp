@@ -49,16 +49,13 @@ namespace CODEC2_GUI
         private bool _radioConnected = false;
         private Radio _radio = null;
         //private List<Slice> _slices;
-        private List<Slice> _fdvSlices;
-        private Dictionary<Meter, Slice> _SNRTable;
+        private List<Slice> _waveformSlices;
 
         public Form1()
         {
             InitializeComponent();
 
-            //_slices = new List<Slice>();
-            _fdvSlices = new List<Slice>();
-            _SNRTable = new Dictionary<Meter, Slice>();
+            _waveformSlices = new List<Slice>();
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -108,12 +105,6 @@ namespace CODEC2_GUI
 
             slc.PropertyChanged += new PropertyChangedEventHandler(slc_PropertyChanged);
             slc.WaveformStatusReceived += new Slice.WaveformStatusReceivedEventHandler(slc_WaveformStatusReceived);
-            slc.MeterAdded += new Slice.MeterAddedEventHandler(slc_MeterAdded);
-            slc.MeterRemoved += new Slice.MeterRemovedEventHandler(slc_MeterRemoved);
-         
-            Meter m = slc.FindMeterByName("SNR");
-            if(m != null)
-                AddSNRMeter(slc, m);
 
             if (InvokeRequired)
             {
@@ -130,33 +121,27 @@ namespace CODEC2_GUI
 
         void _radio_SliceRemoved(Slice slc)
         {
-            //if (!_slices.Contains(slc)) return;
-
-            if (_fdvSlices.Contains(slc))
+            if (_waveformSlices.Contains(slc))
             {
                 // yes -- tear down any GUI components
                 if (InvokeRequired)
                 {
                     Invoke(new MethodInvoker(delegate
                     {
-                        RemoveFDVSliceControls(slc);
+                        RemoveWaveformSliceControls(slc);
                     }));
                 }
                 else
                 {
-                    RemoveFDVSliceControls(slc);
+                    RemoveWaveformSliceControls(slc);
                 }                
 
                 // now remove it
-                _fdvSlices.Remove(slc);
+                _waveformSlices.Remove(slc);
             }
 
-            //_slices.Remove(slc);
-
             slc.PropertyChanged -= slc_PropertyChanged;
-            slc.WaveformStatusReceived -= slc_WaveformStatusReceived;
-            slc.MeterAdded -= slc_MeterAdded;
-            slc.MeterRemoved -= slc_MeterRemoved;                        
+            slc.WaveformStatusReceived -= slc_WaveformStatusReceived;                      
         }
 
         //*************************************
@@ -194,13 +179,13 @@ namespace CODEC2_GUI
 
         private void CheckDemodMode(Slice slc)
         {
-            if (slc.DemodMode == "FDV")
+            if (slc.DemodMode == "D*FM")
             {
                 // yes -- is this Slice already in the list?
-                if (!_fdvSlices.Contains(slc))
+                if (!_waveformSlices.Contains(slc))
                 {
                     // no -- lets go add it
-                    _fdvSlices.Add(slc);
+                    _waveformSlices.Add(slc);
 
                     // now create GUI components to go with it
                     AddFDVSliceControls(slc);
@@ -209,83 +194,17 @@ namespace CODEC2_GUI
             else
             {
                 // was this Slice in FreeDV mode before?
-                if (_fdvSlices.Contains(slc))
+                if (_waveformSlices.Contains(slc))
                 {
                     // yes -- tear down any GUI components
-                    RemoveFDVSliceControls(slc);
+                    RemoveWaveformSliceControls(slc);
 
                     // now remove it
-                    _fdvSlices.Remove(slc);
+                    _waveformSlices.Remove(slc);
                 }
             }
         }
 
-        private void AddSNRMeter(Slice slc, Meter m)
-        {
-            if (_SNRTable.ContainsKey(m)) return;
-
-            _SNRTable.Add(m, slc);
-            m.DataReady += new Meter.DataReadyEventHandler(SNR_DataReady);
-        }
-
-        void slc_MeterAdded(Slice slc, Meter m)
-        {
-            if (m.Name == "SNR")
-                AddSNRMeter(slc, m);
-        }
-
-        void SNR_DataReady(Meter meter, float data)
-        {
-            if (!_SNRTable.ContainsKey(meter)) return;
-
-            Slice slc = _SNRTable[meter];
-
-            UpdateSNR(slc, data);
-        }
-
-        private void UpdateSNR(Slice slc, float data)
-        {
-            // use the slice to find the progress bar control to update
-            Control c = FindControlByName(this, "bar" + slc.Index);
-            if (c == null) return;
-
-            // get a good reference to the bar instead of a generic control
-            VerticalProgressBar bar = c as VerticalProgressBar;
-            if (bar == null) return;
-
-            // convert the data into a percentage
-            // we will map the 0-20dB SNR range onto the 0-100 bar value
-            
-            // check incoming data limits
-            if (data < 0) data = 0.0f;
-            if (data > 20) data = 20.0f;
-
-            // do the conversion
-            int new_value = (int)(data * 5);
-            
-            // now set the value -- careful to Invoke since this is a GUI affecting call
-            if (InvokeRequired)
-            {
-                Invoke(new MethodInvoker(delegate
-                {
-                    bar.Value = new_value;
-                }));
-            }
-            else
-            {
-                bar.Value = new_value;
-            }
-        }
-
-        void slc_MeterRemoved(Slice slc, Meter m)
-        {
-            if(m.Name != "SNR") return;
-
-            if (_SNRTable.ContainsKey(m))
-                _SNRTable.Remove(m);
-
-            m.DataReady -= SNR_DataReady;
-        }
 
         void slc_WaveformStatusReceived(Slice slc, string status)
         {
@@ -336,52 +255,182 @@ namespace CODEC2_GUI
         {
             lock (this)
             {
-                int index = _fdvSlices.IndexOf(slc);
+                int index = _waveformSlices.IndexOf(slc);
                 label1.Visible = false;
+
+                int vertical_offset = 30;
 
                 this.SuspendLayout();
 
-                TextBox txtIn = new TextBox();
-                TextBox txtOut = new TextBox();
-                VerticalProgressBar bar = new VerticalProgressBar();
+                Label myInfo = new Label();
+                myInfo.Text = "MY INFO";
+                Label rxInfo = new Label();
+                rxInfo.Text = "RX INFO";
+
+                Label destinationRptrInLabel = new Label();
+                destinationRptrInLabel.Text = "Destination Repeater:";
+                destinationRptrInLabel.Anchor = AnchorStyles.Left;
+                Label departureRptrInLabel = new Label();
+                departureRptrInLabel.Text = "Departure Repeater:";
+                Label companionCallInLabel = new Label();
+                companionCallInLabel.Text = "Companion Call:";
+                Label ownCall1InLabel = new Label();
+                ownCall1InLabel.Text = "Own Call 1:";
+                Label ownCall2InLabel = new Label();
+                ownCall2InLabel.Text = "Own Call 2:";
+
+                TextBox destinationRptrIn = new TextBox();
+                TextBox departureRptrIn = new TextBox();
+                TextBox companionCallIn = new TextBox();
+                TextBox ownCall1In = new TextBox();
+                TextBox ownCall2In = new TextBox();
+
+                Label destinationRptrOutLabel = new Label();
+                destinationRptrOutLabel.Text = "Destination Repeater:";
+                Label departureRptrOutLabel = new Label();
+                departureRptrOutLabel.Text = "Departure Repeater:";
+                Label companionCallOutLabel = new Label();
+                companionCallOutLabel.Text = "Companion Call:";
+                Label ownCall1OutLabel = new Label();
+                ownCall1OutLabel.Text = "Own Call 1:";
+                Label ownCall2OutLabel = new Label();
+                ownCall2OutLabel.Text = "Own Call 2:";
+
+                TextBox destinationRptrOut = new TextBox();
+                TextBox departureRptrOut = new TextBox();
+                TextBox companionCallOut = new TextBox();
+                TextBox ownCall1Out = new TextBox();
+                TextBox ownCall2Out = new TextBox();
+
                 GroupBox groupbox = new GroupBox();
                 groupbox.SuspendLayout();
                 //
                 // groupBox
                 //
-                groupbox.Controls.Add(txtIn);
-                groupbox.Controls.Add(txtOut);
-                groupbox.Controls.Add(bar);
-                groupbox.Location = new Point(10, 10 + index * 110);
+
+                groupbox.Controls.Add(myInfo);
+                groupbox.Controls.Add(rxInfo);
+
+                groupbox.Controls.Add(destinationRptrInLabel);
+                groupbox.Controls.Add(departureRptrInLabel);
+                groupbox.Controls.Add(companionCallInLabel);
+                groupbox.Controls.Add(ownCall1InLabel);
+                groupbox.Controls.Add(ownCall2InLabel);
+                groupbox.Controls.Add(destinationRptrIn);
+                groupbox.Controls.Add(departureRptrIn);
+                groupbox.Controls.Add(companionCallIn);
+                groupbox.Controls.Add(ownCall1In);
+                groupbox.Controls.Add(ownCall2In);
+
+                groupbox.Controls.Add(destinationRptrOutLabel);
+                groupbox.Controls.Add(departureRptrOutLabel);
+                groupbox.Controls.Add(companionCallOutLabel);
+                groupbox.Controls.Add(ownCall1OutLabel);
+                groupbox.Controls.Add(ownCall2OutLabel);
+                groupbox.Controls.Add(destinationRptrOut);
+                groupbox.Controls.Add(departureRptrOut);
+                groupbox.Controls.Add(companionCallOut);
+                groupbox.Controls.Add(ownCall1Out);
+                groupbox.Controls.Add(ownCall2Out);
+
+                groupbox.Location = new Point(10, 10 + index * 220);
                 groupbox.Name = "grpSlice" + index;
-                groupbox.Size = new Size(260, 100);
+                groupbox.Size = new Size(500, 220);
                 groupbox.Text = "Slice " + SliceIndexToLetter(slc.Index);
+
+            
+
+                myInfo.Location = new Point(75, 30);
+                myInfo.Size = new Size(100, 20);
+                myInfo.TextAlign = ContentAlignment.MiddleCenter;
+
+
+                rxInfo.Location = new Point(325, 30);
+                rxInfo.Size = new Size(100, 20);
+                rxInfo.TextAlign = ContentAlignment.MiddleCenter;
+
                 //
-                // txtIn
+                // destinationRptrIn
                 //
-                txtIn.Location = new Point(40, 30);
-                txtIn.Name = "txtIn" + slc.Index;
-                txtIn.Size = new Size(200, 20);
-                txtIn.ReadOnly = true;
+                destinationRptrInLabel.Location = new Point(10, 30 + vertical_offset);
+                destinationRptrInLabel.Size = new Size(120, 20);
+                destinationRptrIn.Location = new Point(130, 30 + vertical_offset);
+                destinationRptrIn.Name = "destinationRptrIn" + slc.Index;
+                destinationRptrIn.Size = new Size(100, 20);
+                destinationRptrIn.PreviewKeyDown += new PreviewKeyDownEventHandler(txtIn_PreviewKeyDown);
                 //
-                // txtOut
-                //
-                txtOut.Location = new Point(40, 60);
-                txtOut.Name = "txtOut" + slc.Index;
-                txtOut.Size = new Size(200, 20);
-                txtOut.PreviewKeyDown += new PreviewKeyDownEventHandler(txtOut_PreviewKeyDown);
-                //
-                // bar
-                //
-                bar.Location = new Point(10, 20);
-                bar.Name = "bar" + slc.Index;
-                bar.Size = new Size(20, 70);
-                bar.Value = 25;
+                // departureRptrIn
+
+                departureRptrInLabel.Location = new Point(10, 60 + vertical_offset);
+                departureRptrInLabel.Size = new Size(120, 20);
+                departureRptrIn.Location = new Point(130, 60 + vertical_offset);
+                departureRptrIn.Name = "departureRptrIn" + slc.Index;
+                departureRptrIn.Size = new Size(100, 20);
+                departureRptrIn.PreviewKeyDown += new PreviewKeyDownEventHandler(txtIn_PreviewKeyDown);
+
+                companionCallInLabel.Location = new Point(10, 90 + vertical_offset);
+                companionCallInLabel.Size = new Size(120, 20);
+                companionCallIn.Location = new Point(130, 90 + vertical_offset);
+                companionCallIn.Name = "companionCallIn" + slc.Index;
+                companionCallIn.Size = new Size(100, 20);
+                companionCallIn.PreviewKeyDown += new PreviewKeyDownEventHandler(txtIn_PreviewKeyDown);
+
+                ownCall1InLabel.Location = new Point(10, 120 + vertical_offset);
+                ownCall1InLabel.Size = new Size(120, 20);
+                ownCall1In.Location = new Point(130, 120 + vertical_offset);
+                ownCall1In.Name = "ownCall1In" + slc.Index;
+                ownCall1In.Size = new Size(100, 20);
+                ownCall1In.PreviewKeyDown += new PreviewKeyDownEventHandler(txtIn_PreviewKeyDown);
+
+                ownCall2InLabel.Location = new Point(10, 150 + vertical_offset);
+                ownCall2InLabel.Size = new Size(120, 20);
+                ownCall2In.Location = new Point(130, 150 + vertical_offset);
+                ownCall2In.Name = "ownCall2In" + slc.Index;
+                ownCall2In.Size = new Size(100, 20);
+                ownCall2In.PreviewKeyDown += new PreviewKeyDownEventHandler(txtIn_PreviewKeyDown);
+
+                /* OUT indicates it get's retrieved by the radio */
+
+                destinationRptrOutLabel.Location = new Point(250, 30 + vertical_offset);
+                destinationRptrOutLabel.Size = new Size(120, 20);
+                destinationRptrOut.Location = new Point(250 + 120, 30 + vertical_offset);
+                destinationRptrOut.Name = "destinationRptrOut" + slc.Index;
+                destinationRptrOut.Size = new Size(100, 20);
+                destinationRptrOut.ReadOnly = true;
+
+                departureRptrOutLabel.Location = new Point(250, 60 + vertical_offset);
+                departureRptrOutLabel.Size = new Size(120, 20);
+                departureRptrOut.Location = new Point(250 + 120, 60 + vertical_offset);
+                departureRptrOut.Name = "departureRptrIn" + slc.Index;
+                departureRptrOut.Size = new Size(100, 20);
+                departureRptrOut.ReadOnly = true;
+
+                companionCallOutLabel.Location = new Point(250, 90 + vertical_offset);
+                companionCallOutLabel.Size = new Size(120, 20);
+                companionCallOut.Location = new Point(250 + 120, 90 + vertical_offset);
+                companionCallOut.Name = "companionCallOut" + slc.Index;
+                companionCallOut.Size = new Size(100, 20);
+                companionCallOut.ReadOnly = true;
+
+                ownCall1OutLabel.Location = new Point(250, 120 + vertical_offset);
+                ownCall1OutLabel.Size = new Size(120, 20);
+                ownCall1Out.Location = new Point(250 + 120, 120 + vertical_offset);
+                ownCall1Out.Name = "ownCall1Out" + slc.Index;
+                ownCall1Out.Size = new Size(100, 20);
+                ownCall1Out.ReadOnly = true;
+
+                ownCall2OutLabel.Location = new Point(250, 150 + vertical_offset);
+                ownCall2OutLabel.Size = new Size(120, 20);
+                ownCall2Out.Location = new Point(250 + 120, 150 + vertical_offset);
+                ownCall2Out.Name = "ownCall2Out" + slc.Index;
+                ownCall2Out.Size = new Size(100, 20);
+                ownCall2Out.ReadOnly = true;
+                
                 //
                 // Form1
                 //
                 if (groupbox.Bottom > this.Height)
-                    this.Height += 110;
+                    this.Height += 180;
                 this.Controls.Add(groupbox);
                 groupbox.ResumeLayout();
                 this.ResumeLayout(false);
@@ -389,7 +438,7 @@ namespace CODEC2_GUI
             }
         }
 
-        void txtOut_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        void txtIn_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             if (e.KeyCode != Keys.Enter) return;
 
@@ -402,7 +451,7 @@ namespace CODEC2_GUI
             if(!b) return;
 
             // first we need to find the slice that goes with this control
-            foreach(Slice slc in _fdvSlices)
+            foreach(Slice slc in _waveformSlices)
             {
                 if (slc.Index == index)
                 {
@@ -413,13 +462,13 @@ namespace CODEC2_GUI
             }
         }
 
-        private void RemoveFDVSliceControls(Slice slc)
+        private void RemoveWaveformSliceControls(Slice slc)
         {
             lock (this)
             {
                 this.SuspendLayout();
 
-                int index = _fdvSlices.IndexOf(slc);
+                int index = _waveformSlices.IndexOf(slc);
 
                 // find the right groupbox and remove it
                 for (int i = 0; i < this.Controls.Count; i++)
@@ -446,7 +495,7 @@ namespace CODEC2_GUI
                             if (c2.Name.StartsWith("txtOut"))
                             {
                                 TextBox txt = c2 as TextBox;
-                                txt.PreviewKeyDown -= txtOut_PreviewKeyDown;
+                                txt.PreviewKeyDown -= txtIn_PreviewKeyDown;
                             }
                         }
                         groupbox.Controls.Clear();
@@ -460,7 +509,7 @@ namespace CODEC2_GUI
                     }
                 }
 
-                if (_fdvSlices.Count == 1)
+                if (_waveformSlices.Count == 1)
                     label1.Visible = true;
 
                 this.ResumeLayout(false);

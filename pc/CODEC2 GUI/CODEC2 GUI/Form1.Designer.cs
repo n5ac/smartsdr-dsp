@@ -34,20 +34,20 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(96, 43);
+            this.label1.Location = new System.Drawing.Point(196, 105);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(86, 13);
+            this.label1.Size = new System.Drawing.Size(123, 13);
             this.label1.TabIndex = 0;
-            this.label1.Text = "No FreeDV Slice";
+            this.label1.Text = "No DSTAR (D*FM) Slice";
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 112);
+            this.ClientSize = new System.Drawing.Size(519, 236);
             this.Controls.Add(this.label1);
             this.Name = "Form1";
-            this.Text = "FreeDV";
+            this.Text = "DSTAR";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
