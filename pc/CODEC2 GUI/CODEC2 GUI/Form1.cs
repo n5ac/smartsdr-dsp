@@ -630,19 +630,19 @@ namespace CODEC2_GUI
             switch (text)
                 {
                     case "destinationRptrIn":
-                        cmd = "set destination_rptr=" + txt.Text;
+                        cmd = "set destination_rptr=" + txt.Text.Replace(" ", "\u007f");
                         break;
                     case "departureRptrIn":
-                        cmd = "set departure_rptr=" + txt.Text;
+                        cmd = "set departure_rptr=" + txt.Text.Replace(" ", "\u007f");
                         break;
                     case "companionCallIn":
-                        cmd = "set companion_call=" + txt.Text;
+                        cmd = "set companion_call=" + txt.Text.Replace(" ", "\u007f");
                         break;
                     case "ownCall1In":
-                        cmd = "set own_call1=" + txt.Text;
+                        cmd = "set own_call1=" + txt.Text.Replace(" ", "\u007f");
                         break;
                     case "ownCall2In":
-                        cmd = "set own_call2=" + txt.Text;
+                        cmd = "set own_call2=" + txt.Text.Replace(" ", "\u007f");
                     break;
                 default:
                     break;
