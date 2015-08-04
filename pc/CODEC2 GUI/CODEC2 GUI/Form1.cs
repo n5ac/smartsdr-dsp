@@ -186,6 +186,7 @@ namespace CODEC2_GUI
                 {
                     // no -- lets go add it
                     _waveformSlices.Add(slc);
+                    slc.SendWaveformCommand("status");
 
                     // now create GUI components to go with it
                     AddFDVSliceControls(slc);
@@ -227,7 +228,7 @@ namespace CODEC2_GUI
                 TextBox txtbox = null;
                 switch (key.ToLower())
                 {
-                    case "destination_rptr":
+                    case "destination_rptr_rx":
                         c = FindControlByName(this, "destinationRptrOut" + slc.Index);
                         if (c == null) continue;
                         txtbox = c as TextBox;
@@ -245,7 +246,7 @@ namespace CODEC2_GUI
                             txtbox.Text = value;
                         }
                         break;
-                    case "departure_rptr":
+                    case "departure_rptr_rx":
                         c = FindControlByName(this, "departureRptrOut" + slc.Index);
                         if (c == null) continue;
                         txtbox = c as TextBox;
@@ -263,7 +264,7 @@ namespace CODEC2_GUI
                             txtbox.Text = value;
                         }
                         break;
-                    case "companion_call":
+                    case "companion_call_rx":
                         c = FindControlByName(this, "companionCallOut" + slc.Index);
                         if (c == null) continue;
                         txtbox = c as TextBox;
@@ -281,7 +282,7 @@ namespace CODEC2_GUI
                             txtbox.Text = value;
                         }
                         break;
-                    case "own_call1":
+                    case "own_call1_rx":
                         c = FindControlByName(this, "ownCall1Out" + slc.Index);
                         if (c == null) continue;
                         txtbox = c as TextBox;
@@ -299,8 +300,98 @@ namespace CODEC2_GUI
                             txtbox.Text = value;
                         }
                         break;
-                    case "own_call2":
+                    case "own_call2_rx":
                         c = FindControlByName(this, "ownCall2Out" + slc.Index);
+                        if (c == null) continue;
+                        txtbox = c as TextBox;
+                        if (txtbox == null) continue;
+                        if (InvokeRequired)
+                        {
+
+                            Invoke(new MethodInvoker(delegate
+                            {
+                                txtbox.Text = value;
+                            }));
+                        }
+                        else
+                        {
+                            txtbox.Text = value;
+                        }
+                        break;
+                    case "destination_rptr_tx":
+                        c = FindControlByName(this, "destinationRptrIn" + slc.Index);
+                        if (c == null) continue;
+                        txtbox = c as TextBox;
+                        if (txtbox == null) continue;
+                        if (InvokeRequired)
+                        {
+
+                            Invoke(new MethodInvoker(delegate
+                            {
+                                txtbox.Text = value;
+                            }));
+                        }
+                        else
+                        {
+                            txtbox.Text = value;
+                        }
+                        break;
+                    case "departure_rptr_tx":
+                        c = FindControlByName(this, "departureRptrIn" + slc.Index);
+                        if (c == null) continue;
+                        txtbox = c as TextBox;
+                        if (txtbox == null) continue;
+                        if (InvokeRequired)
+                        {
+
+                            Invoke(new MethodInvoker(delegate
+                            {
+                                txtbox.Text = value;
+                            }));
+                        }
+                        else
+                        {
+                            txtbox.Text = value;
+                        }
+                        break;
+                    case "companion_call_tx":
+                        c = FindControlByName(this, "companionCallIn" + slc.Index);
+                        if (c == null) continue;
+                        txtbox = c as TextBox;
+                        if (txtbox == null) continue;
+                        if (InvokeRequired)
+                        {
+
+                            Invoke(new MethodInvoker(delegate
+                            {
+                                txtbox.Text = value;
+                            }));
+                        }
+                        else
+                        {
+                            txtbox.Text = value;
+                        }
+                        break;
+                    case "own_call1_tx":
+                        c = FindControlByName(this, "ownCall1In" + slc.Index);
+                        if (c == null) continue;
+                        txtbox = c as TextBox;
+                        if (txtbox == null) continue;
+                        if (InvokeRequired)
+                        {
+
+                            Invoke(new MethodInvoker(delegate
+                            {
+                                txtbox.Text = value;
+                            }));
+                        }
+                        else
+                        {
+                            txtbox.Text = value;
+                        }
+                        break;
+                    case "own_call2_tx":
+                        c = FindControlByName(this, "ownCall2In" + slc.Index);
                         if (c == null) continue;
                         txtbox = c as TextBox;
                         if (txtbox == null) continue;
