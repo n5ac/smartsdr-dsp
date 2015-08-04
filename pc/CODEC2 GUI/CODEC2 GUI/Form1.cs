@@ -440,23 +440,54 @@ namespace CODEC2_GUI
 
         void txtIn_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
-            if (e.KeyCode != Keys.Enter) return;
+            if (e.KeyCode != Keys.Enter && e.KeyCode != Keys.Tab) return;
 
             TextBox txt = sender as TextBox;
             if (txt == null) return;
 
-            // get the index of the control
-            int index;
-            bool b = int.TryParse(txt.Name.Substring(6), out index);
-            if(!b) return;
+            string text = txt.Name.Substring(0, txt.Name.Length - 1);
+            string slice = txt.Name.Substring(txt.Name.Length - 1, 1);
+            int slice_index = 0;
+            bool b = Int32.TryParse(slice, out slice_index);
+            if (!b)
+            {
+                return;
+            }
 
+            txt.Text = txt.Text.ToUpper();
+
+            string cmd = "";
+
+            switch (text)
+                {
+                    case "destinationRptrIn":
+                        cmd = "set destination_rptr=" + txt.Text;
+                        break;
+                    case "departureRptrIn":
+                        cmd = "set departure_rptr=" + txt.Text;
+                        break;
+                    case "companionCallIn":
+                        cmd = "set companion_call=" + txt.Text;
+                        break;
+                    case "ownCall1In":
+                        cmd = "set own_call1=" + txt.Text;
+                        break;
+                    case "ownCall2In":
+                        cmd = "set own_call2=" + txt.Text;
+                    break;
+                default:
+                    break;
+            }
+
+            if (cmd == "") 
+                return;
             // first we need to find the slice that goes with this control
             foreach(Slice slc in _waveformSlices)
             {
-                if (slc.Index == index)
+                if (slc.Index == slice_index)
                 {
                     // now that we have found the slice, we need to send a waveform command to set the string
-                    slc.SendWaveformCommand("string=" + txt.Text);
+                    slc.SendWaveformCommand(cmd);
                     return;
                 }
             }
@@ -492,7 +523,7 @@ namespace CODEC2_GUI
                         // detach the PreviewKeyDown event
                         foreach (Control c2 in groupbox.Controls)
                         {
-                            if (c2.Name.StartsWith("txtOut"))
+                            if (c2.Name.Contains("In"))
                             {
                                 TextBox txt = c2 as TextBox;
                                 txt.PreviewKeyDown -= txtIn_PreviewKeyDown;
@@ -504,7 +535,7 @@ namespace CODEC2_GUI
                     else if (temp > index)
                     {
                         // yes -- move it on up
-                        groupbox.Top -= 110;
+                        groupbox.Top -= 180;
                         groupbox.Name = "grpSlice" + (temp - 1);
                     }
                 }
