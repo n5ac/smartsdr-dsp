@@ -288,12 +288,103 @@ static void thumbDV_writeSerial(int serial_fd, const unsigned char * buffer, uin
 
 }
 
+static int _check_serial(int fd )
+{
+    unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
+    thumbDV_writeSerial(fd, reset, 5);
+
+    fd_set fds;
+    struct timeval timeout;
+
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+    errno = 0;
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
+    select(fd + 1, &fds, NULL, NULL, &timeout);
+    if ( FD_ISSET(fd, &fds)) {
+      int ret = thumbDV_processSerial(fd);
+      if ( ret != 0 ) {
+          output("Could not reset serial port FD = %d \n", fd);
+          return -1;
+      }
+    } else {
+        output("Could not reset serial port FD = %d \n", fd);
+        return -1;
+    }
+
+    unsigned char get_prodID[5] = {0x61, 0x00, 0x01, 0x00, 0x30 };
+    thumbDV_writeSerial(fd, get_prodID, 5 );
+
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+    errno = 0;
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
+    select(fd + 1,&fds,NULL, NULL, &timeout);
+    if ( FD_ISSET(fd, &fds)) {
+         int ret = thumbDV_processSerial(fd);
+         if ( ret != 0 ) {
+             output("Could not get prodID serial port FD = %d \n", fd);
+             return -1;
+         }
+    }  else {
+        output("Could not prodID serial port FD = %d \n", fd);
+        return -1;
+    }
+
+    return 0 ;
+}
+
 int thumbDV_openSerial(const char * tty_name)
 {
     struct termios tty;
     int fd;
 
     /* TODO: Sanitize tty_name */
+
+    fd = open(tty_name, O_RDWR | O_NOCTTY | O_SYNC);
+    if (fd < 0) {
+        output("ThumbDV: error when opening %s, errno=%d\n", tty_name, errno);
+        return fd;
+    }
+
+    if (tcgetattr(fd, &tty) != 0) {
+        output( "ThumbDV: error %d from tcgetattr\n", errno);
+        return -1;
+    }
+
+    cfsetospeed(&tty, B460800);
+    cfsetispeed(&tty, B460800);
+
+    tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;
+    tty.c_iflag &= ~IGNBRK;
+    tty.c_lflag = 0;
+
+    tty.c_oflag = 0;
+    tty.c_cc[VMIN]  = 1;
+    tty.c_cc[VTIME] = 5;
+
+    tty.c_iflag &= ~(IXON | IXOFF | IXANY);
+
+    tty.c_cflag |= (CLOCAL | CREAD);
+
+    tty.c_cflag &= ~(PARENB | PARODD);
+    tty.c_cflag &= ~CSTOPB;
+    tty.c_cflag &= ~CRTSCTS;
+
+    if (tcsetattr(fd, TCSANOW, &tty) != 0) {
+        output("ThumbDV: error %d from tcsetattr\n", errno);
+        close(fd);
+        return -1;
+    }
+
+    if ( _check_serial(fd) != 0 ) {
+        output("Could not detect ThumbDV at 460800 Baud. Trying 230400\n");
+        close(fd);
+    } else {
+        return fd;
+    }
 
     fd = open(tty_name, O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0) {
@@ -331,7 +422,11 @@ int thumbDV_openSerial(const char * tty_name)
         return -1;
     }
 
-    output("opened %s - fd = %d\n", tty_name, fd);
+    if ( _check_serial(fd) != 0 ) {
+        output("Could not detect THumbDV at 230400 Baud\n");
+        close(fd);
+        return -1;
+    }
     return fd;
 }
 
@@ -347,7 +442,7 @@ int thumbDV_processSerial(int serial_fd)
     len = read(serial_fd, buffer, 1);
     if (len != 1) {
         output(ANSI_RED "ThumbDV: error when reading from the serial port, len = %d, errno=%d\n" ANSI_WHITE, len, errno);
-        return 0;
+        return 1;
     }
 
     if (buffer[0U] != AMBE3000_START_BYTE) {
@@ -399,7 +494,8 @@ int thumbDV_processSerial(int serial_fd)
 
     } else {
         output(ANSI_RED "Unrecognized packet type 0x%02X ", packet_type);
-        safe_free(desc);
+        return 1;
+
     }
 
 
@@ -581,7 +677,11 @@ void thumbDV_init(const char * serial_device_name, int * serial_fd)
 
     do {
         *serial_fd = thumbDV_openSerial("/dev/ttyUSB0");
-        if ( *serial_fd < 0 ) {
+        if ( *serial_fd < 0 )
+            *serial_fd = thumbDV_openSerial("/dev/ttyUSB1");
+
+        if ( * serial_fd < 0 )
+        {
             output("Could not open serial. Waiting 1 second before trying again.\n");
             usleep(1000 * 1000);
         }
