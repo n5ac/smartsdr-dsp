@@ -208,44 +208,122 @@ namespace CODEC2_GUI
 
         void slc_WaveformStatusReceived(Slice slc, string status)
         {
-            if(status.StartsWith("string"))
+            string[] words = status.Split(' ');
+
+            foreach (string kv in words)
             {
-                Debug.WriteLine(status);
-                string x = "ASDLKFJASLDKJ";
+                string[] tokens = kv.Split('=');
 
-                int start_pos = status.IndexOf("\"");
-                // did we find beginning quotes?
-                if(start_pos < 0) return; // no -- return
-
-                int end_pos = status.LastIndexOf("\"");
-                // did we find ending quotes?
-                if(end_pos == start_pos) return; // no -- return
-                
-                start_pos += 1; // ignore beginning quotes
-                string value = status.Substring(start_pos,end_pos - start_pos);
-
-                // handle the remapped spaces
-                value = value.Replace("\u007f", " ");
-                
-                Control c = FindControlByName(this, "txtIn" + slc.Index);
-                if (c == null) return;
-
-                TextBox txtbox = c as TextBox;
-                if (txtbox == null) return;
-
-                if (InvokeRequired)
+                if (tokens.Length != 2)
                 {
-                    Invoke(new MethodInvoker(delegate
-                    {
-                        txtbox.Text = value;
-                    }));
+                    continue;
                 }
-                else
+
+                string key = tokens[0];
+                string value = tokens[1];
+
+                value = value.Replace('\u007f', ' ');
+                Control c = null;
+                TextBox txtbox = null;
+                switch (key.ToLower())
                 {
-                    txtbox.Text = value;
+                    case "destination_rptr":
+                        c = FindControlByName(this, "destinationRptrOut" + slc.Index);
+                        if (c == null) continue;
+                        txtbox = c as TextBox;
+                        if (txtbox == null) continue;
+                        if (InvokeRequired)
+                        {
+
+                            Invoke(new MethodInvoker(delegate
+                                {
+                                    txtbox.Text = value;
+                                }));
+                        }
+                        else
+                        {
+                            txtbox.Text = value;
+                        }
+                        break;
+                    case "departure_rptr":
+                        c = FindControlByName(this, "departureRptrOut" + slc.Index);
+                        if (c == null) continue;
+                        txtbox = c as TextBox;
+                        if (txtbox == null) continue;
+                        if (InvokeRequired)
+                        {
+
+                            Invoke(new MethodInvoker(delegate
+                            {
+                                txtbox.Text = value;
+                            }));
+                        }
+                        else
+                        {
+                            txtbox.Text = value;
+                        }
+                        break;
+                    case "companion_call":
+                        c = FindControlByName(this, "companionCallOut" + slc.Index);
+                        if (c == null) continue;
+                        txtbox = c as TextBox;
+                        if (txtbox == null) continue;
+                        if (InvokeRequired)
+                        {
+
+                            Invoke(new MethodInvoker(delegate
+                            {
+                                txtbox.Text = value;
+                            }));
+                        }
+                        else
+                        {
+                            txtbox.Text = value;
+                        }
+                        break;
+                    case "own_call1":
+                        c = FindControlByName(this, "ownCall1Out" + slc.Index);
+                        if (c == null) continue;
+                        txtbox = c as TextBox;
+                        if (txtbox == null) continue;
+                        if (InvokeRequired)
+                        {
+
+                            Invoke(new MethodInvoker(delegate
+                            {
+                                txtbox.Text = value;
+                            }));
+                        }
+                        else
+                        {
+                            txtbox.Text = value;
+                        }
+                        break;
+                    case "own_call2":
+                        c = FindControlByName(this, "ownCall2Out" + slc.Index);
+                        if (c == null) continue;
+                        txtbox = c as TextBox;
+                        if (txtbox == null) continue;
+                        if (InvokeRequired)
+                        {
+
+                            Invoke(new MethodInvoker(delegate
+                            {
+                                txtbox.Text = value;
+                            }));
+                        }
+                        else
+                        {
+                            txtbox.Text = value;
+                        }
+                        break;
                 }
             }
         }
+
+
+
+        
 
         //*************************************
         //           GUI Routines
@@ -401,7 +479,7 @@ namespace CODEC2_GUI
                 departureRptrOutLabel.Location = new Point(250, 60 + vertical_offset);
                 departureRptrOutLabel.Size = new Size(120, 20);
                 departureRptrOut.Location = new Point(250 + 120, 60 + vertical_offset);
-                departureRptrOut.Name = "departureRptrIn" + slc.Index;
+                departureRptrOut.Name = "departureRptrOut" + slc.Index;
                 departureRptrOut.Size = new Size(100, 20);
                 departureRptrOut.ReadOnly = true;
 
