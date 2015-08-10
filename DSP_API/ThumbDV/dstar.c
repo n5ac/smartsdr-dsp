@@ -447,7 +447,7 @@ void dstar_createTestHeader( DSTAR_HEADER header )
 {
     strcpy(header->departure_rptr, "DIRECT  ");
     strcpy(header->destination_rptr, "DIRECT  ");
-    strcpy(header->companion_call, "CALLSIGN");
+    strcpy(header->companion_call, "CQCQCQ  ");
     strcpy(header->own_call1, "CALLSIGN");
     strcpy(header->own_call2, "    ");
 }
