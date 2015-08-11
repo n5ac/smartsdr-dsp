@@ -74,17 +74,17 @@ static void _handle_status(char* string)
             {
                 errno = 0;
                 char* smode = argv[i]+strlen("mode")+1;
-                if (strncmp(smode,"D*FM",3) == 0)
+                if (strncmp(smode,"DSTR", strlen("DSTR")) == 0)
                 {
-                    // we are now in FDV mode
-                    output(ANSI_MAGENTA "slice %d is now in FDV mode\n",slc);
+                    // we are now in DSTR mode
+                    output(ANSI_MAGENTA "slice %d is now in DSTR mode\n",slc);
                     char cmd[512] = {0};
                     sprintf(cmd, "slice s %d fm_deviation=1250 post_demod_low=0 post_demod_high=6000 dfm_pre_de_emphasis=0 post_demod_bypass=1 squelch=0", slc);
                     tc_sendSmartSDRcommand(cmd,FALSE, NULL);
                 }
                 else
                 {
-                    // we have left FDV mode
+                    // we have left DSTR mode
                     output(ANSI_MAGENTA "slice %d is in %s mode\n",slc,smode);
                 }
             }
