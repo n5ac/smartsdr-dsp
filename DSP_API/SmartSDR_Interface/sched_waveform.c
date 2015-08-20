@@ -340,6 +340,11 @@ void sched_waveform_setOwnCall2(uint32 slice , const char * owncall2 )
     dstar_dumpHeader(&(_dstar->outgoing_header));
 }
 
+void sched_waveform_setFD(int fd)
+{
+    _dv_serial_fd = fd;
+}
+
 static void* _sched_waveform_thread(void* param)
 {
     int 	nout;
@@ -376,7 +381,7 @@ static void* _sched_waveform_thread(void* param)
 
     // =======================  Initialization Section =========================
 
-    thumbDV_init("/dev/ttyUSB0", &_dv_serial_fd);
+    thumbDV_init(&_dv_serial_fd);
 
     // Initialize the Circular Buffers
 

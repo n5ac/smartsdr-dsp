@@ -55,6 +55,7 @@
 
 #include "vita_output.h"
 #include "thumbDV.h"
+#include "sched_waveform.h"
 
 
 #define DV3000_TTY              "/dev/ttyAMA0"
@@ -86,6 +87,8 @@ static pthread_rwlock_t _decoded_list_lock;
 static BufferDescriptor _decoded_root;
 static BOOL _decoded_buffering = TRUE;
 static uint32 _decoded_count = 0;
+
+static void* _thumbDV_readThread(void* param);
 
 static BufferDescriptor _thumbDVEncodedList_UnlinkHead(void)
 {
@@ -441,7 +444,7 @@ int thumbDV_processSerial(int serial_fd)
     errno = 0;
     len = read(serial_fd, buffer, 1);
     if (len != 1) {
-        output(ANSI_RED "ThumbDV: error when reading from the serial port, len = %d, errno=%d\n" ANSI_WHITE, len, errno);
+        output(ANSI_RED "ThumbDV: Process serial. error when reading from the serial port, len = %d, errno=%d\n" ANSI_WHITE, len, errno);
         return 1;
     }
 
@@ -507,7 +510,7 @@ int thumbDV_decode(int serial_fd, unsigned char * packet_in, short * speech_out,
     uint32 i = 0;
 
     unsigned char full_packet[15] = {0};
-    if ( packet_in != NULL ) {
+    if ( packet_in != NULL && serial_fd > 0 ) {
         full_packet[0] = 0x61;
         full_packet[1] = 0x00;
         full_packet[2] = 0x0B;
@@ -600,8 +603,8 @@ int thumbDV_encode(int serial_fd, short * speech_in, unsigned char * packet_out,
         idx[0] = speech_in[i] >> 8;
         idx[1] = (speech_in[i] & 0x00FF) ;
     }
-
-    thumbDV_writeSerial(serial_fd, packet, length + AMBE3000_HEADER_LEN);
+    if ( serial_fd > 0 )
+        thumbDV_writeSerial(serial_fd, packet, length + AMBE3000_HEADER_LEN);
 
     int32 samples_returned = 0;
     BufferDescriptor desc = _thumbDVEncodedList_UnlinkHead();
@@ -619,6 +622,73 @@ int thumbDV_encode(int serial_fd, short * speech_in, unsigned char * packet_out,
     return samples_returned;
 
 }
+
+
+static void _connectSerial(int * serial_fd)
+{
+    int i = 0 ;
+    char device[256] = {0} ;
+    do {
+        for ( i = 0 ; i < 25 ; i++ ) {
+            sprintf(device, "/dev/ttyUSB%d", i);
+            *serial_fd =thumbDV_openSerial(device);
+            if ( *serial_fd > 0 ) {
+                /* We opened a valid port */
+                break;
+            }
+        }
+
+        if ( * serial_fd < 0 )
+        {
+            output("Could not open serial. Waiting 1 second before trying again.\n");
+            usleep(1000 * 1000);
+        }
+    } while ( *serial_fd < 0 ) ;
+
+    unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
+    thumbDV_writeSerial(*serial_fd, reset, 5);
+    /* Block until we get data from serial port after reset */
+    thumbDV_processSerial(*serial_fd);
+
+    unsigned char reset_softcfg[11] = {0x61, 0x00, 0x07, 0x00, 0x34, 0x05, 0x03, 0xEB, 0xFF, 0xFF, 0xFF};
+    thumbDV_writeSerial(*serial_fd, reset_softcfg, 11);
+    thumbDV_processSerial(*serial_fd);
+
+    unsigned char disable_parity[6] = {0x61, 0x00, 0x02, 0x00, 0x3F, 0x00};
+    thumbDV_writeSerial(*serial_fd, disable_parity, 6);
+    thumbDV_processSerial(*serial_fd);
+
+    unsigned char get_prodID[5] = {0x61, 0x00, 0x01, 0x00, 0x30 };
+    unsigned char get_version[5] = {0x61, 0x00, 0x01, 0x00, 0x31};
+    unsigned char read_cfg[5] = {0x61, 0x00, 0x01, 0x00, 0x37};
+    unsigned char dstar_mode[17] = {0x61, 0x00, 0x0D, 0x00, 0x0A, 0x01, 0x30, 0x07, 0x63, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48};
+
+    thumbDV_writeSerial(*serial_fd, get_prodID, 5 );
+    thumbDV_writeSerial(*serial_fd, get_version, 5);
+    thumbDV_writeSerial(*serial_fd, read_cfg, 5);
+    thumbDV_writeSerial(*serial_fd, dstar_mode, 17);
+
+////    /* Init */
+    unsigned char pkt_init[6] = { 0x61, 0x00, 0x02, 0x00, 0x0B, 0x07 };
+    thumbDV_writeSerial(*serial_fd, pkt_init, 6);
+
+    /* PKT GAIN - set to 0dB */
+    unsigned char pkt_gain[7] = { 0x61, 0x00, 0x03, 0x00, 0x4B, 0x00, 0x00 };
+    thumbDV_writeSerial(*serial_fd, pkt_gain, 7);
+
+    /* Companding off so it uses 16bit linear */
+    unsigned char pkt_compand[6] = { 0x61, 0x00, 0x02, 0x00, 0x32, 0x00 };
+    thumbDV_writeSerial(*serial_fd, pkt_compand, 6);
+
+    unsigned char test_coded[15] =  {0x61, 0x00 ,0x0B ,0x01 ,0x01 ,0x48 ,0x5E ,0x83 ,0x12 ,0x3B ,0x98 ,0x79 ,0xDE ,0x13 ,0x90};
+
+    thumbDV_writeSerial(*serial_fd, test_coded, 15);
+
+    unsigned char pkt_fmt[7] = {0x61, 0x00, 0x3, 0x00, 0x15, 0x00, 0x00};
+    thumbDV_writeSerial(*serial_fd, pkt_fmt, 7);
+
+}
+
 
 static void* _thumbDV_readThread(void* param)
 {
@@ -644,10 +714,20 @@ static void* _thumbDV_readThread(void* param)
         ret = select(topFd, &fds, NULL, NULL, &timeout);
         if (ret < 0) {
             fprintf(stderr, "ThumbDV: error from select, errno=%d\n", errno);
+
         }
 
         if (FD_ISSET(serial_fd, &fds)) {
             ret = thumbDV_processSerial(serial_fd);
+            if ( ret != 0 ) {
+                /* Set invalid FD in sched_waveform so we don't call write functions */
+                sched_waveform_setFD(-1);
+                /* This function hangs until a new connection is made */
+                _connectSerial(&serial_fd);
+                /* Update the sched_waveform to new valid serial */
+                sched_waveform_setFD(serial_fd);
+                topFd = serial_fd + 1;
+            }
         }
     }
 
@@ -655,7 +735,7 @@ static void* _thumbDV_readThread(void* param)
     return 0;
 }
 
-void thumbDV_init(const char * serial_device_name, int * serial_fd)
+void thumbDV_init(int * serial_fd)
 {
     pthread_rwlock_init(&_encoded_list_lock, NULL);
     pthread_rwlock_init(&_decoded_list_lock, NULL);
@@ -674,31 +754,7 @@ void thumbDV_init(const char * serial_device_name, int * serial_fd)
     _decoded_root->prev = _decoded_root;
     pthread_rwlock_unlock(&_decoded_list_lock);
 
-
-    do {
-        *serial_fd = thumbDV_openSerial("/dev/ttyUSB0");
-        if ( *serial_fd < 0 )
-            *serial_fd = thumbDV_openSerial("/dev/ttyUSB1");
-
-        if ( * serial_fd < 0 )
-        {
-            output("Could not open serial. Waiting 1 second before trying again.\n");
-            usleep(1000 * 1000);
-        }
-    } while ( *serial_fd < 0 ) ;
-
-    unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
-    thumbDV_writeSerial(*serial_fd, reset, 5);
-    /* Block until we get data from serial port after reset */
-    thumbDV_processSerial(*serial_fd);
-
-    unsigned char reset_softcfg[11] = {0x61, 0x00, 0x07, 0x00, 0x34, 0x05, 0x03, 0xEB, 0xFF, 0xFF, 0xFF};
-    thumbDV_writeSerial(*serial_fd, reset_softcfg, 11);
-    thumbDV_processSerial(*serial_fd);
-
-    unsigned char disable_parity[6] = {0x61, 0x00, 0x02, 0x00, 0x3F, 0x00};
-    thumbDV_writeSerial(*serial_fd, disable_parity, 6);
-    thumbDV_processSerial(*serial_fd);
+    _connectSerial(serial_fd);
 
     pthread_create(&_read_thread, NULL, &_thumbDV_readThread, serial_fd);
 
@@ -706,36 +762,5 @@ void thumbDV_init(const char * serial_device_name, int * serial_fd)
     fifo_param.sched_priority = 30;
     pthread_setschedparam(_read_thread, SCHED_FIFO, &fifo_param);
 
-
-    unsigned char get_prodID[5] = {0x61, 0x00, 0x01, 0x00, 0x30 };
-    unsigned char get_version[5] = {0x61, 0x00, 0x01, 0x00, 0x31};
-    unsigned char read_cfg[5] = {0x61, 0x00, 0x01, 0x00, 0x37};
-    unsigned char dstar_mode[17] = {0x61, 0x00, 0x0D, 0x00, 0x0A, 0x01, 0x30, 0x07, 0x63, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48};
-
-
-
-    thumbDV_writeSerial(*serial_fd, get_prodID, 5 );
-    thumbDV_writeSerial(*serial_fd, get_version, 5);
-    thumbDV_writeSerial(*serial_fd, read_cfg, 5);
-    thumbDV_writeSerial(*serial_fd, dstar_mode, 17);
-
-////    /* Init */
-    unsigned char pkt_init[6] = { 0x61, 0x00, 0x02, 0x00, 0x0B, 0x07 };
-    thumbDV_writeSerial(*serial_fd, pkt_init, 6);
-
-    /* PKT GAIN - set to 0dB */
-    unsigned char pkt_gain[7] = { 0x61, 0x00, 0x03, 0x00, 0x4B, 0x00, 0x00 };
-    thumbDV_writeSerial(*serial_fd, pkt_gain, 7);
-
-    /* Companding off so it uses 16bit linear */
-    unsigned char pkt_compand[6] = { 0x61, 0x00, 0x02, 0x00, 0x32, 0x00 };
-    thumbDV_writeSerial(*serial_fd, pkt_compand, 6);
-
-    unsigned char test_coded[15] =  {0x61, 0x00 ,0x0B ,0x01 ,0x01 ,0x48 ,0x5E ,0x83 ,0x12 ,0x3B ,0x98 ,0x79 ,0xDE ,0x13 ,0x90};
-
-    thumbDV_writeSerial(*serial_fd, test_coded, 15);
-
-    unsigned char pkt_fmt[7] = {0x61, 0x00, 0x3, 0x00, 0x15, 0x00, 0x00};
-    thumbDV_writeSerial(*serial_fd, pkt_fmt, 7);
 
 }

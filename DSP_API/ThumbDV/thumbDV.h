@@ -36,7 +36,7 @@
 #ifndef THUMBDV_THUMBDV_
 #define THUMBDV_THUMBDV_
 
-void thumbDV_init(const char * serial_device_name, int * serial_fd);
+void thumbDV_init(int * serial_fd);
 int thumbDV_openSerial(const char * tty_name);
 int thumbDV_processSerial(int serial_fd);
 
