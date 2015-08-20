@@ -649,10 +649,10 @@ static void _connectSerial(int * serial_fd)
     thumbDV_writeSerial(*serial_fd, reset, 5);
     /* Block until we get data from serial port after reset */
     thumbDV_processSerial(*serial_fd);
-
-    unsigned char reset_softcfg[11] = {0x61, 0x00, 0x07, 0x00, 0x34, 0x05, 0x03, 0xEB, 0xFF, 0xFF, 0xFF};
-    thumbDV_writeSerial(*serial_fd, reset_softcfg, 11);
-    thumbDV_processSerial(*serial_fd);
+//
+//    unsigned char reset_softcfg[11] = {0x61, 0x00, 0x07, 0x00, 0x34, 0x05, 0x03, 0xEB, 0xFF, 0xFF, 0xFF};
+//    thumbDV_writeSerial(*serial_fd, reset_softcfg, 11);
+//    thumbDV_processSerial(*serial_fd);
 
     unsigned char disable_parity[6] = {0x61, 0x00, 0x02, 0x00, 0x3F, 0x00};
     thumbDV_writeSerial(*serial_fd, disable_parity, 6);
