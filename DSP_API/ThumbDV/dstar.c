@@ -706,7 +706,12 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
         case VOICE_FRAME:
             voice_bits[machine->bit_count++] = in_bit;
 
-            if ( machine->bit_count == VOICE_FRAME_LENGTH_BITS ) {
+            found_end_bits = bitPM_addBit(machine->end_pm, in_bit);
+
+            if ( found_end_bits ) {
+                machine->state = END_PATTERN_FOUND;
+                machine->bit_count = 0;
+            } else if ( machine->bit_count == VOICE_FRAME_LENGTH_BITS ) {
                 memset(bytes, 0, VOICE_FRAME_LENGTH_BYTES);
                 uint32 n = 0;
                 uint32 i = 0 ;
