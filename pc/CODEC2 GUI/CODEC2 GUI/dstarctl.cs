@@ -1,0 +1,449 @@
+﻿/*******************************************************************************
+ * dstarctl.cs									  			
+ *
+ * 	UI Control for DSTAR Settings
+ *
+ *  Created on: 2015-08-20
+ *      Author: Mark Hanson / AA3RK / MKCM Software, LLC.
+ *
+ *
+ *******************************************************************************
+ *
+ *	Copyright (C) 2015 FlexRadio Systems.
+ *	This program is free software: you can redistribute it and/or modify
+ *	it under the terms of the GNU General Public License as published by
+ *	the Free Software Foundation, either version 3 of the License, or
+ *	(at your option) any later version.
+ *	This program is distributed in the hope that it will be useful,
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *	GNU General Public License for more details.
+ *	You should have received a copy of the GNU General Public License
+ *	along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *	
+ *  Contact: gpl<AT>flexradio<DOT>com or 
+ *  
+ *  GPL C/O FlexRadio Systems
+ *  4616 W. Howard Lane
+ *  Suite 1-150
+ *  Austin, TX USA 78728
+ *
+ ******************************************************************************/
+
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
+using System.Data;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+
+namespace CODEC2_GUI
+{
+    public partial class dstarctl : UserControl, INotifyPropertyChanged
+    {
+        [Flags]
+        public enum ModifyFlags : byte
+        {
+            NOFLAGS = 0,
+            MYFLAG = 1,
+            NOTEFLAG = 2,
+            URFLAG = 4,
+            RPT1FLAG = 8,
+            RPT2FLAG = 16,
+            DRFLAG = 32
+        }
+        public ModifyFlags Modified { get; set; }
+
+        private bool DRModeOrig;
+        private string MYOrig = string.Empty;
+        private string NOTEOrig = string.Empty;
+        private string UROrig = string.Empty;
+        private string RPT1Orig = string.Empty;
+        private string RPT2Orig = string.Empty;
+
+        public bool DRMode
+        {
+            get
+            {
+                return rbDR.Checked;
+            }
+            set
+            {
+                if ((rbDV.Checked && value) || (rbDR.Checked && !value) || (!rbDV.Checked && !rbDR.Checked))
+                {
+                    rbDV.Checked = !value;
+                    rbDR.Checked = value;
+                    Modified = Modified & ~ModifyFlags.DRFLAG;
+                    rpt1txt.Enabled =
+                    rpt1.Enabled =
+                    rpt2.Enabled =
+                    //btnRpt.Visible =
+                    rpt2txt.Enabled =
+                    value;
+                    OnPropertyChanged("DRMode");
+                }
+                DRModeOrig = value;
+            }
+        }
+        public string MY
+        {
+            get
+            {
+                return mytxt.Text.ToUpper();
+            }
+            set
+            {
+                if (value == null)
+                    value = string.Empty;
+                if (string.Compare(value, mytxt.Text, true) != 0)
+                {
+                    mytxt.Text = value.ToUpper();
+                    Modified = Modified & ~ModifyFlags.MYFLAG;
+                    OnPropertyChanged("MY");
+                }
+                MYOrig = value;
+                updateReset();
+            }
+        }
+        public string NOTE
+        {
+            get
+            {
+                return mynotetxt.Text;
+            }
+            set
+            {
+                if (value == null)
+                    value = string.Empty;
+                if (string.Compare(value, mynotetxt.Text, true) != 0)
+                {
+                    mynotetxt.Text = value;
+                    Modified = Modified & ~ModifyFlags.NOTEFLAG;
+                    OnPropertyChanged("NOTE");
+                }
+                NOTEOrig = value;
+                updateReset();
+            }
+        }
+        public string UR
+        {
+            get
+            {
+                return urtxt.Text.ToUpper();
+            }
+            set
+            {
+                if (value == null)
+                    value = string.Empty;
+                if (string.Compare(value, urtxt.Text, true) != 0)
+                {
+                    urtxt.Text = value.ToUpper();
+                    Modified = Modified & ~ModifyFlags.URFLAG;
+                    OnPropertyChanged("UR");
+                }
+                UROrig = value;
+                updateReset();
+            }
+        }
+        public string RPT1
+        {
+            get
+            {
+                return rpt1txt.Text.ToUpper();
+            }
+            set
+            {
+                if (value == null)
+                    value = string.Empty;
+                if (string.Compare(value, rpt1txt.Text, true) != 0)
+                {
+                    rpt1txt.Text = value.ToUpper();
+                    Modified = Modified & ~ModifyFlags.RPT1FLAG;
+                    OnPropertyChanged("RPT1");
+                }
+                RPT1Orig = value;
+                updateReset();
+            }
+        }
+        public string RPT2
+        {
+            get
+            {
+                return DRMode ? rpt2txt.Text.ToUpper() : string.Empty;
+            }
+            set
+            {
+                if (value == null)
+                    value = string.Empty;
+                if (string.Compare(value, rpt2txt.Text, true) != 0)
+                {
+                    rpt2txt.Text = value.ToUpper();
+                    Modified = Modified & ~ModifyFlags.RPT2FLAG;
+                    OnPropertyChanged("RPT2");
+                }
+                RPT2Orig = value;
+                updateReset();
+            }
+        }
+
+        public List<string> URList
+        {
+            get
+            {
+                List<string> lst = new List<string>(urtxt.Items.Cast<string>());
+                int i = lst.IndexOf("CQCQCQ");
+                if (i >= 0)
+                    lst.RemoveAt(i);
+                return lst;
+            }
+            set
+            {
+                urtxt.Items.Clear();
+                if (value != null && value.Count > 0)
+                {
+                    if (!value.Contains("CQCQCQ"))
+                        urtxt.Items.Add("CQCQCQ");
+                    urtxt.Items.AddRange(value.ToArray());
+                }
+                else 
+                    urtxt.Items.Add("CQCQCQ");
+            }
+        }
+
+        public List<string> RPT1List
+        {
+            get
+            {
+                List<string> lst = new List<string>(rpt1txt.Items.Cast<string>());
+                return lst;
+            }
+            set
+            {
+                rpt1txt.Items.Clear();
+                if (value != null && value.Count > 0)
+                {
+                    rpt1txt.Items.AddRange(value.ToArray());
+                }
+            }
+        }
+
+        public List<string> RPT2List
+        {
+            get
+            {
+                List<string> lst = new List<string>(rpt2txt.Items.Cast<string>());
+                return lst;
+            }
+            set
+            {
+                rpt2txt.Items.Clear();
+                if (value != null && value.Count > 0)
+                {
+                    rpt2txt.Items.AddRange(value.ToArray());
+                }
+            }
+        }
+
+        public dstarctl()
+        {
+            InitializeComponent();
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnPropertyChanged(string prop)
+        {
+            if (prop == "Modified")
+            {
+                btnReset.Visible = Modified != ModifyFlags.NOFLAGS;
+            }
+            if (PropertyChanged != null)
+                PropertyChanged(this, new PropertyChangedEventArgs(prop));
+        }
+
+        private void rbDV_Click(object sender, EventArgs e)
+        {
+            if (rbDR.Checked == true)
+                rbDR.Checked = false;
+
+            Modified = Modified & ~ModifyFlags.DRFLAG;
+            rpt1txt.Enabled = false;
+            rpt1txt.Text = string.Empty;
+            rpt2txt.Text = string.Empty;
+            rpt1.Enabled = false;
+            rpt2.Enabled = false;
+            rpt2txt.Enabled = false;
+            //btnRpt.Visible = false;
+            OnPropertyChanged("DRMode");
+            OnPropertyChanged("Modified");
+
+        }
+
+        private void rbDR_Click(object sender, EventArgs e)
+        {
+            if (rbDV.Checked == true)
+                rbDV.Checked = false;
+            Modified = Modified | ModifyFlags.DRFLAG;
+            rpt1txt.Enabled = true;
+            rpt1.Enabled = true;
+            rpt2.Enabled = true;
+            rpt2txt.Enabled = true;
+            //btnRpt.Visible = true;
+            OnPropertyChanged("DRMode");
+            OnPropertyChanged("Modified");
+        }
+
+        private void dstarctl_Load(object sender, EventArgs e)
+        {
+            Modified = ModifyFlags.NOFLAGS;
+            btnReset.Visible = false;
+            rpt1tip.SetToolTip(rpt1txt, "Access / Area Callsign");
+            rpt2tip.SetToolTip(rpt2txt, "Link / Gateway Callsign");
+            urtip.SetToolTip(urtxt, "Destination Callsign (CQ, Individual Callsign or Reflector Command)");
+            mytip.SetToolTip(mytxt, "MY Callsign (8 chars max)");
+            mynotetip.SetToolTip(mynotetxt, "Note (4 chars max)");
+            dvtip.SetToolTip(rbDV, "DStar Simplex Mode");
+            drtip.SetToolTip(rbDR, "DStar Repeater Mode");
+
+
+            // not complete code
+            btnRpt.Visible = false;
+
+            // end not complete code
+        }
+
+
+        private void mytxt_TextChanged(object sender, EventArgs e)
+        {
+            Modified = Modified | ModifyFlags.MYFLAG;
+            OnPropertyChanged("MY");
+            OnPropertyChanged("Modified");
+        }
+
+        private void mynotetxt_TextChanged(object sender, EventArgs e)
+        {
+            Modified = Modified | ModifyFlags.NOTEFLAG;
+            OnPropertyChanged("NOTE");
+            OnPropertyChanged("Modified");
+        }
+
+        private void urtxt_TextChanged(object sender, EventArgs e)
+        {
+            Modified = Modified | ModifyFlags.URFLAG;
+            OnPropertyChanged("UR");
+            OnPropertyChanged("Modified");
+        }
+
+        private void rpt1txt_TextChanged(object sender, EventArgs e)
+        {
+            Modified = Modified | ModifyFlags.RPT1FLAG;
+            OnPropertyChanged("RPT1");
+            OnPropertyChanged("Modified");
+        }
+
+        private void rpt2txt_TextChanged(object sender, EventArgs e)
+        {
+            Modified = Modified | ModifyFlags.RPT2FLAG;
+            OnPropertyChanged("RPT2");
+            OnPropertyChanged("Modified");
+        }
+
+        private void updateReset()
+        {
+            bool isorig = (MYOrig == MY && NOTEOrig == NOTE && UROrig == UR && RPT1Orig == RPT1 && RPT2Orig == RPT2);
+
+            if (btnReset.Visible == isorig)
+            {
+                btnReset.Visible = !isorig;
+                if (isorig)
+                    Modified = ModifyFlags.NOFLAGS;
+            }
+            OnPropertyChanged("Modified");
+        }
+
+        private void btnReset_Click(object sender, EventArgs e)
+        {
+            rbDV.Checked = !DRModeOrig;
+            rbDR.Checked = DRModeOrig;
+            mytxt.Text = MYOrig;
+            mynotetxt.Text = NOTEOrig;
+            urtxt.Text = UROrig;
+            rpt1txt.Text = RPT1Orig;
+            rpt2txt.Text = RPT2Orig;
+            rpt1txt.Enabled =
+            rpt1.Enabled =
+            rpt2.Enabled =
+            //btnRpt.Visible = 
+            rpt2txt.Enabled =
+            DRModeOrig;
+
+            Modified = ModifyFlags.NOFLAGS;
+            btnReset.Visible = false;
+
+            OnPropertyChanged("MY");
+            OnPropertyChanged("NOTE");
+            OnPropertyChanged("UR");
+            OnPropertyChanged("RPT1");
+            OnPropertyChanged("RPT2");
+            OnPropertyChanged("Modified");
+        }
+
+        private void btnRef_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                SelectForm sf = new SelectForm();
+                sf.Owner = this.TopLevelControl as Form;
+                if (sf.ShowDialog() == DialogResult.OK)
+                {
+                    urtxt.Text = sf.SelectedName;
+                    Modified = Modified | ModifyFlags.URFLAG;
+                    OnPropertyChanged("UR");
+                    OnPropertyChanged("Modified");
+                }
+            }
+            catch (Exception ex)
+            {
+                StringBuilder sb = new StringBuilder();
+                Exception ex1 = ex;
+                while (ex1 != null)
+                {
+                    sb.AppendLine(ex1.Message);
+                    ex1 = ex1.InnerException;
+                }
+                MessageBox.Show(sb.ToString(), "Select DSTARINFO Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            }
+        }
+
+        private void btnRpt_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                SelectForm sf = new SelectForm();
+                sf.repeaterOnly = true;
+                sf.Owner = this.TopLevelControl as Form;
+                if (sf.ShowDialog() == DialogResult.OK)
+                {
+                    rpt1txt.Text = sf.SelectedName;
+                    Modified = Modified | ModifyFlags.RPT1FLAG;
+                    OnPropertyChanged("RPT1");
+                    OnPropertyChanged("Modified");
+                }
+            }
+            catch (Exception ex)
+            {
+                StringBuilder sb = new StringBuilder();
+                Exception ex1 = ex;
+                while (ex1 != null)
+                {
+                    sb.AppendLine(ex1.Message);
+                    ex1 = ex1.InnerException;
+                }
+                MessageBox.Show(sb.ToString(), "Select DSTARINFO Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            }
+        }
+    }
+}
