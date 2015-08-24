@@ -387,6 +387,8 @@ static void* _sched_waveform_thread(void* param)
 
     float 	tx_float_in_24k[DV_PACKET_SAMPLES * DECIMATION_FACTOR + FILTER_TAPS];
 
+    BOOL inhibit_tx = FALSE;
+    BOOL flush_tx = FALSE;
 
     // =======================  Initialization Section =========================
 
@@ -432,7 +434,7 @@ static void* _sched_waveform_thread(void* param)
 
 	initial_tx = TRUE;
 	initial_rx = TRUE;
-
+	BOOL initial_tx_flush = FALSE;
 	uint32 dstar_tx_frame_count = 0;
 
 	// show that we are running
@@ -482,6 +484,10 @@ static void* _sched_waveform_thread(void* param)
 
 						//	Set the transmit 'initial' flag
 						initial_tx = TRUE;
+						inhibit_tx = FALSE;
+						flush_tx = FALSE;
+						_end_of_transmission = FALSE;
+						gmsk_resetMODFilter(_gmsk_mod);
 
                         enum DEMOD_STATE state = DEMOD_UNKNOWN;
                         for ( i = 0 ; i < PACKET_SAMPLES ; i++ )
@@ -573,6 +579,9 @@ static void* _sched_waveform_thread(void* param)
 						initial_rx = TRUE;
 						// Check for new receiver input packet & move to TX1_cb.
 
+						if ( !inhibit_tx ) {
+
+
 						for( i = 0 ; i < PACKET_SAMPLES ; i++ )
 						{
 							//output("Outputting ")
@@ -622,7 +631,7 @@ static void* _sched_waveform_thread(void* param)
                             initial_tx = FALSE;
 
                             /* Create Sync */
-                            for ( i = 0 ; i < 64 * 10 ; i += 2 ) {
+                            for ( i = 0 ; i < 64 + 20; i += 2 ) {
                                 gmsk_encode(_gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH);
 
                                 for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
@@ -677,6 +686,8 @@ static void* _sched_waveform_thread(void* param)
                                 }
                             }
 
+                            initial_tx_flush = TRUE;
+
                             dstar_tx_frame_count = 0;
                         } else {
                             /* Data and Voice */
@@ -706,6 +717,7 @@ static void* _sched_waveform_thread(void* param)
                                         cbWriteFloat(TX4_cb, data_buf[i]);
                                     }
                                 } else {
+
 
                                     dstar_pfcs pfcs;
                                     pfcs.crc16 = 0xFFFF;
@@ -762,31 +774,96 @@ static void* _sched_waveform_thread(void* param)
                                 }
                                dstar_tx_frame_count++;
                             }
-
                         }
 
-						uint32 tx_check_samples = PACKET_SAMPLES;
+                        if ( _end_of_transmission && !inhibit_tx ) {
 
-						if(cfbContains(TX4_cb) >= tx_check_samples )
-						{
-							for( i = 0 ; i < PACKET_SAMPLES ; i++)
-							{
-								// Set up the outbound packet
-								fsample = cbReadFloat(TX4_cb);
+                            float end_buf[END_PATTERN_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH] = {0.0};
+                            unsigned char end_bytes[END_PATTERN_LENGTH_BYTES] = {0};
+                            memcpy(end_bytes, END_PATTERN_BYTES, END_PATTERN_LENGTH_BYTES * sizeof(unsigned char));
+                            gmsk_encodeBuffer(_gmsk_mod, end_bytes, END_PATTERN_LENGTH_BITS, end_buf, END_PATTERN_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH);
+                            for ( i = 0 ; i < END_PATTERN_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
+                                cbWriteFloat(TX4_cb, end_buf[i]);
+                            }
 
-								// put the fsample into the outbound packet
-								((Complex*)buf_desc->buf_ptr)[i].real = fsample;
-								((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
-							}
-						} else {
-							memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
-						}
+                            for ( i = 0 ; i <  20 ; i += 2 ) {
+                                gmsk_encode(_gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH);
 
-						initial_tx = FALSE;
+                                for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
+                                    cbWriteFloat(TX4_cb, buf[j]);
+                                }
+
+                                gmsk_encode(_gmsk_mod, FALSE, buf, DSTAR_RADIO_BIT_LENGTH);
+
+                                for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
+                                    cbWriteFloat(TX4_cb, buf[j]);
+                                }
+                            }
+
+                            flush_tx = TRUE;
+                            initial_tx_flush = TRUE;
+                        }
 
 					}
 
-					emit_waveform_output(buf_desc);
+						if ( !inhibit_tx ) {
+                            uint32 tx_check_samples = PACKET_SAMPLES;
+
+                            if(cfbContains(TX4_cb) >= tx_check_samples )
+                            {
+                                for( i = 0 ; i < PACKET_SAMPLES ; i++)
+                                {
+                                    // Set up the outbound packet
+                                    fsample = cbReadFloat(TX4_cb);
+
+                                    // put the fsample into the outbound packet
+                                    ((Complex*)buf_desc->buf_ptr)[i].real = fsample;
+                                    ((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
+                                }
+                            } else {
+                                memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
+                            }
+
+                            emit_waveform_output(buf_desc);
+
+                            if ( flush_tx && initial_tx_flush ) {
+                                initial_tx_flush = FALSE;
+                                inhibit_tx = TRUE;
+                                //output("TX4_cb has %d samples\n", cfbContains(TX4_cb));
+                                while ( cfbContains(TX4_cb) > 0 ) {
+
+                                    if ( cfbContains(TX4_cb) > PACKET_SAMPLES ) {
+                                        for( i = 0 ; i < PACKET_SAMPLES ; i++)
+                                        {
+                                            // Set up the outbound packet
+                                            fsample = cbReadFloat(TX4_cb);
+
+                                            // put the fsample into the outbound packet
+                                            ((Complex*)buf_desc->buf_ptr)[i].real = fsample;
+                                            ((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
+                                        }
+                                    } else {
+                                        int end_index = 0;
+                                        for ( i = 0 ; i <= cfbContains(TX4_cb); i++ ) {
+                                            fsample = cbReadFloat(TX4_cb);
+                                            ((Complex*)buf_desc->buf_ptr)[i].real = fsample;
+                                            ((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
+                                            end_index = i+1;
+                                        }
+
+                                        for ( i = end_index ; i < PACKET_SAMPLES ; i++ ) {
+                                            ((Complex*)buf_desc->buf_ptr)[i].real = 0.0f;
+                                            ((Complex*)buf_desc->buf_ptr)[i].imag = 0.0f;
+                                        }
+
+                                    }
+                                    emit_waveform_output(buf_desc);
+
+                                }
+                            }
+
+                        }
+					}
 
 					hal_BufferRelease(&buf_desc);
 				}
