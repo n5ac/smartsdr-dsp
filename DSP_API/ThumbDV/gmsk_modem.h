@@ -67,6 +67,7 @@ void gmsk_bytesToBits(unsigned char * bytes, BOOL * bits, uint32 num_bits);
 BOOL gmsk_encodeBuffer(GMSK_MOD mod, unsigned char * bytes, uint32 num_bits, float * buffer, uint32 buf_len);
 void gmsk_decodeBuffer(GMSK_DEMOD demod, float * buffer,uint32 buf_len, unsigned char * bytes, uint32 num_bits);
 
+void gmsk_resetMODFilter(GMSK_MOD mod);
 
 uint32 gmsk_encode(GMSK_MOD mod, BOOL bit, float * buffer, unsigned int length);
 enum DEMOD_STATE gmsk_decode(GMSK_DEMOD demod, float val);

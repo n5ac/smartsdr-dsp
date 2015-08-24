@@ -311,6 +311,12 @@ BOOL gmsk_encodeBuffer(GMSK_MOD mod, unsigned char * bytes, uint32 num_bits, flo
 
 /* Init */
 
+void gmsk_resetMODFilter(GMSK_MOD mod)
+{
+    memset(mod->filter->buffer, 0, mod->filter->buf_len * sizeof(float));
+    mod->filter->pointer = mod->filter->length;
+}
+
 FIR_FILTER gmsk_createFilter(const float * taps, uint32 length)
 {
     FIR_FILTER filter = (FIR_FILTER) safe_malloc(sizeof(fir_filter));

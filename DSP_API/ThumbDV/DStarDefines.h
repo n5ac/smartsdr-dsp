@@ -36,7 +36,8 @@ static const BOOL DATA_SYNC_BITS[]   = {TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE
                                  TRUE,  FALSE, TRUE,  TRUE,  FALSE, TRUE,  FALSE, FALSE,
                                  FALSE, TRUE,  TRUE,  FALSE, TRUE,  FALSE, FALSE, FALSE};
 
-static const unsigned char END_PATTERN_BYTES[] = {0x55, 0x55, 0x55, 0x55, 0xC8, 0x7A};
+//static const unsigned char END_PATTERN_BYTES[] = {0x55, 0x55, 0x55, 0x55, 0xC8, 0x7A};
+static const unsigned char END_PATTERN_BYTES[] = {0xAA, 0xAA, 0xAA, 0xAA, 0x13, 0x5E};
 static const BOOL END_PATTERN_BITS[] = {TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
                                  TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
                                  TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
