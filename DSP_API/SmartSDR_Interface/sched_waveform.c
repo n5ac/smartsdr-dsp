@@ -201,6 +201,9 @@ static int _dv_serial_fd = 0;
 static GMSK_DEMOD _gmsk_demod = NULL;
 static GMSK_MOD   _gmsk_mod = NULL;
 static DSTAR_MACHINE _dstar = NULL;
+static _end_of_transmission = FALSE;
+
+
 
 #define FREEDV_NSAMPLES 160
 
@@ -344,6 +347,12 @@ void sched_waveform_setFD(int fd)
 {
     _dv_serial_fd = fd;
 }
+
+void sched_waveform_setEndOfTX(BOOL end_of_transmission)
+{
+    _end_of_transmission = TRUE;
+}
+
 
 static void* _sched_waveform_thread(void* param)
 {

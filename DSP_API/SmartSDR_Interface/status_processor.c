@@ -37,6 +37,7 @@
 
 #include "common.h"
 #include "traffic_cop.h"
+#include "sched_waveform.h"
 
 static void _handle_status(char* string)
 {
@@ -140,6 +141,12 @@ static void _handle_status(char* string)
                 {
                     output(ANSI_MAGENTA "we are receiving\n");
                 }
+                else if ( strncmp(state, "UNKEY_REQUESTED", strlen("UNKEY_REQUESTED")) == 0 )
+                {
+                    output(ANSI_MAGENTA "unkey requested - sending end bits\n");
+                    sched_waveform_setEndOfTX(TRUE);
+                }
+
             }
         }
 

@@ -49,4 +49,5 @@ void sched_waveform_setOwnCall2(uint32 slice , const char * owncall2 );
 
 void sched_waveform_sendStatus(uint32 slice);
 void sched_waveform_setFD(int fd);
+void sched_waveform_setEndOfTX(BOOL end_of_transmission);
 #endif /* SCHED_WAVEFORM_H_ */
