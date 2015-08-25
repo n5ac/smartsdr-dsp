@@ -201,9 +201,7 @@ static int _dv_serial_fd = 0;
 static GMSK_DEMOD _gmsk_demod = NULL;
 static GMSK_MOD   _gmsk_mod = NULL;
 static DSTAR_MACHINE _dstar = NULL;
-static _end_of_transmission = FALSE;
-
-
+static BOOL _end_of_transmission = FALSE;
 
 #define FREEDV_NSAMPLES 160
 
