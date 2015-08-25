@@ -549,6 +549,8 @@ static void* _sched_waveform_thread(void* param)
                         if(initial_rx)
                             initial_rx = FALSE;
 
+                        emit_waveform_output(buf_desc);
+
 					} else if ( (buf_desc->stream_id & 1) == 1) { //TX BUFFER
 						//	If 'initial_rx' flag, clear buffers TX1, TX2, TX3, TX4
 						if(initial_tx)
