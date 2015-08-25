@@ -239,6 +239,11 @@ void sched_waveform_setDestinationRptr(uint32 slice , const char * destination_r
     /* Enforce termination */
     _dstar->outgoing_header.destination_rptr[8] = '\0';
 
+    if ( strncmp(_dstar->outgoing_header.destination_rptr, "DIRECT", strlen("DIRECT")) != 0 ) {
+        output("WOOT\n");
+        _dstar->outgoing_header.flag1 = 0x1 << 6;
+    }
+
     dstar_dumpHeader(&(_dstar->outgoing_header));
 }
 
