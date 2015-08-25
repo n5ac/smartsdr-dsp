@@ -32,8 +32,7 @@
 
 #include "DStarDefines.h"
 
-enum DSTAR_STATE
-{
+enum DSTAR_STATE {
     BIT_FRAME_SYNC_WAIT = 0x1,
     HEADER_PROCESSING,
     VOICE_FRAME,
@@ -42,14 +41,12 @@ enum DSTAR_STATE
     END_PATTERN_FOUND
 };
 
-enum STATUS_TYPE
-{
+enum STATUS_TYPE {
     STATUS_RX = 0,
     STATUS_TX
 };
 
-typedef struct _dstar_header
-{
+typedef struct _dstar_header {
     unsigned char flag1;
     unsigned char flag2;
     unsigned char flag3;
@@ -61,8 +58,7 @@ typedef struct _dstar_header
     uint16  p_fcs;
 } dstar_header, * DSTAR_HEADER;
 
-typedef struct _dstar_machine
-{
+typedef struct _dstar_machine {
     enum DSTAR_STATE state;
     dstar_header incoming_header;
     dstar_header outgoing_header;
@@ -82,8 +78,7 @@ typedef struct _dstar_machine
 
 } dstar_machine, * DSTAR_MACHINE;
 
-typedef struct _dstar_fec
-{
+typedef struct _dstar_fec {
     BOOL mem0[330];
     BOOL mem1[330];
     BOOL mem2[330];
@@ -91,30 +86,29 @@ typedef struct _dstar_fec
     int metric[4];
 } dstar_fec, * DSTAR_FEC;
 
-typedef union _dstar_pfcs
-{
+typedef union _dstar_pfcs {
     uint16 crc16;
     uint8 crc8[2];
 } dstar_pfcs, * DSTAR_PFCS;
 
-void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice , enum STATUS_TYPE type);
-DSTAR_MACHINE dstar_createMachine(void);
-void dstar_destroyMachine(DSTAR_MACHINE machine);
-BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len);
+void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice , enum STATUS_TYPE type );
+DSTAR_MACHINE dstar_createMachine( void );
+void dstar_destroyMachine( DSTAR_MACHINE machine );
+BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len );
 
 void dstar_dumpHeader( DSTAR_HEADER header );
 
-void dstar_pfcsUpdate(DSTAR_PFCS pfcs, BOOL * bits );
-BOOL dstar_pfcsCheck(DSTAR_PFCS pfcs, BOOL * bits );
-void dstar_pfcsResult(DSTAR_PFCS pfcs, unsigned char * chksum);
+void dstar_pfcsUpdate( DSTAR_PFCS pfcs, BOOL * bits );
+BOOL dstar_pfcsCheck( DSTAR_PFCS pfcs, BOOL * bits );
+void dstar_pfcsResult( DSTAR_PFCS pfcs, unsigned char * chksum );
 void dstar_pfcsResultBits( DSTAR_PFCS pfcs, BOOL * bits );
-void dstar_pfcsUpdateBuffer(DSTAR_PFCS pfcs, unsigned char * bytes, uint32 length);
-void dstar_headerToBytes(DSTAR_HEADER header, unsigned char * bytes);
+void dstar_pfcsUpdateBuffer( DSTAR_PFCS pfcs, unsigned char * bytes, uint32 length );
+void dstar_headerToBytes( DSTAR_HEADER header, unsigned char * bytes );
 
-void dstar_FECTest(void);
-void dstar_scramble(BOOL * in, BOOL * out, uint32 length, uint32 * scramble_count);
-void dstar_interleave(const BOOL * in, BOOL * out, unsigned int length);
-void dstar_deinterleave(const BOOL * in, BOOL * out, unsigned int length);
-BOOL dstar_FECdecode(DSTAR_FEC fec, const BOOL * in, BOOL * out, unsigned int inLen, unsigned int * outLen);
-void dstar_FECencode(const BOOL * in, BOOL * out, unsigned int inLen, unsigned int * outLen);
+void dstar_FECTest( void );
+void dstar_scramble( BOOL * in, BOOL * out, uint32 length, uint32 * scramble_count );
+void dstar_interleave( const BOOL * in, BOOL * out, unsigned int length );
+void dstar_deinterleave( const BOOL * in, BOOL * out, unsigned int length );
+BOOL dstar_FECdecode( DSTAR_FEC fec, const BOOL * in, BOOL * out, unsigned int inLen, unsigned int * outLen );
+void dstar_FECencode( const BOOL * in, BOOL * out, unsigned int inLen, unsigned int * outLen );
 #endif /* THUMBDV_DSTAR_H_ */

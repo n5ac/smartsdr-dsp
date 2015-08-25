@@ -86,7 +86,8 @@ static const BOOL SCRAMBLER_TABLE_BITS[] = {
     FALSE, FALSE, TRUE,  FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE,  FALSE, FALSE, FALSE, TRUE,  FALSE, FALSE,
     TRUE,  TRUE,  FALSE, FALSE, FALSE, TRUE,  FALSE, TRUE,  TRUE,  TRUE,  FALSE, TRUE,  FALSE, TRUE,  TRUE,  FALSE,
     TRUE,  TRUE,  FALSE, FALSE, FALSE, FALSE, FALSE, TRUE,  TRUE,  FALSE, FALSE, TRUE,  TRUE,  FALSE, TRUE,  FALSE,
-    TRUE,  FALSE, FALSE, TRUE,  TRUE,  TRUE,  FALSE, FALSE, TRUE,  TRUE,  TRUE,  TRUE,  FALSE, TRUE,  TRUE,  FALSE};
+    TRUE,  FALSE, FALSE, TRUE,  TRUE,  TRUE,  FALSE, FALSE, TRUE,  TRUE,  TRUE,  TRUE,  FALSE, TRUE,  TRUE,  FALSE
+};
 
 
 
@@ -96,7 +97,8 @@ static const unsigned char SCRAMBLER_TABLE_BYTES[] = {
     0x3b, 0xcb, 0x24, 0x08, 0x98, 0xba, 0xd8, 0x33, 0x53, 0x9e, 0xd0, 0xab, 0xe9, 0x46, 0xe3, 0xf8,
     0x77, 0x96, 0x48, 0x11, 0x31, 0x75, 0xb0, 0x66, 0xa7, 0x3d, 0xa1, 0x57, 0xd2, 0x8d, 0xc7, 0xf0,
     0xef, 0x2c, 0x90, 0x22, 0x62, 0xeb, 0x60, 0xcd, 0x4e, 0x7b, 0x42, 0xaf, 0xa5, 0x1b, 0x8f, 0xe1,
-    0xde, 0x59, 0x20, 0x44, 0xc5, 0xd6, 0xc1, 0x9a, 0x9c, 0xf6};
+    0xde, 0x59, 0x20, 0x44, 0xc5, 0xd6, 0xc1, 0x9a, 0x9c, 0xf6
+};
 
 
 static const unsigned int INTERLEAVE_TABLE[] = {
@@ -139,79 +141,80 @@ static const unsigned int INTERLEAVE_TABLE[] = {
     81, 109, 137, 165, 193, 221, 249, 277, 305, 333, 361, 388, 415, 442, 469, 496, 523,
     550, 577, 604, 631, 658, 26, 54, 82, 110, 138, 166, 194, 222, 250, 278, 306, 334,
     362, 389, 416, 443, 470, 497, 524, 551, 578, 605, 632, 659, 27, 55, 83, 111, 139,
-    167, 195, 223, 251, 279, 307, 335};
+    167, 195, 223, 251, 279, 307, 335
+};
 
 static const unsigned short ccittTab[] = {
-    0x0000,0x1189,0x2312,0x329b,0x4624,0x57ad,0x6536,0x74bf,
-    0x8c48,0x9dc1,0xaf5a,0xbed3,0xca6c,0xdbe5,0xe97e,0xf8f7,
-    0x1081,0x0108,0x3393,0x221a,0x56a5,0x472c,0x75b7,0x643e,
-    0x9cc9,0x8d40,0xbfdb,0xae52,0xdaed,0xcb64,0xf9ff,0xe876,
-    0x2102,0x308b,0x0210,0x1399,0x6726,0x76af,0x4434,0x55bd,
-    0xad4a,0xbcc3,0x8e58,0x9fd1,0xeb6e,0xfae7,0xc87c,0xd9f5,
-    0x3183,0x200a,0x1291,0x0318,0x77a7,0x662e,0x54b5,0x453c,
-    0xbdcb,0xac42,0x9ed9,0x8f50,0xfbef,0xea66,0xd8fd,0xc974,
-    0x4204,0x538d,0x6116,0x709f,0x0420,0x15a9,0x2732,0x36bb,
-    0xce4c,0xdfc5,0xed5e,0xfcd7,0x8868,0x99e1,0xab7a,0xbaf3,
-    0x5285,0x430c,0x7197,0x601e,0x14a1,0x0528,0x37b3,0x263a,
-    0xdecd,0xcf44,0xfddf,0xec56,0x98e9,0x8960,0xbbfb,0xaa72,
-    0x6306,0x728f,0x4014,0x519d,0x2522,0x34ab,0x0630,0x17b9,
-    0xef4e,0xfec7,0xcc5c,0xddd5,0xa96a,0xb8e3,0x8a78,0x9bf1,
-    0x7387,0x620e,0x5095,0x411c,0x35a3,0x242a,0x16b1,0x0738,
-    0xffcf,0xee46,0xdcdd,0xcd54,0xb9eb,0xa862,0x9af9,0x8b70,
-    0x8408,0x9581,0xa71a,0xb693,0xc22c,0xd3a5,0xe13e,0xf0b7,
-    0x0840,0x19c9,0x2b52,0x3adb,0x4e64,0x5fed,0x6d76,0x7cff,
-    0x9489,0x8500,0xb79b,0xa612,0xd2ad,0xc324,0xf1bf,0xe036,
-    0x18c1,0x0948,0x3bd3,0x2a5a,0x5ee5,0x4f6c,0x7df7,0x6c7e,
-    0xa50a,0xb483,0x8618,0x9791,0xe32e,0xf2a7,0xc03c,0xd1b5,
-    0x2942,0x38cb,0x0a50,0x1bd9,0x6f66,0x7eef,0x4c74,0x5dfd,
-    0xb58b,0xa402,0x9699,0x8710,0xf3af,0xe226,0xd0bd,0xc134,
-    0x39c3,0x284a,0x1ad1,0x0b58,0x7fe7,0x6e6e,0x5cf5,0x4d7c,
-    0xc60c,0xd785,0xe51e,0xf497,0x8028,0x91a1,0xa33a,0xb2b3,
-    0x4a44,0x5bcd,0x6956,0x78df,0x0c60,0x1de9,0x2f72,0x3efb,
-    0xd68d,0xc704,0xf59f,0xe416,0x90a9,0x8120,0xb3bb,0xa232,
-    0x5ac5,0x4b4c,0x79d7,0x685e,0x1ce1,0x0d68,0x3ff3,0x2e7a,
-    0xe70e,0xf687,0xc41c,0xd595,0xa12a,0xb0a3,0x8238,0x93b1,
-    0x6b46,0x7acf,0x4854,0x59dd,0x2d62,0x3ceb,0x0e70,0x1ff9,
-    0xf78f,0xe606,0xd49d,0xc514,0xb1ab,0xa022,0x92b9,0x8330,
-    0x7bc7,0x6a4e,0x58d5,0x495c,0x3de3,0x2c6a,0x1ef1,0x0f78};
+    0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf,
+    0x8c48, 0x9dc1, 0xaf5a, 0xbed3, 0xca6c, 0xdbe5, 0xe97e, 0xf8f7,
+    0x1081, 0x0108, 0x3393, 0x221a, 0x56a5, 0x472c, 0x75b7, 0x643e,
+    0x9cc9, 0x8d40, 0xbfdb, 0xae52, 0xdaed, 0xcb64, 0xf9ff, 0xe876,
+    0x2102, 0x308b, 0x0210, 0x1399, 0x6726, 0x76af, 0x4434, 0x55bd,
+    0xad4a, 0xbcc3, 0x8e58, 0x9fd1, 0xeb6e, 0xfae7, 0xc87c, 0xd9f5,
+    0x3183, 0x200a, 0x1291, 0x0318, 0x77a7, 0x662e, 0x54b5, 0x453c,
+    0xbdcb, 0xac42, 0x9ed9, 0x8f50, 0xfbef, 0xea66, 0xd8fd, 0xc974,
+    0x4204, 0x538d, 0x6116, 0x709f, 0x0420, 0x15a9, 0x2732, 0x36bb,
+    0xce4c, 0xdfc5, 0xed5e, 0xfcd7, 0x8868, 0x99e1, 0xab7a, 0xbaf3,
+    0x5285, 0x430c, 0x7197, 0x601e, 0x14a1, 0x0528, 0x37b3, 0x263a,
+    0xdecd, 0xcf44, 0xfddf, 0xec56, 0x98e9, 0x8960, 0xbbfb, 0xaa72,
+    0x6306, 0x728f, 0x4014, 0x519d, 0x2522, 0x34ab, 0x0630, 0x17b9,
+    0xef4e, 0xfec7, 0xcc5c, 0xddd5, 0xa96a, 0xb8e3, 0x8a78, 0x9bf1,
+    0x7387, 0x620e, 0x5095, 0x411c, 0x35a3, 0x242a, 0x16b1, 0x0738,
+    0xffcf, 0xee46, 0xdcdd, 0xcd54, 0xb9eb, 0xa862, 0x9af9, 0x8b70,
+    0x8408, 0x9581, 0xa71a, 0xb693, 0xc22c, 0xd3a5, 0xe13e, 0xf0b7,
+    0x0840, 0x19c9, 0x2b52, 0x3adb, 0x4e64, 0x5fed, 0x6d76, 0x7cff,
+    0x9489, 0x8500, 0xb79b, 0xa612, 0xd2ad, 0xc324, 0xf1bf, 0xe036,
+    0x18c1, 0x0948, 0x3bd3, 0x2a5a, 0x5ee5, 0x4f6c, 0x7df7, 0x6c7e,
+    0xa50a, 0xb483, 0x8618, 0x9791, 0xe32e, 0xf2a7, 0xc03c, 0xd1b5,
+    0x2942, 0x38cb, 0x0a50, 0x1bd9, 0x6f66, 0x7eef, 0x4c74, 0x5dfd,
+    0xb58b, 0xa402, 0x9699, 0x8710, 0xf3af, 0xe226, 0xd0bd, 0xc134,
+    0x39c3, 0x284a, 0x1ad1, 0x0b58, 0x7fe7, 0x6e6e, 0x5cf5, 0x4d7c,
+    0xc60c, 0xd785, 0xe51e, 0xf497, 0x8028, 0x91a1, 0xa33a, 0xb2b3,
+    0x4a44, 0x5bcd, 0x6956, 0x78df, 0x0c60, 0x1de9, 0x2f72, 0x3efb,
+    0xd68d, 0xc704, 0xf59f, 0xe416, 0x90a9, 0x8120, 0xb3bb, 0xa232,
+    0x5ac5, 0x4b4c, 0x79d7, 0x685e, 0x1ce1, 0x0d68, 0x3ff3, 0x2e7a,
+    0xe70e, 0xf687, 0xc41c, 0xd595, 0xa12a, 0xb0a3, 0x8238, 0x93b1,
+    0x6b46, 0x7acf, 0x4854, 0x59dd, 0x2d62, 0x3ceb, 0x0e70, 0x1ff9,
+    0xf78f, 0xe606, 0xd49d, 0xc514, 0xb1ab, 0xa022, 0x92b9, 0x8330,
+    0x7bc7, 0x6a4e, 0x58d5, 0x495c, 0x3de3, 0x2c6a, 0x1ef1, 0x0f78
+};
 
-void dstar_scramble(BOOL * in, BOOL * out, uint32 length, uint32 * scramble_count)
-{
-    if ( out == NULL || in == NULL || scramble_count == NULL) {
-        output("Null inOut pointer\n");
+void dstar_scramble( BOOL * in, BOOL * out, uint32 length, uint32 * scramble_count ) {
+    if ( out == NULL || in == NULL || scramble_count == NULL ) {
+        output( "Null inOut pointer\n" );
         return;
     }
 
     uint32 i = 0;
 
     for ( i = 0 ; i < length ; i++ ) {
-        out[i] = in[i] ^ SCRAMBLER_TABLE_BITS[(*scramble_count)++];
+        out[i] = in[i] ^ SCRAMBLER_TABLE_BITS[( *scramble_count )++];
 
-        if (*scramble_count >= SCRAMBLER_TABLE_BITS_LENGTH)
+        if ( *scramble_count >= SCRAMBLER_TABLE_BITS_LENGTH )
             *scramble_count = 0U;
     }
 }
 
 
-void dstar_interleave(const BOOL * in, BOOL * out, unsigned int length)
-{
+void dstar_interleave( const BOOL * in, BOOL * out, unsigned int length ) {
     if ( in == NULL || out == NULL ) {
-        output(ANSI_RED "Null in or out in interleave\n" ANSI_WHITE);
+        output( ANSI_RED "Null in or out in interleave\n" ANSI_WHITE );
         return;
     }
 
     if ( length != FEC_SECTION_LENGTH_BITS ) {
-        output(ANSI_RED "Wrong leangth in interleave\n" ANSI_WHITE);
+        output( ANSI_RED "Wrong leangth in interleave\n" ANSI_WHITE );
     }
 
-    memset(out, 0, FEC_SECTION_LENGTH_BITS * sizeof(BOOL));
+    memset( out, 0, FEC_SECTION_LENGTH_BITS * sizeof( BOOL ) );
     uint32 i = 0;
+
     for ( i = 0 ; i < FEC_SECTION_LENGTH_BITS ; i++ ) {
         if ( in[i] ) {
             unsigned int newi = INTERLEAVE_TABLE[i];
 
             if ( newi >= FEC_SECTION_LENGTH_BITS ) {
-                output(ANSI_RED "Out of range index interleave\n" ANSI_WHITE);
+                output( ANSI_RED "Out of range index interleave\n" ANSI_WHITE );
             }
 
             out[newi] = TRUE;
@@ -220,27 +223,28 @@ void dstar_interleave(const BOOL * in, BOOL * out, unsigned int length)
     }
 }
 
-void dstar_deinterleave(const BOOL * in, BOOL * out, unsigned int length)
-{
+void dstar_deinterleave( const BOOL * in, BOOL * out, unsigned int length ) {
 
-    memset(out, 0, FEC_SECTION_LENGTH_BITS * sizeof(BOOL));
+    memset( out, 0, FEC_SECTION_LENGTH_BITS * sizeof( BOOL ) );
 
     uint32 k = 0;
     uint32 i = 0;
+
     for ( i = 0 ; i < length ; i++ ) {
         if ( k >=  FEC_SECTION_LENGTH_BITS ) {
-            output(ANSI_RED "k greater than FEC_SECTION_LENGTH_BITS - deinterleave\n" ANSI_WHITE);
+            output( ANSI_RED "k greater than FEC_SECTION_LENGTH_BITS - deinterleave\n" ANSI_WHITE );
         }
 
-        if (in[i])
+        if ( in[i] )
             out[k] = TRUE;
         else
             out[k] = FALSE;
 
         k += 24U;
-        if (k >= 672U)
+
+        if ( k >= 672U )
             k -= 671U;
-        else if (k >= 660U)
+        else if ( k >= 660U )
             k -= 647U;
     }
 }
@@ -256,15 +260,15 @@ enum FEC_STATE {
 };
 
 
-void dstar_FECacs(DSTAR_FEC fec, unsigned int n, int* metric)
-{
+void dstar_FECacs( DSTAR_FEC fec, unsigned int n, int * metric ) {
     //output("ACS\n");
     int tempMetric[4];
 
     // Pres. state = S0, Prev. state = S0 & S2
     int m1 = metric[0] + fec->metric[0];
     int m2 = metric[4] + fec->metric[2];
-    if (m1 < m2) {
+
+    if ( m1 < m2 ) {
         fec->mem0[n] = FALSE;
         tempMetric[0]    = m1;
     } else {
@@ -275,7 +279,8 @@ void dstar_FECacs(DSTAR_FEC fec, unsigned int n, int* metric)
     // Pres. state = S1, Prev. state = S0 & S2
     m1 = metric[1] + fec->metric[0];
     m2 = metric[5] + fec->metric[2];
-    if (m1 < m2) {
+
+    if ( m1 < m2 ) {
         fec->mem1[n] = FALSE;
         tempMetric[1]    = m1;
     } else {
@@ -286,7 +291,8 @@ void dstar_FECacs(DSTAR_FEC fec, unsigned int n, int* metric)
     // Pres. state = S2, Prev. state = S2 & S3
     m1 = metric[2] + fec->metric[1];
     m2 = metric[6] + fec->metric[3];
-    if (m1 < m2) {
+
+    if ( m1 < m2 ) {
         fec->mem2[n] = FALSE;
         tempMetric[2]    = m1;
     } else {
@@ -297,169 +303,183 @@ void dstar_FECacs(DSTAR_FEC fec, unsigned int n, int* metric)
     // Pres. state = S3, Prev. state = S1 & S3
     m1 = metric[3] + fec->metric[1];
     m2 = metric[7] + fec->metric[3];
-    if (m1 < m2) {
+
+    if ( m1 < m2 ) {
         fec->mem3[n] = FALSE;
         tempMetric[3]    = m1;
     } else {
         fec->mem3[n] = TRUE;
         tempMetric[3]    = m2;
     }
+
     uint32 i = 0;
-    for ( i = 0 ; i < 4 ; i++)
+
+    for ( i = 0 ; i < 4 ; i++ )
         fec->metric[i] = tempMetric[i];
 }
 
 
-void dstar_FECtraceBack(DSTAR_FEC fec, BOOL * out, unsigned int * length)
-{
+void dstar_FECtraceBack( DSTAR_FEC fec, BOOL * out, unsigned int * length ) {
     //output("traceBack\n");
     // Start from the S0, t=31
     enum FEC_STATE state = S0;
 
     *length = 0U;
     int i = 0;
-    for ( i = 329 ; i >= 0 ; i--, (*length)++) {
-        switch (state) {
-            case S0: // if state = S0
-                //output("i = %d\n");
-                if (fec->mem0[i])
-                    state = S2;             // lower path
-                else
-                    state = S0;             // upper path
-                out[i] = FALSE;
-                break;
 
-            case S1: // if state = S1
-                if (fec->mem1[i])
-                    state = S2;             // lower path
-                else
-                    state = S0;             // upper path
-                out[i] = TRUE;
-                break;
+    for ( i = 329 ; i >= 0 ; i--, ( *length )++ ) {
+        switch ( state ) {
+        case S0: // if state = S0
 
-            case S2: // if state = S2
-                if (fec->mem2[i])
-                    state = S3;             // lower path
-                else
-                    state = S1;             // upper path
-                out[i] = FALSE;
-                break;
+            //output("i = %d\n");
+            if ( fec->mem0[i] )
+                state = S2;             // lower path
+            else
+                state = S0;             // upper path
 
-            case S3: // if state = S3
-                if (fec->mem3[i])
-                    state = S3;             // lower path
-                else
-                    state = S1;             // upper path
-                out[i] = TRUE;
-                break;
+            out[i] = FALSE;
+            break;
+
+        case S1: // if state = S1
+            if ( fec->mem1[i] )
+                state = S2;             // lower path
+            else
+                state = S0;             // upper path
+
+            out[i] = TRUE;
+            break;
+
+        case S2: // if state = S2
+            if ( fec->mem2[i] )
+                state = S3;             // lower path
+            else
+                state = S1;             // upper path
+
+            out[i] = FALSE;
+            break;
+
+        case S3: // if state = S3
+            if ( fec->mem3[i] )
+                state = S3;             // lower path
+            else
+                state = S1;             // upper path
+
+            out[i] = TRUE;
+            break;
         }
     }
 }
 
 
-void dstar_FECviterbiDecode(DSTAR_FEC fec, unsigned int n, int * data)
-{
+void dstar_FECviterbiDecode( DSTAR_FEC fec, unsigned int n, int * data ) {
     //output("ViterbiDecode\n");
     int metric[8];
 
-    metric[0] = (data[1] ^ 0) + (data[0] ^ 0);
-    metric[1] = (data[1] ^ 1) + (data[0] ^ 1);
-    metric[2] = (data[1] ^ 1) + (data[0] ^ 0);
-    metric[3] = (data[1] ^ 0) + (data[0] ^ 1);
-    metric[4] = (data[1] ^ 1) + (data[0] ^ 1);
-    metric[5] = (data[1] ^ 0) + (data[0] ^ 0);
-    metric[6] = (data[1] ^ 0) + (data[0] ^ 1);
-    metric[7] = (data[1] ^ 1) + (data[0] ^ 0);
+    metric[0] = ( data[1] ^ 0 ) + ( data[0] ^ 0 );
+    metric[1] = ( data[1] ^ 1 ) + ( data[0] ^ 1 );
+    metric[2] = ( data[1] ^ 1 ) + ( data[0] ^ 0 );
+    metric[3] = ( data[1] ^ 0 ) + ( data[0] ^ 1 );
+    metric[4] = ( data[1] ^ 1 ) + ( data[0] ^ 1 );
+    metric[5] = ( data[1] ^ 0 ) + ( data[0] ^ 0 );
+    metric[6] = ( data[1] ^ 0 ) + ( data[0] ^ 1 );
+    metric[7] = ( data[1] ^ 1 ) + ( data[0] ^ 0 );
 
-    dstar_FECacs(fec, n, metric);
+    dstar_FECacs( fec, n, metric );
 }
 
 
-BOOL dstar_FECdecode(DSTAR_FEC fec,const BOOL * in, BOOL * out, unsigned int inLen, unsigned int * outLen)
-{
+BOOL dstar_FECdecode( DSTAR_FEC fec, const BOOL * in, BOOL * out, unsigned int inLen, unsigned int * outLen ) {
     if ( in == NULL || out == NULL ) {
-        output(ANSI_RED "NULL in or out in FECDecode\n" ANSI_WHITE);
+        output( ANSI_RED "NULL in or out in FECDecode\n" ANSI_WHITE );
         return FALSE;
     }
 
     uint32 i = 0;
-    for ( i = 0U; i < 4U; i++)
+
+    for ( i = 0U; i < 4U; i++ )
         fec->metric[i] = 0;
 
     unsigned int n = 0U;
-    for ( i = 0U; i < FEC_SECTION_LENGTH_BITS; i += 2U, n++) {
+
+    for ( i = 0U; i < FEC_SECTION_LENGTH_BITS; i += 2U, n++ ) {
         int data[2];
 
-        if (in[i + 0U])
+        if ( in[i + 0U] )
             data[1] = 1;
         else
             data[1] = 0;
 
-        if (in[i + 1U])
+        if ( in[i + 1U] )
             data[0] = 1;
         else
             data[0] = 0;
 
-        dstar_FECviterbiDecode(fec, n, data);
+        dstar_FECviterbiDecode( fec, n, data );
     }
 
-    dstar_FECtraceBack(fec, out, outLen);
+    dstar_FECtraceBack( fec, out, outLen );
 
     // Swap endian-ness
-    for ( i = 0U; i < RADIO_HEADER_LENGTH_BITS; i += 8U) {
+    for ( i = 0U; i < RADIO_HEADER_LENGTH_BITS; i += 8U ) {
         BOOL temp;
-        temp = out[i + 0U]; out[i + 0U] = out[i + 7U]; out[i + 7U] = temp;
-        temp = out[i + 1U]; out[i + 1U] = out[i + 6U]; out[i + 6U] = temp;
-        temp = out[i + 2U]; out[i + 2U] = out[i + 5U]; out[i + 5U] = temp;
-        temp = out[i + 3U]; out[i + 3U] = out[i + 4U]; out[i + 4U] = temp;
+        temp = out[i + 0U];
+        out[i + 0U] = out[i + 7U];
+        out[i + 7U] = temp;
+        temp = out[i + 1U];
+        out[i + 1U] = out[i + 6U];
+        out[i + 6U] = temp;
+        temp = out[i + 2U];
+        out[i + 2U] = out[i + 5U];
+        out[i + 5U] = temp;
+        temp = out[i + 3U];
+        out[i + 3U] = out[i + 4U];
+        out[i + 4U] = temp;
     }
 
     return TRUE;
 }
 
 
-void dstar_FECencode(const BOOL * in, BOOL * out, unsigned int inLen, unsigned int * outLen)
-{
+void dstar_FECencode( const BOOL * in, BOOL * out, unsigned int inLen, unsigned int * outLen ) {
 
     *outLen = 0U;
     int d1 = 0;
     int d2 = 0;
     uint32 i = 0;
     int32 j = 0;
-    for ( i = 0U; i < 42U; i++) {
-        for ( j = 7; j >= 0; j--) {
+
+    for ( i = 0U; i < 42U; i++ ) {
+        for ( j = 7; j >= 0; j-- ) {
             int d = in[i * 8U + j] ? 1 : 0;
 
-            int g0 = (d + d2) % 2;
-            int g1 = (d + d1 + d2) % 2;
+            int g0 = ( d + d2 ) % 2;
+            int g1 = ( d + d1 + d2 ) % 2;
 
             d2 = d1;
             d1 = d;
 
-            out[(*outLen)++] = g1 == 1;
-            out[(*outLen)++] = g0 == 1;
+            out[( *outLen )++] = g1 == 1;
+            out[( *outLen )++] = g0 == 1;
         }
     }
 }
 
 
-void dstar_createTestHeader( DSTAR_HEADER header )
-{
-    strcpy(header->departure_rptr, "DIRECT  ");
-    strcpy(header->destination_rptr, "DIRECT  ");
-    strcpy(header->companion_call, "CQCQCQ  ");
-    strcpy(header->own_call1, "CALLSIGN");
-    strcpy(header->own_call2, "    ");
+void dstar_createTestHeader( DSTAR_HEADER header ) {
+    strcpy( header->departure_rptr, "DIRECT  " );
+    strcpy( header->destination_rptr, "DIRECT  " );
+    strcpy( header->companion_call, "CQCQCQ  " );
+    strcpy( header->own_call1, "CALLSIGN" );
+    strcpy( header->own_call2, "    " );
 }
 
-DSTAR_MACHINE dstar_createMachine(void)
-{
-    DSTAR_MACHINE machine = safe_malloc(sizeof(dstar_machine));
-    memset(machine, 0, sizeof(dstar_machine));
+DSTAR_MACHINE dstar_createMachine( void ) {
+    DSTAR_MACHINE machine = safe_malloc( sizeof( dstar_machine ) );
+    memset( machine, 0, sizeof( dstar_machine ) );
 
     machine->state = BIT_FRAME_SYNC_WAIT;
 
-    BOOL syn_bits[15+4] = {0};
+    BOOL syn_bits[15 + 4] = {0};
     uint32 i = 0;
 
     syn_bits[0] = TRUE;
@@ -469,85 +489,82 @@ DSTAR_MACHINE dstar_createMachine(void)
 
 
     BOOL frame_bits[] = {TRUE, TRUE,  TRUE, FALSE, TRUE,  TRUE,  FALSE, FALSE,
-            TRUE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE};
+                         TRUE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE
+                        };
 
     for ( i = 4 ; i < 15 + 4 ; i++ ) {
-        syn_bits[i] = frame_bits[i-4];
+        syn_bits[i] = frame_bits[i - 4];
     }
 
-    machine->syn_pm = bitPM_create( syn_bits, 15 + 4);
-    machine->data_sync_pm = bitPM_create( DATA_SYNC_BITS, 24);
-    machine->end_pm = bitPM_create(END_PATTERN_BITS, END_PATTERN_LENGTH_BITS);
+    machine->syn_pm = bitPM_create( syn_bits, 15 + 4 );
+    machine->data_sync_pm = bitPM_create( DATA_SYNC_BITS, 24 );
+    machine->end_pm = bitPM_create( END_PATTERN_BITS, END_PATTERN_LENGTH_BITS );
 
 
-    dstar_createTestHeader(&(machine->outgoing_header));
+    dstar_createTestHeader( &( machine->outgoing_header ) );
 
     return machine;
 }
 
-void dstar_destroyMachine(DSTAR_MACHINE machine)
-{
-    bitPM_destroy(machine->syn_pm);
-    bitPM_destroy(machine->data_sync_pm);
-    bitPM_destroy(machine->end_pm);
+void dstar_destroyMachine( DSTAR_MACHINE machine ) {
+    bitPM_destroy( machine->syn_pm );
+    bitPM_destroy( machine->data_sync_pm );
+    bitPM_destroy( machine->end_pm );
 
-    safe_free(machine);
+    safe_free( machine );
 }
 
-void dstar_dumpHeader( DSTAR_HEADER header )
-{
-    output("HEADER:\n");
-    output("Flag1: 0x%08X\n", header->flag1);
-    output("Flag2: 0x%08X\n", header->flag2);
-    output("Flag3: 0x%08X\n", header->flag3);
-    output("Destination RPTR: '%s'\n", header->destination_rptr);
-    output("Departure RPTR: '%s'\n", header->departure_rptr);
-    output("Companion Call: '%s'\n", header->companion_call);
-    output("Own Call 1: '%s'\n", header->own_call1);
-    output("Own Call 2: '%s'\n", header->own_call2);
+void dstar_dumpHeader( DSTAR_HEADER header ) {
+    output( "HEADER:\n" );
+    output( "Flag1: 0x%08X\n", header->flag1 );
+    output( "Flag2: 0x%08X\n", header->flag2 );
+    output( "Flag3: 0x%08X\n", header->flag3 );
+    output( "Destination RPTR: '%s'\n", header->destination_rptr );
+    output( "Departure RPTR: '%s'\n", header->departure_rptr );
+    output( "Companion Call: '%s'\n", header->companion_call );
+    output( "Own Call 1: '%s'\n", header->own_call1 );
+    output( "Own Call 2: '%s'\n", header->own_call2 );
 }
 
-void dstar_headerToBytes(DSTAR_HEADER header, unsigned char * bytes)
-{
-    memset(bytes, 0, 39 * sizeof(unsigned char));
+void dstar_headerToBytes( DSTAR_HEADER header, unsigned char * bytes ) {
+    memset( bytes, 0, 39 * sizeof( unsigned char ) );
 
     bytes[0] = header->flag1;
     bytes[1] = header->flag2;
     bytes[2] = header->flag3;
 
-    memcpy(&bytes[3], header->destination_rptr, 8);
-    memcpy(&bytes[3+8], header->departure_rptr, 8);
-    memcpy(&bytes[3+8+8], header->companion_call, 8);
-    memcpy(&bytes[3+8+8+8], header->own_call1, 8);
-    memcpy(&bytes[3+8+8+8+8], header->own_call2, 4);
+    memcpy( &bytes[3], header->destination_rptr, 8 );
+    memcpy( &bytes[3 + 8], header->departure_rptr, 8 );
+    memcpy( &bytes[3 + 8 + 8], header->companion_call, 8 );
+    memcpy( &bytes[3 + 8 + 8 + 8], header->own_call1, 8 );
+    memcpy( &bytes[3 + 8 + 8 + 8 + 8], header->own_call2, 4 );
 }
 
-void dstar_processHeader(unsigned char * bytes, DSTAR_HEADER header)
-{
+void dstar_processHeader( unsigned char * bytes, DSTAR_HEADER header ) {
     /* Takes in an array of bytes and parses out each header field */
-    memset(header, 0, sizeof(dstar_header));
+    memset( header, 0, sizeof( dstar_header ) );
 
     header->flag1 = bytes[0];
     header->flag2 = bytes[1];
     header->flag3 = bytes[2];
 
-    memcpy(header->destination_rptr, &bytes[3], 8);
-    memcpy(header->departure_rptr, &bytes[3+8], 8);
-    memcpy(header->companion_call, &bytes[3+8+8], 8);
-    memcpy(header->own_call1, &bytes[3+8+8+8], 8);
-    memcpy(header->own_call2, &bytes[3+8+8+8+8], 4);
+    memcpy( header->destination_rptr, &bytes[3], 8 );
+    memcpy( header->departure_rptr, &bytes[3 + 8], 8 );
+    memcpy( header->companion_call, &bytes[3 + 8 + 8], 8 );
+    memcpy( header->own_call1, &bytes[3 + 8 + 8 + 8], 8 );
+    memcpy( header->own_call2, &bytes[3 + 8 + 8 + 8 + 8], 4 );
 
-    dstar_dumpHeader(header);
+    dstar_dumpHeader( header );
 }
 
-static unsigned char icom_bitsToByte(const BOOL * bits)
-{
+static unsigned char icom_bitsToByte( const BOOL * bits ) {
     uint32 l = 0;
 
     unsigned char val = 0x00;
 
     for ( l = 0 ; l < 8 ; l++ ) {
         val >>= 1;
+
         if ( bits[l] ) {
             val |= 0x80;
         }
@@ -556,10 +573,9 @@ static unsigned char icom_bitsToByte(const BOOL * bits)
     return val;
 }
 
-void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice,  enum STATUS_TYPE type)
-{
+void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice,  enum STATUS_TYPE type ) {
     if ( machine == NULL ) {
-        output(ANSI_RED "NULL dStar machine %s\n" ANSI_WHITE, __LINE__);
+        output( ANSI_RED "NULL dStar machine %s\n" ANSI_WHITE, __LINE__ );
         return;
     }
 
@@ -569,46 +585,47 @@ void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice,  enum STATUS_TYPE 
 
     /* Make copy to replace spaces with special char */
     dstar_header h;
-    switch(type) {
 
-        case STATUS_RX:
-        memcpy(&h, &(machine->incoming_header), sizeof(dstar_header) );
+    switch ( type ) {
 
-        charReplace((char*)h.destination_rptr, ' ', (char) 0x7F );
-        charReplace((char*)h.departure_rptr, ' ', (char) 0x7F );
-        charReplace((char*)h.companion_call, ' ', (char) 0x7F );
-        charReplace((char*)h.own_call1, ' ', (char) 0x7F );
-        charReplace((char*)h.own_call2, ' ', (char) 0x7F );
+    case STATUS_RX:
+        memcpy( &h, &( machine->incoming_header ), sizeof( dstar_header ) );
 
-        sprintf(header_string, "destination_rptr_rx=%s departure_rptr_rx=%s companion_call_rx=%s own_call1_rx=%s own_call2_rx=%s",
-                h.destination_rptr, h.departure_rptr, h.companion_call, h.own_call1, h.own_call2);
+        charReplace( ( char * )h.destination_rptr, ' ', ( char ) 0x7F );
+        charReplace( ( char * )h.departure_rptr, ' ', ( char ) 0x7F );
+        charReplace( ( char * )h.companion_call, ' ', ( char ) 0x7F );
+        charReplace( ( char * )h.own_call1, ' ', ( char ) 0x7F );
+        charReplace( ( char * )h.own_call2, ' ', ( char ) 0x7F );
 
-        sprintf(status, "waveform status slice=%d %s", slice, header_string);
+        sprintf( header_string, "destination_rptr_rx=%s departure_rptr_rx=%s companion_call_rx=%s own_call1_rx=%s own_call2_rx=%s",
+                 h.destination_rptr, h.departure_rptr, h.companion_call, h.own_call1, h.own_call2 );
 
-        tc_sendSmartSDRcommand(status, FALSE, NULL);
+        sprintf( status, "waveform status slice=%d %s", slice, header_string );
+
+        tc_sendSmartSDRcommand( status, FALSE, NULL );
         break;
-        case STATUS_TX:
 
-        memcpy(&h, &(machine->outgoing_header), sizeof(dstar_header) );
+    case STATUS_TX:
 
-        charReplace((char*)h.destination_rptr, ' ', (char) 0x7F );
-        charReplace((char*)h.departure_rptr, ' ', (char) 0x7F );
-        charReplace((char*)h.companion_call, ' ', (char) 0x7F );
-        charReplace((char*)h.own_call1, ' ', (char) 0x7F );
-        charReplace((char*)h.own_call2, ' ', (char) 0x7F );
+        memcpy( &h, &( machine->outgoing_header ), sizeof( dstar_header ) );
 
-        sprintf(header_string, "destination_rptr_tx=%s departure_rptr_tx=%s companion_call_tx=%s own_call1_tx=%s own_call2_tx=%s",
-                h.destination_rptr, h.departure_rptr, h.companion_call, h.own_call1, h.own_call2);
+        charReplace( ( char * )h.destination_rptr, ' ', ( char ) 0x7F );
+        charReplace( ( char * )h.departure_rptr, ' ', ( char ) 0x7F );
+        charReplace( ( char * )h.companion_call, ' ', ( char ) 0x7F );
+        charReplace( ( char * )h.own_call1, ' ', ( char ) 0x7F );
+        charReplace( ( char * )h.own_call2, ' ', ( char ) 0x7F );
 
-        sprintf(status, "waveform status slice=%d %s", slice, header_string);
+        sprintf( header_string, "destination_rptr_tx=%s departure_rptr_tx=%s companion_call_tx=%s own_call1_tx=%s own_call2_tx=%s",
+                 h.destination_rptr, h.departure_rptr, h.companion_call, h.own_call1, h.own_call2 );
 
-        tc_sendSmartSDRcommand(status, FALSE, NULL);
+        sprintf( status, "waveform status slice=%d %s", slice, header_string );
+
+        tc_sendSmartSDRcommand( status, FALSE, NULL );
         break;
     }
 }
 
-BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len)
-{
+BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len ) {
     BOOL have_audio_packet = FALSE;
     BOOL found_syn_bits = FALSE;
     BOOL found_end_bits = FALSE;
@@ -620,225 +637,232 @@ BOOL dstar_stateMachine(DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe
     static uint32 long_data_bytes_idx = 0;
 
     //unsigned char bytes[((24+72) * 50)/8 + 1];
-    unsigned char bytes[FEC_SECTION_LENGTH_BITS/8 + 1];
+    unsigned char bytes[FEC_SECTION_LENGTH_BITS / 8 + 1];
 
-    switch(machine->state)
-    {
-        case BIT_FRAME_SYNC_WAIT:
-            found_syn_bits = bitPM_addBit(machine->syn_pm, in_bit);
-            BOOL found_data_sync = bitPM_addBit(machine->data_sync_pm, in_bit);
+    switch ( machine->state ) {
+    case BIT_FRAME_SYNC_WAIT:
+        found_syn_bits = bitPM_addBit( machine->syn_pm, in_bit );
+        BOOL found_data_sync = bitPM_addBit( machine->data_sync_pm, in_bit );
 
-            if ( found_syn_bits ) {
-                output("FOUND SYN BITS\n");
-                bitPM_reset(machine->syn_pm);
-                bitPM_reset(machine->data_sync_pm);
-                machine->state = HEADER_PROCESSING;
-                machine->bit_count = 0;
-            } else if ( found_data_sync ) {
-                output("FOUND DATA SYNC BITS instead of header\n");
-                bitPM_reset(machine->syn_pm);
-                bitPM_reset(machine->data_sync_pm);
-                machine->state = VOICE_FRAME;
-                machine->bit_count = 0;
-                machine->frame_count++;
-            }
-            break;
-        case HEADER_PROCESSING:
-            header[machine->bit_count++] = in_bit;
+        if ( found_syn_bits ) {
+            output( "FOUND SYN BITS\n" );
+            bitPM_reset( machine->syn_pm );
+            bitPM_reset( machine->data_sync_pm );
+            machine->state = HEADER_PROCESSING;
+            machine->bit_count = 0;
+        } else if ( found_data_sync ) {
+            output( "FOUND DATA SYNC BITS instead of header\n" );
+            bitPM_reset( machine->syn_pm );
+            bitPM_reset( machine->data_sync_pm );
+            machine->state = VOICE_FRAME;
+            machine->bit_count = 0;
+            machine->frame_count++;
+        }
+        break;
 
-            if ( machine->bit_count == FEC_SECTION_LENGTH_BITS ) {
-               // output("Found 660 bits - descrambling\n");
-                /* Found 660 bits of header */
+    case HEADER_PROCESSING:
+        header[machine->bit_count++] = in_bit;
+
+        if ( machine->bit_count == FEC_SECTION_LENGTH_BITS ) {
+            // output("Found 660 bits - descrambling\n");
+            /* Found 660 bits of header */
 
 //                gmsk_bitsToBytes(header, bytes, FEC_SECTION_LENGTH_BITS);
 //                thumbDV_dump("RAW:", bytes, FEC_SECTION_LENGTH_BITS/8);
 
-
-                uint32 scramble_count = 0;
-                BOOL descrambled[FEC_SECTION_LENGTH_BITS] = {0};
-                dstar_scramble(header, descrambled, FEC_SECTION_LENGTH_BITS, &scramble_count);
+            uint32 scramble_count = 0;
+            BOOL descrambled[FEC_SECTION_LENGTH_BITS] = {0};
+            dstar_scramble( header, descrambled, FEC_SECTION_LENGTH_BITS, &scramble_count );
 //                gmsk_bitsToBytes(descrambled, bytes, FEC_SECTION_LENGTH_BITS);
 //                thumbDV_dump("DESCRAMBLE:", bytes, FEC_SECTION_LENGTH_BITS/8);
 
-
-                BOOL out[FEC_SECTION_LENGTH_BITS] = {0};
-                dstar_deinterleave(descrambled, out, FEC_SECTION_LENGTH_BITS);
+            BOOL out[FEC_SECTION_LENGTH_BITS] = {0};
+            dstar_deinterleave( descrambled, out, FEC_SECTION_LENGTH_BITS );
 //                gmsk_bitsToBytes(out, bytes, FEC_SECTION_LENGTH_BITS);
 //                thumbDV_dump("DEINTERLEAVE:", bytes, FEC_SECTION_LENGTH_BITS/8);
-                dstar_fec fec;
-                memset(&fec, 0, sizeof(dstar_fec));
-                unsigned int outLen = FEC_SECTION_LENGTH_BITS;
-                BOOL decoded[FEC_SECTION_LENGTH_BITS / 2] = {0};
-                dstar_FECdecode(&fec, out, decoded, FEC_SECTION_LENGTH_BITS, &outLen);
+            dstar_fec fec;
+            memset( &fec, 0, sizeof( dstar_fec ) );
+            unsigned int outLen = FEC_SECTION_LENGTH_BITS;
+            BOOL decoded[FEC_SECTION_LENGTH_BITS / 2] = {0};
+            dstar_FECdecode( &fec, out, decoded, FEC_SECTION_LENGTH_BITS, &outLen );
 //                output("outLen = %d\n" ,outLen);
-                gmsk_bitsToBytes(decoded, bytes, outLen);
+            gmsk_bitsToBytes( decoded, bytes, outLen );
 //                thumbDV_dump("FEC: ", bytes, outLen/8);
-                uint32 i = 0;
-                dstar_pfcs pfcs;
-                pfcs.crc16 = 0xFFFF;
-                for ( i = 0 ; i < 312 ; i += 8) {
-                    dstar_pfcsUpdate(&pfcs, decoded + i);
-                }
+            uint32 i = 0;
+            dstar_pfcs pfcs;
+            pfcs.crc16 = 0xFFFF;
 
-                BOOL pfcs_match = FALSE;
-                pfcs_match = dstar_pfcsCheck(&pfcs, decoded + 312);
-                if ( pfcs_match ) {
-                    output(ANSI_GREEN "P_FCS Matches!\n" ANSI_WHITE);
-
-                    dstar_processHeader(bytes, &machine->incoming_header);
-
-                    dstar_updateStatus(machine, 0, STATUS_RX);
-
-
-                } else {
-                    output(ANSI_RED "P_FCS Does Not Match!\n" ANSI_WHITE);
-                }
-
-
-
-                /* STATE CHANGE */
-                machine->state = VOICE_FRAME;
-                machine->bit_count = 0;
-                machine->frame_count = 0;
+            for ( i = 0 ; i < 312 ; i += 8 ) {
+                dstar_pfcsUpdate( &pfcs, decoded + i );
             }
 
-            break;
-        case VOICE_FRAME:
-            voice_bits[machine->bit_count++] = in_bit;
+            BOOL pfcs_match = FALSE;
+            pfcs_match = dstar_pfcsCheck( &pfcs, decoded + 312 );
 
-            found_end_bits = bitPM_addBit(machine->end_pm, in_bit);
+            if ( pfcs_match ) {
+                output( ANSI_GREEN "P_FCS Matches!\n" ANSI_WHITE );
 
-            if ( found_end_bits ) {
-                machine->state = END_PATTERN_FOUND;
-                machine->bit_count = 0;
-            } else if ( machine->bit_count == VOICE_FRAME_LENGTH_BITS ) {
-                memset(bytes, 0, VOICE_FRAME_LENGTH_BYTES);
-                uint32 n = 0;
-                uint32 i = 0 ;
-                for ( i = 0, n = 0 ; i < VOICE_FRAME_LENGTH_BYTES ; i++, n += 8) {
-                    bytes[i] = icom_bitsToByte(voice_bits + n);
-                }
+                dstar_processHeader( bytes, &machine->incoming_header );
 
-                //thumbDV_dump("ICOM Order: " , bytes, VOICE_FRAME_LENGTH_BITS / 8);
-                memcpy(ambe_out, bytes, VOICE_FRAME_LENGTH_BITS / 8);
-                have_audio_packet = TRUE;
+                dstar_updateStatus( machine, 0, STATUS_RX );
 
-                /* STATE CHANGE */
-                if ( machine->frame_count % 21 == 0 ) {
-                    /* Expecting a SYNC FRAME */
-                    machine->state = DATA_SYNC_FRAME;
-                } else {
-                    machine->state = DATA_FRAME;
-                }
-                machine->bit_count = 0;
+
+            } else {
+                output( ANSI_RED "P_FCS Does Not Match!\n" ANSI_WHITE );
             }
 
-            break;
-        case DATA_FRAME:
-            data_bits[machine->bit_count++] = in_bit;
-
-            found_end_bits = bitPM_addBit(machine->end_pm, in_bit);
-
-            if ( found_end_bits ) {
-                machine->state = END_PATTERN_FOUND;
-                machine->bit_count = 0;
-            } else if ( machine->bit_count == DATA_FRAME_LENGTH_BITS ) {
-
-                BOOL out[DATA_FRAME_LENGTH_BITS] = {0};
-                uint32 scramble_count = 0;
-                dstar_scramble(data_bits, out,  DATA_FRAME_LENGTH_BITS, &scramble_count);
-
-                //gmsk_bitsToBytes(out, bytes, DATA_FRAME_LENGTH_BITS);
-                uint32 i = 0 ;
-                uint32 n = 0;
-                for ( i = 0, n = 0  ; i < DATA_FRAME_LENGTH_BYTES ; i++, n += 8 ) {
-                    bytes[i]  = icom_bitsToByte(out + n);
-                }
-                //thumbDV_dump("Data Frame:", bytes, DATA_FRAME_LENGTH_BYTES);
-
-                memcpy(data_bytes + long_data_bytes_idx, bytes, 3);
-                long_data_bytes_idx += 3;
-                if ( long_data_bytes_idx >= 3 * 40 * 4 ) {
-                    //thumbDV_dump("Long Data: ", data_bytes, 3 * 40 * 4);
-                    long_data_bytes_idx = 0;
-                }
-
-                machine->frame_count++;
-
-                /* STATE CHANGE */
-                machine->state = VOICE_FRAME;
-                machine->bit_count = 0;
-            }
-            break;
-        case DATA_SYNC_FRAME: {
-            BOOL found_sync = FALSE;
-            found_sync = bitPM_addBit(machine->data_sync_pm, in_bit);
-            machine->bit_count++;
-
-            found_end_bits = bitPM_addBit(machine->end_pm, in_bit);
-
-            if ( found_sync ) {
-                output("Found Sync\n");
-
-                machine->frame_count++;
-
-                bitPM_reset(machine->data_sync_pm);
-                /* STATE CHANGE */
-                machine->state = VOICE_FRAME;
-                machine->bit_count = 0;
-            } else if ( found_end_bits ) {
-                machine->state = END_PATTERN_FOUND;
-                machine->bit_count = 0;
-            } else if ( machine->bit_count > ((DATA_FRAME_LENGTH_BITS + VOICE_FRAME_LENGTH_BITS) * 42) ) {
-                /* Function as a timeout if we don't find the sync bits */
-                output("Could not find SYNC\n");
-
-                bitPM_reset(machine->data_sync_pm);
-
-                /* STATE CHANGE */
-                machine->state = BIT_FRAME_SYNC_WAIT;
-                machine->bit_count = 0;
-            }
-
-            break;
+            /* STATE CHANGE */
+            machine->state = VOICE_FRAME;
+            machine->bit_count = 0;
+            machine->frame_count = 0;
         }
-        case END_PATTERN_FOUND:
 
-            output("Found end pattern bits\n");
-            bitPM_reset(machine->end_pm);
-            bitPM_reset(machine->syn_pm);
+        break;
+
+    case VOICE_FRAME:
+        voice_bits[machine->bit_count++] = in_bit;
+
+        found_end_bits = bitPM_addBit( machine->end_pm, in_bit );
+
+        if ( found_end_bits ) {
+            machine->state = END_PATTERN_FOUND;
+            machine->bit_count = 0;
+        } else if ( machine->bit_count == VOICE_FRAME_LENGTH_BITS ) {
+            memset( bytes, 0, VOICE_FRAME_LENGTH_BYTES );
+            uint32 n = 0;
+            uint32 i = 0 ;
+
+            for ( i = 0, n = 0 ; i < VOICE_FRAME_LENGTH_BYTES ; i++, n += 8 ) {
+                bytes[i] = icom_bitsToByte( voice_bits + n );
+            }
+
+            //thumbDV_dump("ICOM Order: " , bytes, VOICE_FRAME_LENGTH_BITS / 8);
+            memcpy( ambe_out, bytes, VOICE_FRAME_LENGTH_BITS / 8 );
+            have_audio_packet = TRUE;
+
+            /* STATE CHANGE */
+            if ( machine->frame_count % 21 == 0 ) {
+                /* Expecting a SYNC FRAME */
+                machine->state = DATA_SYNC_FRAME;
+            } else {
+                machine->state = DATA_FRAME;
+            }
+
+            machine->bit_count = 0;
+        }
+
+        break;
+
+    case DATA_FRAME:
+        data_bits[machine->bit_count++] = in_bit;
+
+        found_end_bits = bitPM_addBit( machine->end_pm, in_bit );
+
+        if ( found_end_bits ) {
+            machine->state = END_PATTERN_FOUND;
+            machine->bit_count = 0;
+        } else if ( machine->bit_count == DATA_FRAME_LENGTH_BITS ) {
+
+            BOOL out[DATA_FRAME_LENGTH_BITS] = {0};
+            uint32 scramble_count = 0;
+            dstar_scramble( data_bits, out,  DATA_FRAME_LENGTH_BITS, &scramble_count );
+
+            //gmsk_bitsToBytes(out, bytes, DATA_FRAME_LENGTH_BITS);
+            uint32 i = 0 ;
+            uint32 n = 0;
+
+            for ( i = 0, n = 0  ; i < DATA_FRAME_LENGTH_BYTES ; i++, n += 8 ) {
+                bytes[i]  = icom_bitsToByte( out + n );
+            }
+
+            //thumbDV_dump("Data Frame:", bytes, DATA_FRAME_LENGTH_BYTES);
+
+            memcpy( data_bytes + long_data_bytes_idx, bytes, 3 );
+            long_data_bytes_idx += 3;
+
+            if ( long_data_bytes_idx >= 3 * 40 * 4 ) {
+                //thumbDV_dump("Long Data: ", data_bytes, 3 * 40 * 4);
+                long_data_bytes_idx = 0;
+            }
+
+            machine->frame_count++;
+
+            /* STATE CHANGE */
+            machine->state = VOICE_FRAME;
+            machine->bit_count = 0;
+        }
+
+        break;
+
+    case DATA_SYNC_FRAME: {
+        BOOL found_sync = FALSE;
+        found_sync = bitPM_addBit( machine->data_sync_pm, in_bit );
+        machine->bit_count++;
+
+        found_end_bits = bitPM_addBit( machine->end_pm, in_bit );
+
+        if ( found_sync ) {
+            output( "Found Sync\n" );
+
+            machine->frame_count++;
+
+            bitPM_reset( machine->data_sync_pm );
+            /* STATE CHANGE */
+            machine->state = VOICE_FRAME;
+            machine->bit_count = 0;
+        } else if ( found_end_bits ) {
+            machine->state = END_PATTERN_FOUND;
+            machine->bit_count = 0;
+        } else if ( machine->bit_count > ( ( DATA_FRAME_LENGTH_BITS + VOICE_FRAME_LENGTH_BITS ) * 42 ) ) {
+            /* Function as a timeout if we don't find the sync bits */
+            output( "Could not find SYNC\n" );
+
+            bitPM_reset( machine->data_sync_pm );
 
             /* STATE CHANGE */
             machine->state = BIT_FRAME_SYNC_WAIT;
             machine->bit_count = 0;
+        }
 
-            break;
-        default:
-            output(ANSI_YELLOW "Unhandled state - dstar_stateMachine. State = 0x%08X" ANSI_WHITE, machine->state);
-            break;
+        break;
+    }
+
+    case END_PATTERN_FOUND:
+
+        output( "Found end pattern bits\n" );
+        bitPM_reset( machine->end_pm );
+        bitPM_reset( machine->syn_pm );
+
+        /* STATE CHANGE */
+        machine->state = BIT_FRAME_SYNC_WAIT;
+        machine->bit_count = 0;
+
+        break;
+
+    default:
+        output( ANSI_YELLOW "Unhandled state - dstar_stateMachine. State = 0x%08X" ANSI_WHITE, machine->state );
+        break;
     }
 
     return have_audio_packet;
 }
 
-void dstar_pfcsUpdateBuffer(DSTAR_PFCS pfcs, unsigned char * bytes, uint32 length)
-{
+void dstar_pfcsUpdateBuffer( DSTAR_PFCS pfcs, unsigned char * bytes, uint32 length ) {
     uint32 i = 0;
+
     for ( i = 0 ; i < length ; i++ ) {
-        pfcs->crc16 = (uint16)(pfcs->crc8[1]) ^ ccittTab[pfcs->crc8[0] ^ bytes[i]];
+        pfcs->crc16 = ( uint16 )( pfcs->crc8[1] ) ^ ccittTab[pfcs->crc8[0] ^ bytes[i]];
     }
 }
 
-void dstar_pfcsUpdate(DSTAR_PFCS pfcs, BOOL * bits )
-{
+void dstar_pfcsUpdate( DSTAR_PFCS pfcs, BOOL * bits ) {
     unsigned char byte;
-    gmsk_bitsToByte(bits, &byte);
+    gmsk_bitsToByte( bits, &byte );
 
-    pfcs->crc16 = (uint16)pfcs->crc8[1] ^ ccittTab[ pfcs->crc8[0] ^ byte ];
+    pfcs->crc16 = ( uint16 )pfcs->crc8[1] ^ ccittTab[ pfcs->crc8[0] ^ byte ];
 }
 
-void dstar_pfcsResult( DSTAR_PFCS pfcs, unsigned char * chksum )
-{
+void dstar_pfcsResult( DSTAR_PFCS pfcs, unsigned char * chksum ) {
     pfcs->crc16 = ~ pfcs->crc16;
 
     chksum[0] = pfcs->crc8[0];
@@ -846,110 +870,96 @@ void dstar_pfcsResult( DSTAR_PFCS pfcs, unsigned char * chksum )
 
 }
 
-void dstar_pfcsResultBits( DSTAR_PFCS pfcs, BOOL * bits )
-{
+void dstar_pfcsResultBits( DSTAR_PFCS pfcs, BOOL * bits ) {
     pfcs->crc16 = ~pfcs->crc16;
 
     unsigned char mask = 0x80;
     uint32 i = 0;
+
     for ( i = 0 ; i < 8 ; i++, mask >>= 1 ) {
-        bits[i + 0] = (pfcs->crc8[0] & mask) ? TRUE : FALSE;
+        bits[i + 0] = ( pfcs->crc8[0] & mask ) ? TRUE : FALSE;
     }
 
     mask = 0x80;
+
     for ( i = 0 ; i < 8 ; i++ , mask >>= 1 ) {
-        bits[i + 8] = (pfcs->crc8[1] & mask) ? TRUE : FALSE;
+        bits[i + 8] = ( pfcs->crc8[1] & mask ) ? TRUE : FALSE;
     }
 }
 
-BOOL dstar_pfcsCheck(DSTAR_PFCS pfcs, BOOL * bits )
-{
+BOOL dstar_pfcsCheck( DSTAR_PFCS pfcs, BOOL * bits ) {
     uint32 i = 0;
     BOOL sum[16];
-    dstar_pfcsResultBits(pfcs, sum);
+    dstar_pfcsResultBits( pfcs, sum );
 
     for ( i = 0 ; i < 16 ; i++ ) {
         if ( sum[i] != bits[i] ) {
             return FALSE;
         }
     }
+
     return TRUE;
 }
 
 
 
-void dstar_FECTest(void)
-{
-    unsigned char bytes[660/8] = {0};
+void dstar_FECTest( void ) {
+    unsigned char bytes[660 / 8] = {0};
     BOOL test[330] = {0};
-    BOOL encoded[330*2] = {0};
-    BOOL interleaved[330*2] = {0};
-    BOOL deinterleaved[330*2] = {0};
-    BOOL scrambled[330*2] = {0};
-    BOOL descrambled[330*2] = {0};
+    BOOL encoded[330 * 2] = {0};
+    BOOL interleaved[330 * 2] = {0};
+    BOOL deinterleaved[330 * 2] = {0};
+    BOOL scrambled[330 * 2] = {0};
+    BOOL descrambled[330 * 2] = {0};
     BOOL decoded[330] = {0};
     uint32 i = 0;
-    for ( i = 0 ; i < 327- 1 ; i += 2 ) {
+
+    for ( i = 0 ; i < 327 - 1 ; i += 2 ) {
         test[i] = TRUE;//(rand() & 0x01) ? TRUE:FALSE;
-        test[i+1] = FALSE;//( rand() & 0x01 ) ? TRUE:FALSE ;
+        test[i + 1] = FALSE; //( rand() & 0x01 ) ? TRUE:FALSE ;
     }
 
-    gmsk_bitsToBytes(test, bytes, 330);
-    thumbDV_dump("TEST FEC IN:", bytes, 330/8); memset(bytes,0, 660/8 * sizeof(unsigned char));
+    gmsk_bitsToBytes( test, bytes, 330 );
+    thumbDV_dump( "TEST FEC IN:", bytes, 330 / 8 );
+    memset( bytes, 0, 660 / 8 * sizeof( unsigned char ) );
 
     uint32 outLen = 0;
-    dstar_FECencode(test, encoded, 300, &outLen);
-    output("Encode outLen = %d\n", outLen);
+    dstar_FECencode( test, encoded, 300, &outLen );
+    output( "Encode outLen = %d\n", outLen );
     outLen = 660;
-    gmsk_bitsToBytes(encoded, bytes, outLen);
-    thumbDV_dump("TEST FEC ENCODE", bytes, outLen/8);memset(bytes,0, 660/8 * sizeof(unsigned char));
+    gmsk_bitsToBytes( encoded, bytes, outLen );
+    thumbDV_dump( "TEST FEC ENCODE", bytes, outLen / 8 );
+    memset( bytes, 0, 660 / 8 * sizeof( unsigned char ) );
 
-    dstar_interleave(encoded, interleaved, outLen);
-    gmsk_bitsToBytes(interleaved, bytes, outLen);
-        thumbDV_dump("TEST INTERLEAVE", bytes, outLen/8);memset(bytes,0, 660/8 * sizeof(unsigned char));
+    dstar_interleave( encoded, interleaved, outLen );
+    gmsk_bitsToBytes( interleaved, bytes, outLen );
+    thumbDV_dump( "TEST INTERLEAVE", bytes, outLen / 8 );
+    memset( bytes, 0, 660 / 8 * sizeof( unsigned char ) );
 
     uint32 count = 0;
-    dstar_scramble(interleaved, scrambled, outLen, &count);
-    gmsk_bitsToBytes(scrambled, bytes, outLen);
-    thumbDV_dump("TEST SCRAMBLE", bytes, outLen/8);memset(bytes,0, 660/8 * sizeof(unsigned char));
+    dstar_scramble( interleaved, scrambled, outLen, &count );
+    gmsk_bitsToBytes( scrambled, bytes, outLen );
+    thumbDV_dump( "TEST SCRAMBLE", bytes, outLen / 8 );
+    memset( bytes, 0, 660 / 8 * sizeof( unsigned char ) );
 
     count = 0;
-    dstar_scramble(scrambled, descrambled, outLen, &count);
-    gmsk_bitsToBytes(descrambled, bytes, outLen);
-    thumbDV_dump("TEST DE-SCRAMBLE", bytes, outLen/8);memset(bytes,0, 660/8 * sizeof(unsigned char));
+    dstar_scramble( scrambled, descrambled, outLen, &count );
+    gmsk_bitsToBytes( descrambled, bytes, outLen );
+    thumbDV_dump( "TEST DE-SCRAMBLE", bytes, outLen / 8 );
+    memset( bytes, 0, 660 / 8 * sizeof( unsigned char ) );
 
-    dstar_deinterleave(descrambled, deinterleaved, outLen);
-    gmsk_bitsToBytes(deinterleaved, bytes, outLen);
-    thumbDV_dump("TEST DE-INTELEAVE", bytes, outLen/8);memset(bytes,0, 660/8 * sizeof(unsigned char));
+    dstar_deinterleave( descrambled, deinterleaved, outLen );
+    gmsk_bitsToBytes( deinterleaved, bytes, outLen );
+    thumbDV_dump( "TEST DE-INTELEAVE", bytes, outLen / 8 );
+    memset( bytes, 0, 660 / 8 * sizeof( unsigned char ) );
 
 
     dstar_fec fec;
-    memset(&fec, 0, sizeof(dstar_fec));
-    output("outLen = %d\n", outLen);
-    dstar_FECdecode(&fec, deinterleaved, decoded, outLen, &outLen);
-    output("Decode outLen = %d\n", outLen);
-    gmsk_bitsToBytes(decoded, bytes, outLen);
-    thumbDV_dump("TEST FEC Decode", bytes, outLen/8);memset(bytes,0, 660/8 * sizeof(unsigned char));
-//
-//
-//    output("True ^ True = %d\n", TRUE ^ TRUE);
-//    output("True ^ False = %d\n", TRUE ^ FALSE);
-//    output("False ^ True = %d\n", FALSE ^ TRUE);
-//    output("False ^ False = %d\n", FALSE ^ FALSE);
-//
-//    output("Generating Interleave Table\n");
-//
-//    uint32 j = 0;
-//    uint32 limit = 28;
-//    for ( j = 0 ; j < 24; j++ ) {
-//
-//        if ( j < 12 ) limit = 28;
-//        else limit = 27;
-//        for ( i = 0; i < limit; i++ ) {
-//
-//            output("%d,", j + (i * 24));
-//        }
-//    }
-//    output("\nDONE\n");
-
+    memset( &fec, 0, sizeof( dstar_fec ) );
+    output( "outLen = %d\n", outLen );
+    dstar_FECdecode( &fec, deinterleaved, decoded, outLen, &outLen );
+    output( "Decode outLen = %d\n", outLen );
+    gmsk_bitsToBytes( decoded, bytes, outLen );
+    thumbDV_dump( "TEST FEC Decode", bytes, outLen / 8 );
+    memset( bytes, 0, 660 / 8 * sizeof( unsigned char ) );
 }

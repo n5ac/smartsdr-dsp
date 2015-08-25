@@ -36,12 +36,12 @@
 #ifndef THUMBDV_THUMBDV_
 #define THUMBDV_THUMBDV_
 
-void thumbDV_init(int * serial_fd);
-int thumbDV_openSerial(const char * tty_name);
-int thumbDV_processSerial(int serial_fd);
+void thumbDV_init( int * serial_fd );
+int thumbDV_openSerial( const char * tty_name );
+int thumbDV_processSerial( int serial_fd );
 
-int thumbDV_encode(int serial_fd, short * speech_in, unsigned char * packet_out, uint8 num_of_samples );
-int thumbDV_decode(int serial_fd, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet);
+int thumbDV_encode( int serial_fd, short * speech_in, unsigned char * packet_out, uint8 num_of_samples );
+int thumbDV_decode( int serial_fd, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet );
 
-void thumbDV_dump(char *text, unsigned char *data, unsigned int length);
+void thumbDV_dump( char * text, unsigned char * data, unsigned int length );
 #endif /* THUMBDV_THUMBDV_ */
