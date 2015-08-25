@@ -33,8 +33,8 @@
  * ************************************************************************** */
 
 
-#ifndef THUMBDV_THUMBDV_
-#define THUMBDV_THUMBDV_
+#ifndef THUMBDV_THUMBDV_H_
+#define THUMBDV_THUMBDV_H_
 
 void thumbDV_init( int * serial_fd );
 int thumbDV_openSerial( const char * tty_name );

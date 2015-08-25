@@ -89,10 +89,10 @@ void gmsk_bytesToBits( unsigned char * bytes, BOOL * bits, uint32 num_bits ) {
         return;
     }
 
-    uint32 bits_left = num_bits;
+    int32 bits_left = num_bits;
     uint32 byte_idx = 0;
 
-    while ( bits_left != 0 ) {
+    while ( bits_left > 0 ) {
         gmsk_byteToBits( bytes[byte_idx], &bits[byte_idx * 8], bits_left > 8 ? 8 : bits_left );
         byte_idx++;
         bits_left -= 8;

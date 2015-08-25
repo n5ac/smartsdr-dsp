@@ -1,6 +1,6 @@
 ///*!   \file dstar.h
 // *
-// *    Handles scrambling and descrambling of DSTAR Header
+// *    Handles all DSTAR States
 // *
 // *    \date 02-JUN-2015
 // *    \author Ed Gonzalez KG5FBT modified from original in OpenDV code(C) 2009 Jonathan Naylor, G4KLX
@@ -30,7 +30,28 @@
 #ifndef THUMBDV_DSTAR_H_
 #define THUMBDV_DSTAR_H_
 
+#include "bit_pattern_matcher.h"
 #include "DStarDefines.h"
+#include "dstar.h"
+
+enum _slow_data_decode_state {
+    FIRST_FRAME = 0,
+    HEADER_SECOND_FRAME,
+    MESSAGE_SECOND_FRAME
+};
+
+typedef struct _slow_data_decoder {
+    enum _slow_data_decode_state decode_state;
+    unsigned char header_bytes[RADIO_HEADER_LENGTH_BYTES];
+    uint32 header_array_index;
+    unsigned char message[4][6];
+    uint32 frame_count;
+} slow_data_decoder, * SLOW_DATA_DECODER;
+
+typedef struct _slow_data_machine {
+
+} slow_data_machine, *SLOW_DATA_MACHINE;
+
 
 enum DSTAR_STATE {
     BIT_FRAME_SYNC_WAIT = 0x1,
@@ -76,13 +97,15 @@ typedef struct _dstar_machine {
     BOOL voice_bits[VOICE_FRAME_LENGTH_BITS];
     BOOL data_bits[DATA_FRAME_LENGTH_BITS];
 
+    SLOW_DATA_DECODER slow_decoder;
+
 } dstar_machine, * DSTAR_MACHINE;
 
 typedef struct _dstar_fec {
-    BOOL mem0[330];
-    BOOL mem1[330];
-    BOOL mem2[330];
-    BOOL mem3[330];
+    BOOL mem0[RADIO_HEADER_LENGTH_BITS];
+    BOOL mem1[RADIO_HEADER_LENGTH_BITS];
+    BOOL mem2[RADIO_HEADER_LENGTH_BITS];
+    BOOL mem3[RADIO_HEADER_LENGTH_BITS];
     int metric[4];
 } dstar_fec, * DSTAR_FEC;
 
@@ -98,6 +121,7 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
 
 void dstar_dumpHeader( DSTAR_HEADER header );
 
+void dstar_processHeader( unsigned char * bytes, DSTAR_HEADER header );
 void dstar_pfcsUpdate( DSTAR_PFCS pfcs, BOOL * bits );
 BOOL dstar_pfcsCheck( DSTAR_PFCS pfcs, BOOL * bits );
 void dstar_pfcsResult( DSTAR_PFCS pfcs, unsigned char * chksum );
@@ -111,4 +135,6 @@ void dstar_interleave( const BOOL * in, BOOL * out, unsigned int length );
 void dstar_deinterleave( const BOOL * in, BOOL * out, unsigned int length );
 BOOL dstar_FECdecode( DSTAR_FEC fec, const BOOL * in, BOOL * out, unsigned int inLen, unsigned int * outLen );
 void dstar_FECencode( const BOOL * in, BOOL * out, unsigned int inLen, unsigned int * outLen );
+
 #endif /* THUMBDV_DSTAR_H_ */
+

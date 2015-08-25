@@ -639,7 +639,7 @@ static void * _sched_waveform_thread( void * param ) {
                                 dstar_pfcs pfcs;
                                 pfcs.crc16 = 0xFFFF;
 
-                                unsigned char header_bytes[330] = {0};
+                                unsigned char header_bytes[RADIO_HEADER_LENGTH_BITS] = {0};
                                 dstar_headerToBytes( &( _dstar->outgoing_header ), header_bytes );
                                 dstar_pfcsUpdateBuffer( &pfcs, header_bytes, 312 / 8 );
                                 dstar_pfcsResult( &pfcs, header_bytes + 312 / 8 );
@@ -649,14 +649,14 @@ static void * _sched_waveform_thread( void * param ) {
                                 BOOL bits[FEC_SECTION_LENGTH_BITS] = {0};
 
                                 gmsk_bytesToBits( header_bytes, bits, 328 );
-                                BOOL encoded[330 * 2] = {0};
-                                BOOL interleaved[330 * 2] = {0};
-                                BOOL scrambled[330 * 2] = {0};
+                                BOOL encoded[RADIO_HEADER_LENGTH_BITS * 2] = {0};
+                                BOOL interleaved[RADIO_HEADER_LENGTH_BITS * 2] = {0};
+                                BOOL scrambled[RADIO_HEADER_LENGTH_BITS * 2] = {0};
                                 uint32 outLen = 0;
-                                dstar_FECencode( bits, encoded, 330, &outLen );
+                                dstar_FECencode( bits, encoded, RADIO_HEADER_LENGTH_BITS, &outLen );
                                 //output("Encode outLen = %d\n", outLen);
 
-                                outLen = 660;
+                                outLen = FEC_SECTION_LENGTH_BITS;
                                 dstar_interleave( encoded, interleaved, outLen );
 
                                 uint32 count = 0;
@@ -709,7 +709,7 @@ static void * _sched_waveform_thread( void * param ) {
                                         dstar_pfcs pfcs;
                                         pfcs.crc16 = 0xFFFF;
 
-                                        unsigned char header_bytes[330] = {0};
+                                        unsigned char header_bytes[RADIO_HEADER_LENGTH_BITS] = {0};
                                         dstar_headerToBytes( &( _dstar->outgoing_header ), header_bytes );
                                         dstar_pfcsUpdateBuffer( &pfcs, header_bytes, 312 / 8 );
                                         dstar_pfcsResult( &pfcs, header_bytes + 312 / 8 );

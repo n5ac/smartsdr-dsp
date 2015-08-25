@@ -1,6 +1,6 @@
-///*!   \file dstar.h
+///*!   \file dstar.c
 // *
-// *    Handles scrambling and descrambling of DSTAR Header
+// *    Handles all DSTAR states
 // *
 // *    \date 02-JUN-2015
 // *    \author Ed Gonzalez KG5FBT modified from original in OpenDV code (C) 2009 Jonathan Naylor, G4KLX
@@ -37,6 +37,7 @@
 #include "bit_pattern_matcher.h"
 #include "thumbDV.h"
 #include "dstar.h"
+#include "slow_data.h"
 
 #define SCRAMBLER_TABLE_BITS_LENGTH     720U
 #define SCRAMBLER_TABLE_BYTES_LENGTH    90U
@@ -503,6 +504,8 @@ DSTAR_MACHINE dstar_createMachine( void ) {
 
     dstar_createTestHeader( &( machine->outgoing_header ) );
 
+    machine->slow_decoder = safe_malloc(sizeof(slow_data_decoder));
+
     return machine;
 }
 
@@ -510,6 +513,8 @@ void dstar_destroyMachine( DSTAR_MACHINE machine ) {
     bitPM_destroy( machine->syn_pm );
     bitPM_destroy( machine->data_sync_pm );
     bitPM_destroy( machine->end_pm );
+
+    safe_free(machine->slow_decoder);
 
     safe_free( machine );
 }
@@ -633,8 +638,8 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
     BOOL * voice_bits = machine->voice_bits;
     BOOL * data_bits = machine->data_bits;
 
-    static unsigned char data_bytes[3 * 40 * 4] = {0};
-    static uint32 long_data_bytes_idx = 0;
+//    static unsigned char data_bytes[3 * 40 * 4] = {0};
+//    static uint32 long_data_bytes_idx = 0;
 
     //unsigned char bytes[((24+72) * 50)/8 + 1];
     unsigned char bytes[FEC_SECTION_LENGTH_BITS / 8 + 1];
@@ -643,6 +648,9 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
     case BIT_FRAME_SYNC_WAIT:
         found_syn_bits = bitPM_addBit( machine->syn_pm, in_bit );
         BOOL found_data_sync = bitPM_addBit( machine->data_sync_pm, in_bit );
+
+        machine->slow_decoder->decode_state = FIRST_FRAME;
+        machine->slow_decoder->header_array_index = 0;
 
         if ( found_syn_bits ) {
             output( "FOUND SYN BITS\n" );
@@ -683,7 +691,7 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
             dstar_fec fec;
             memset( &fec, 0, sizeof( dstar_fec ) );
             unsigned int outLen = FEC_SECTION_LENGTH_BITS;
-            BOOL decoded[FEC_SECTION_LENGTH_BITS / 2] = {0};
+            BOOL decoded[RADIO_HEADER_LENGTH_BITS] = {0};
             dstar_FECdecode( &fec, out, decoded, FEC_SECTION_LENGTH_BITS, &outLen );
 //                output("outLen = %d\n" ,outLen);
             gmsk_bitsToBytes( decoded, bytes, outLen );
@@ -777,13 +785,7 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
 
             //thumbDV_dump("Data Frame:", bytes, DATA_FRAME_LENGTH_BYTES);
 
-            memcpy( data_bytes + long_data_bytes_idx, bytes, 3 );
-            long_data_bytes_idx += 3;
-
-            if ( long_data_bytes_idx >= 3 * 40 * 4 ) {
-                //thumbDV_dump("Long Data: ", data_bytes, 3 * 40 * 4);
-                long_data_bytes_idx = 0;
-            }
+            slow_data_addDecodeData(machine, bytes, DATA_FRAME_LENGTH_BYTES);
 
             machine->frame_count++;
 
@@ -823,6 +825,9 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
             machine->state = BIT_FRAME_SYNC_WAIT;
             machine->bit_count = 0;
         }
+
+        machine->slow_decoder->decode_state = FIRST_FRAME;
+        machine->slow_decoder->header_array_index = 0;
 
         break;
     }
