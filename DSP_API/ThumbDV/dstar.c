@@ -506,6 +506,8 @@ DSTAR_MACHINE dstar_createMachine( void ) {
 
     machine->slow_decoder = safe_malloc(sizeof(slow_data_decoder));
 
+    machine->slice = 0;
+
     return machine;
 }
 
@@ -712,7 +714,7 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
 
                 dstar_processHeader( bytes, &machine->incoming_header );
 
-                dstar_updateStatus( machine, 0, STATUS_RX );
+                dstar_updateStatus( machine, machine->slice, STATUS_RX );
 
 
             } else {

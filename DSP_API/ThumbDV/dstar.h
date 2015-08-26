@@ -99,6 +99,8 @@ typedef struct _dstar_machine {
 
     SLOW_DATA_DECODER slow_decoder;
 
+    uint32 slice;
+
 } dstar_machine, * DSTAR_MACHINE;
 
 typedef struct _dstar_fec {

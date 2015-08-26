@@ -82,6 +82,9 @@ static void _handle_status(char* string)
                     char cmd[512] = {0};
                     sprintf(cmd, "slice s %d fm_deviation=1250 post_demod_low=0 post_demod_high=6000 dfm_pre_de_emphasis=0 post_demod_bypass=1 squelch=0", slc);
                     tc_sendSmartSDRcommand(cmd,FALSE, NULL);
+
+                    sched_waveform_setDSTARSlice(slc);
+
                 }
                 else
                 {

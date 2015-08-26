@@ -343,6 +343,12 @@ void sched_waveform_setEndOfTX( BOOL end_of_transmission ) {
     _end_of_transmission = TRUE;
 }
 
+void sched_waveform_setDSTARSlice( uint32 slice )
+{
+    if ( _dstar != NULL ) {
+        _dstar->slice = slice;
+    }
+}
 
 static void * _sched_waveform_thread( void * param ) {
     int 	nout;
