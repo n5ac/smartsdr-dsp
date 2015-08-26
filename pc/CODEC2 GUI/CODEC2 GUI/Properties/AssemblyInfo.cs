@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("CODEC2 GUI")]
+[assembly: AssemblyTitle("ThumbDV_DSTAR")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("FlexRadio Systems")]
-[assembly: AssemblyProduct("CODEC2 GUI")]
+[assembly: AssemblyProduct("ThumbDV_DSTAR")]
 [assembly: AssemblyCopyright("Copyright © FlexRadio Systems 2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

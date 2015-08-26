@@ -179,7 +179,7 @@ namespace CODEC2_GUI
 
         private void CheckDemodMode(Slice slc)
         {
-            if (slc.DemodMode == "D*FM")
+            if (slc.DemodMode == "DSTR")
             {
                 // yes -- is this Slice already in the list?
                 if (!_waveformSlices.Contains(slc))
