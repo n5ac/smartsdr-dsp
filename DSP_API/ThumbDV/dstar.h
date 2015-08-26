@@ -44,8 +44,9 @@ typedef struct _slow_data_decoder {
     enum _slow_data_decode_state decode_state;
     unsigned char header_bytes[RADIO_HEADER_LENGTH_BYTES];
     uint32 header_array_index;
-    unsigned char message[4][6];
-    uint32 frame_count;
+    unsigned char message[4][5];
+    uint32 message_index;
+    char message_string[21];
 } slow_data_decoder, * SLOW_DATA_DECODER;
 
 typedef struct _slow_data_machine {
@@ -64,7 +65,8 @@ enum DSTAR_STATE {
 
 enum STATUS_TYPE {
     STATUS_RX = 0,
-    STATUS_TX
+    STATUS_TX,
+    STATUS_SLOW_DATA_MESSAGE
 };
 
 typedef struct _dstar_header {

@@ -561,7 +561,7 @@ void dstar_processHeader( unsigned char * bytes, DSTAR_HEADER header ) {
     memcpy( header->own_call1, &bytes[3 + 8 + 8 + 8], 8 );
     memcpy( header->own_call2, &bytes[3 + 8 + 8 + 8 + 8], 4 );
 
-    dstar_dumpHeader( header );
+    //dstar_dumpHeader( header );
 }
 
 static unsigned char icom_bitsToByte( const BOOL * bits ) {
@@ -627,6 +627,10 @@ void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice,  enum STATUS_TYPE 
 
         sprintf( status, "waveform status slice=%d %s", slice, header_string );
 
+        tc_sendSmartSDRcommand( status, FALSE, NULL );
+        break;
+    case STATUS_SLOW_DATA_MESSAGE:
+        sprintf( status, "waveform status slice=%d message=%s", slice, machine->slow_decoder->message_string);
         tc_sendSmartSDRcommand( status, FALSE, NULL );
         break;
     }
@@ -777,15 +781,12 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
             uint32 scramble_count = 0;
             dstar_scramble( data_bits, out,  DATA_FRAME_LENGTH_BITS, &scramble_count );
 
-            //gmsk_bitsToBytes(out, bytes, DATA_FRAME_LENGTH_BITS);
             uint32 i = 0 ;
             uint32 n = 0;
 
             for ( i = 0, n = 0  ; i < DATA_FRAME_LENGTH_BYTES ; i++, n += 8 ) {
                 bytes[i]  = icom_bitsToByte( out + n );
             }
-
-            //thumbDV_dump("Data Frame:", bytes, DATA_FRAME_LENGTH_BYTES);
 
             slow_data_addDecodeData(machine, bytes, DATA_FRAME_LENGTH_BYTES);
 
@@ -828,8 +829,7 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
             machine->bit_count = 0;
         }
 
-        machine->slow_decoder->decode_state = FIRST_FRAME;
-        machine->slow_decoder->header_array_index = 0;
+        slow_data_resetDecoder(machine);
 
         break;
     }
