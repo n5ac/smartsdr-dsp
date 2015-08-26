@@ -42,6 +42,11 @@ enum _slow_data_decode_state {
     MESSAGE_SECOND_FRAME
 };
 
+enum _slow_data_encode_state {
+    MESSAGE_TX = 0,
+    HEADER_TX
+};
+
 typedef struct _slow_data_decoder {
     enum _slow_data_decode_state decode_state;
     unsigned char header_bytes[RADIO_HEADER_LENGTH_BYTES];
@@ -51,10 +56,15 @@ typedef struct _slow_data_decoder {
     char message_string[21];
 } slow_data_decoder, * SLOW_DATA_DECODER;
 
-typedef struct _slow_data_machine {
 
-} slow_data_machine, *SLOW_DATA_MACHINE;
-
+typedef struct _slow_data_encoder {
+    enum _slow_data_encode_state encode_state;
+    unsigned char message_bytes[SLOW_DATA_PACKET_LEN_BYTES * FRAMES_BETWEEN_SYNC];
+    uint32 message_index;
+    unsigned char header_bytes[SLOW_DATA_PACKET_LEN_BYTES * FRAMES_BETWEEN_SYNC];
+    uint32 header_index;
+    char message[SLOW_DATA_MESSAGE_LENGTH_BYTES + 1];
+} slow_data_encoder, * SLOW_DATA_ENCODER;
 
 enum DSTAR_RX_STATE {
     BIT_FRAME_SYNC = 0x1,
@@ -103,6 +113,7 @@ typedef struct _dstar_machine {
     BOOL data_bits[DATA_FRAME_LENGTH_BITS];
 
     SLOW_DATA_DECODER slow_decoder;
+    SLOW_DATA_ENCODER slow_encoder;
 
     uint32 slice;
 

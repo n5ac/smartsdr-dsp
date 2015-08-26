@@ -50,7 +50,7 @@
 #include "bit_pattern_matcher.h"
 #include "dstar.h"
 #include "DStarDefines.h"
-
+#include "slow_data.h"
 
 //static Queue sched_fft_queue;
 static pthread_rwlock_t _list_lock;
@@ -603,8 +603,6 @@ static void * _sched_waveform_thread( void * param ) {
                                 decode_out = thumbDV_encode( _dv_serial_fd, speech_in, mod_out, DV_PACKET_SAMPLES );
                             }
 
-                            uint32 j = 0;
-
                             if ( initial_tx ) {
 
                                 initial_tx = FALSE;
@@ -617,13 +615,13 @@ static void * _sched_waveform_thread( void * param ) {
 
                                 dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, NULL);
 
+                                slow_data_createEncodeBytes(_dstar);
 
                                 initial_tx_flush = TRUE;
 
                                 dstar_tx_frame_count = 0;
                             } else {
                                 /* Data and Voice */
-                                float data_buf[DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH] = {0};
 
                                 if ( decode_out != 0 ) {
                                     _dstar->tx_state = VOICE_FRAME;
@@ -632,69 +630,12 @@ static void * _sched_waveform_thread( void * param ) {
                                     if ( dstar_tx_frame_count % 21 == 0 ) {
                                         _dstar->tx_state = DATA_SYNC_FRAME;
                                         dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, NULL);
+                                        if ( _dstar->slow_encoder->encode_state == HEADER_TX )
+                                            _dstar->slow_encoder->header_index = 0;
                                     } else {
 
-
-                                        dstar_pfcs pfcs;
-                                        pfcs.crc16 = 0xFFFF;
-
-                                        unsigned char header_bytes[RADIO_HEADER_LENGTH_BITS] = {0};
-                                        dstar_headerToBytes( &( _dstar->outgoing_header ), header_bytes );
-                                        dstar_pfcsUpdateBuffer( &pfcs, header_bytes, 312 / 8 );
-                                        dstar_pfcsResult( &pfcs, header_bytes + 312 / 8 );
-
-                                        //output("PFCS Bytes: 0x%08X 0x%08X\n", *(header_bytes + 312/8), *(header_bytes + 320/8));
-
-                                        unsigned char icom_bytes[41 + 4 + 9] = { 0 } ;
-
-                                        /* Interleave SLOW_DATA_HEADER */
-                                        uint32 icom_idx = 0;
-                                        uint32 header_idx = 0;
-
-                                        for ( i = 0 ; i < 8 ; i++ ) {
-                                            icom_bytes[icom_idx++] = 0x55;
-
-                                            for ( j = 0 ; j < 5 ; j++ ) {
-                                                icom_bytes[icom_idx++] = header_bytes[header_idx++];
-                                            }
-                                        }
-
-                                        icom_bytes[icom_idx++] = 0x51;
-                                        icom_bytes[icom_idx++] = header_bytes[header_idx++];
-
-                                        for ( i = 0 ; i < 4 ; i++ )
-                                            icom_bytes[icom_idx++] = 'f';
-
-
-                                        unsigned char * dummy_bytes = NULL;
-                                        static uint32 dbytes_idx = 0;
-                                        dummy_bytes = icom_bytes + dbytes_idx;
-                                        dbytes_idx += DATA_FRAME_LENGTH_BYTES;
-
-                                        if ( dbytes_idx >= 41 + 4 + 9 ) {
-                                            dbytes_idx = 0;
-                                        }
-
-                                        // thumbDV_dump("Data: ", dummy_bytes, DATA_FRAME_LENGTH_BYTES);
-                                        BOOL dummy_bits[DATA_FRAME_LENGTH_BITS] = {0};
-                                        BOOL dummy_bits_out[DATA_FRAME_LENGTH_BITS] = {0};
-                                        uint32 dummy_count = 0;
-                                        //gmsk_bytesToBits(dummy_bytes, dummy_bits, DATA_FRAME_LENGTH_BITS);
-                                        uint32 n = 0;
-
-                                        for ( i = 0 , n = 0 ; i < DATA_FRAME_LENGTH_BYTES ; i++ , n += 8 ) {
-                                            icom_byteToBits( dummy_bytes[i], dummy_bits + n );
-                                        }
-
-                                        dstar_scramble( dummy_bits, dummy_bits_out, DATA_FRAME_LENGTH_BITS, &dummy_count );
-
-                                        gmsk_bitsToBytes( dummy_bits_out, dummy_bytes, DATA_FRAME_LENGTH_BITS );
-
-                                        gmsk_encodeBuffer( _gmsk_mod, dummy_bytes, DATA_FRAME_LENGTH_BITS, data_buf, DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH );
-
-                                        for ( i = 0 ; i < DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
-                                            cbWriteFloat( TX4_cb, data_buf[i] );
-                                        }
+                                        _dstar->tx_state = DATA_FRAME;
+                                        dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, NULL);
                                     }
 
                                     dstar_tx_frame_count++;

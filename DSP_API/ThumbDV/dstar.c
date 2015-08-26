@@ -516,6 +516,10 @@ DSTAR_MACHINE dstar_createMachine( void ) {
     dstar_createTestHeader( &( machine->outgoing_header ) );
 
     machine->slow_decoder = safe_malloc(sizeof(slow_data_decoder));
+    machine->slow_encoder = safe_malloc(sizeof(slow_data_encoder));
+
+    /* Temporary */
+    strcpy(machine->slow_encoder->message, "12345678901234567890");
 
     machine->slice = 0;
 
@@ -528,6 +532,7 @@ void dstar_destroyMachine( DSTAR_MACHINE machine ) {
     bitPM_destroy( machine->end_pm );
 
     safe_free(machine->slow_decoder);
+    safe_free(machine->slow_encoder);
 
     safe_free( machine );
 }
@@ -572,7 +577,7 @@ void dstar_processHeader( unsigned char * bytes, DSTAR_HEADER header ) {
     memcpy( header->own_call1, &bytes[3 + 8 + 8 + 8], 8 );
     memcpy( header->own_call2, &bytes[3 + 8 + 8 + 8 + 8], 4 );
 
-    //dstar_dumpHeader( header );
+    dstar_dumpHeader( header );
 }
 
 static unsigned char icom_bitsToByte( const BOOL * bits ) {
@@ -657,7 +662,7 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
     switch ( machine->tx_state ) {
     case BIT_FRAME_SYNC:
         /* Create Sync */
-        for ( i = 0 ; i < 64 + 20; i += 2 ) {
+        for ( i = 0 ; i < 64 * 7; i += 2 ) {
             gmsk_encode( gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH );
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
@@ -734,7 +739,32 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
         break;
     }
     case DATA_FRAME:
+    {
+        unsigned char encode_bytes[SLOW_DATA_PACKET_LEN_BYTES] = {0};
+        BOOL encode_bits[DATA_FRAME_LENGTH_BITS] = {0};
+        BOOL encode_bits_scrambled[DATA_FRAME_LENGTH_BITS] = {0};
+        unsigned char encode_bytes_scrambled[SLOW_DATA_PACKET_LEN_BYTES] = {0};
+        uint32 count = 0;
+        float data_buf[DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ] = {0};
+
+        slow_data_getEncodeBytes(machine, encode_bytes, SLOW_DATA_PACKET_LEN_BYTES);
+
+        for ( i = 0, j = 0 ; i < SLOW_DATA_PACKET_LEN_BYTES ; i++, j += 8 ) {
+            icom_byteToBits( encode_bytes[i], encode_bits + j);
+        }
+
+        dstar_scramble(encode_bits, encode_bits_scrambled, DATA_FRAME_LENGTH_BITS, &count);
+
+        gmsk_bitsToBytes(encode_bits_scrambled, encode_bytes_scrambled, DATA_FRAME_LENGTH_BITS);
+
+        gmsk_encodeBuffer(gmsk_mod, encode_bytes_scrambled, DATA_FRAME_LENGTH_BITS, data_buf, DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH);
+
+        for ( i = 0 ; i < DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
+            cbWriteFloat(tx_cb, data_buf[i]);
+        }
+
         break;
+    }
     case DATA_SYNC_FRAME:
     {
         /* Sync Bits */
@@ -759,7 +789,7 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
             cbWriteFloat( tx_cb, end_buf[i] );
         }
 
-        for ( i = 0 ; i <  20 ; i += 2 ) {
+        for ( i = 0 ; i <  100 ; i += 2 ) {
             gmsk_encode( gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH );
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
