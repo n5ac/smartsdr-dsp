@@ -38,6 +38,7 @@
 #include "thumbDV.h"
 #include "dstar.h"
 #include "slow_data.h"
+#include "circular_buffer.h"
 
 #define SCRAMBLER_TABLE_BITS_LENGTH     720U
 #define SCRAMBLER_TABLE_BYTES_LENGTH    90U
@@ -179,6 +180,15 @@ static const unsigned short ccittTab[] = {
     0xf78f, 0xe606, 0xd49d, 0xc514, 0xb1ab, 0xa022, 0x92b9, 0x8330,
     0x7bc7, 0x6a4e, 0x58d5, 0x495c, 0x3de3, 0x2c6a, 0x1ef1, 0x0f78
 };
+
+void icom_byteToBits( unsigned char byte, BOOL * bits ) {
+    unsigned char mask = 0x01;
+    uint32 i = 0;
+
+    for ( i = 0 ; i < 8 ; i++, mask <<= 1 ) {
+        bits[i] = ( byte & mask ) ? TRUE : FALSE;
+    }
+}
 
 void dstar_scramble( BOOL * in, BOOL * out, uint32 length, uint32 * scramble_count ) {
     if ( out == NULL || in == NULL || scramble_count == NULL ) {
@@ -478,7 +488,8 @@ DSTAR_MACHINE dstar_createMachine( void ) {
     DSTAR_MACHINE machine = safe_malloc( sizeof( dstar_machine ) );
     memset( machine, 0, sizeof( dstar_machine ) );
 
-    machine->state = BIT_FRAME_SYNC_WAIT;
+    machine->rx_state = BIT_FRAME_SYNC;
+    machine->tx_state = BIT_FRAME_SYNC;
 
     BOOL syn_bits[15 + 4] = {0};
     uint32 i = 0;
@@ -636,7 +647,138 @@ void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice,  enum STATUS_TYPE 
     }
 }
 
-BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len ) {
+void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Float_Buffer tx_cb, unsigned char * mod_audio)
+{
+    uint32 i = 0;
+    uint32 j = 0;
+    float buf[DSTAR_RADIO_BIT_LENGTH];
+    dstar_pfcs pfcs;
+
+    switch ( machine->tx_state ) {
+    case BIT_FRAME_SYNC:
+        /* Create Sync */
+        for ( i = 0 ; i < 64 + 20; i += 2 ) {
+            gmsk_encode( gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH );
+
+            for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
+                cbWriteFloat( tx_cb, buf[j] );
+            }
+
+            gmsk_encode( gmsk_mod, FALSE, buf, DSTAR_RADIO_BIT_LENGTH );
+
+            for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
+                cbWriteFloat( tx_cb, buf[j] );
+            }
+        }
+
+        for ( i = 0 ; i < FRAME_SYNC_LENGTH_BITS ; i++ ) {
+            gmsk_encode( gmsk_mod, FRAME_SYNC_BITS[i], buf, DSTAR_RADIO_BIT_LENGTH );
+
+            for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
+                cbWriteFloat( tx_cb, buf[j] );
+            }
+        }
+        break;
+    case HEADER_PROCESSING:
+
+        pfcs.crc16 = 0xFFFF;
+
+        unsigned char header_bytes[RADIO_HEADER_LENGTH_BITS] = {0};
+        dstar_headerToBytes( &( machine->outgoing_header ), header_bytes );
+        dstar_pfcsUpdateBuffer( &pfcs, header_bytes, 312 / 8 );
+        dstar_pfcsResult( &pfcs, header_bytes + 312 / 8 );
+
+        output( "Main: PFCS Bytes: 0x%08X 0x%08X\n", *( header_bytes + 312 / 8 ), *( header_bytes + 320 / 8 ) );
+
+        BOOL bits[FEC_SECTION_LENGTH_BITS] = {0};
+
+        gmsk_bytesToBits( header_bytes, bits, 328 );
+        BOOL encoded[RADIO_HEADER_LENGTH_BITS * 2] = {0};
+        BOOL interleaved[RADIO_HEADER_LENGTH_BITS * 2] = {0};
+        BOOL scrambled[RADIO_HEADER_LENGTH_BITS * 2] = {0};
+        uint32 outLen = 0;
+        dstar_FECencode( bits, encoded, RADIO_HEADER_LENGTH_BITS, &outLen );
+        //output("Encode outLen = %d\n", outLen);
+
+        outLen = FEC_SECTION_LENGTH_BITS;
+        dstar_interleave( encoded, interleaved, outLen );
+
+        uint32 count = 0;
+        dstar_scramble( interleaved, scrambled, outLen, &count );
+        output( "Count = %d\n", count );
+
+        for ( i = 0 ; i < count ; i++ ) {
+            gmsk_encode( gmsk_mod, scrambled[i], buf, DSTAR_RADIO_BIT_LENGTH );
+
+            for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
+                cbWriteFloat( tx_cb, buf[j] );
+            }
+        }
+        break;
+    case VOICE_FRAME:
+    {
+        BOOL bits[8] = {0} ;
+        uint32 k = 0;
+
+        for ( i = 0 ; i < VOICE_FRAME_LENGTH_BYTES ; i++ ) {
+            icom_byteToBits( mod_audio[i], bits );
+
+            for ( j = 0 ; j < 8 ; j++ ) {
+                gmsk_encode( gmsk_mod, bits[j], buf, DSTAR_RADIO_BIT_LENGTH );
+
+                for ( k = 0 ; k < DSTAR_RADIO_BIT_LENGTH ; k++ ) {
+                    cbWriteFloat( tx_cb, buf[k] );
+                }
+            }
+        }
+        break;
+    }
+    case DATA_FRAME:
+        break;
+    case DATA_SYNC_FRAME:
+    {
+        /* Sync Bits */
+        unsigned char sync_bytes[3] = {0};
+        float sync_buf[DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH] = {0};
+        memcpy( sync_bytes, DATA_SYNC_BYTES, 3 );
+        gmsk_encodeBuffer( gmsk_mod, sync_bytes, DATA_FRAME_LENGTH_BITS, sync_buf, DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH );
+
+        for ( i = 0 ; i < DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
+            cbWriteFloat( tx_cb, sync_buf[i] );
+        }
+        break;
+    }
+    case END_PATTERN:
+    {
+        float end_buf[END_PATTERN_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH] = {0.0};
+        unsigned char end_bytes[END_PATTERN_LENGTH_BYTES] = {0};
+        memcpy( end_bytes, END_PATTERN_BYTES, END_PATTERN_LENGTH_BYTES * sizeof( unsigned char ) );
+        gmsk_encodeBuffer( gmsk_mod, end_bytes, END_PATTERN_LENGTH_BITS, end_buf, END_PATTERN_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH );
+
+        for ( i = 0 ; i < END_PATTERN_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
+            cbWriteFloat( tx_cb, end_buf[i] );
+        }
+
+        for ( i = 0 ; i <  20 ; i += 2 ) {
+            gmsk_encode( gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH );
+
+            for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
+                cbWriteFloat( tx_cb, buf[j] );
+            }
+
+            gmsk_encode( gmsk_mod, FALSE, buf, DSTAR_RADIO_BIT_LENGTH );
+
+            for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
+                cbWriteFloat( tx_cb, buf[j] );
+            }
+        }
+
+        break;
+    }
+    }
+}
+
+BOOL dstar_rxStateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len ) {
     BOOL have_audio_packet = FALSE;
     BOOL found_syn_bits = FALSE;
     BOOL found_end_bits = FALSE;
@@ -644,14 +786,10 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
     BOOL * voice_bits = machine->voice_bits;
     BOOL * data_bits = machine->data_bits;
 
-//    static unsigned char data_bytes[3 * 40 * 4] = {0};
-//    static uint32 long_data_bytes_idx = 0;
-
-    //unsigned char bytes[((24+72) * 50)/8 + 1];
     unsigned char bytes[FEC_SECTION_LENGTH_BITS / 8 + 1];
 
-    switch ( machine->state ) {
-    case BIT_FRAME_SYNC_WAIT:
+    switch ( machine->rx_state ) {
+    case BIT_FRAME_SYNC:
         found_syn_bits = bitPM_addBit( machine->syn_pm, in_bit );
         BOOL found_data_sync = bitPM_addBit( machine->data_sync_pm, in_bit );
 
@@ -662,13 +800,13 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
             output( "FOUND SYN BITS\n" );
             bitPM_reset( machine->syn_pm );
             bitPM_reset( machine->data_sync_pm );
-            machine->state = HEADER_PROCESSING;
+            machine->rx_state = HEADER_PROCESSING;
             machine->bit_count = 0;
         } else if ( found_data_sync ) {
             output( "FOUND DATA SYNC BITS instead of header\n" );
             bitPM_reset( machine->syn_pm );
             bitPM_reset( machine->data_sync_pm );
-            machine->state = VOICE_FRAME;
+            machine->rx_state = VOICE_FRAME;
             machine->bit_count = 0;
             machine->frame_count++;
         }
@@ -726,7 +864,7 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
             }
 
             /* STATE CHANGE */
-            machine->state = VOICE_FRAME;
+            machine->rx_state = VOICE_FRAME;
             machine->bit_count = 0;
             machine->frame_count = 0;
         }
@@ -739,7 +877,7 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
         found_end_bits = bitPM_addBit( machine->end_pm, in_bit );
 
         if ( found_end_bits ) {
-            machine->state = END_PATTERN_FOUND;
+            machine->rx_state = END_PATTERN;
             machine->bit_count = 0;
         } else if ( machine->bit_count == VOICE_FRAME_LENGTH_BITS ) {
             memset( bytes, 0, VOICE_FRAME_LENGTH_BYTES );
@@ -757,9 +895,9 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
             /* STATE CHANGE */
             if ( machine->frame_count % 21 == 0 ) {
                 /* Expecting a SYNC FRAME */
-                machine->state = DATA_SYNC_FRAME;
+                machine->rx_state = DATA_SYNC_FRAME;
             } else {
-                machine->state = DATA_FRAME;
+                machine->rx_state = DATA_FRAME;
             }
 
             machine->bit_count = 0;
@@ -773,7 +911,7 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
         found_end_bits = bitPM_addBit( machine->end_pm, in_bit );
 
         if ( found_end_bits ) {
-            machine->state = END_PATTERN_FOUND;
+            machine->rx_state = END_PATTERN;
             machine->bit_count = 0;
         } else if ( machine->bit_count == DATA_FRAME_LENGTH_BITS ) {
 
@@ -793,7 +931,7 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
             machine->frame_count++;
 
             /* STATE CHANGE */
-            machine->state = VOICE_FRAME;
+            machine->rx_state = VOICE_FRAME;
             machine->bit_count = 0;
         }
 
@@ -813,10 +951,10 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
 
             bitPM_reset( machine->data_sync_pm );
             /* STATE CHANGE */
-            machine->state = VOICE_FRAME;
+            machine->rx_state = VOICE_FRAME;
             machine->bit_count = 0;
         } else if ( found_end_bits ) {
-            machine->state = END_PATTERN_FOUND;
+            machine->rx_state = END_PATTERN;
             machine->bit_count = 0;
         } else if ( machine->bit_count > ( ( DATA_FRAME_LENGTH_BITS + VOICE_FRAME_LENGTH_BITS ) * 42 ) ) {
             /* Function as a timeout if we don't find the sync bits */
@@ -825,7 +963,7 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
             bitPM_reset( machine->data_sync_pm );
 
             /* STATE CHANGE */
-            machine->state = BIT_FRAME_SYNC_WAIT;
+            machine->rx_state = BIT_FRAME_SYNC;
             machine->bit_count = 0;
         }
 
@@ -834,20 +972,20 @@ BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * amb
         break;
     }
 
-    case END_PATTERN_FOUND:
+    case END_PATTERN:
 
         output( "Found end pattern bits\n" );
         bitPM_reset( machine->end_pm );
         bitPM_reset( machine->syn_pm );
 
         /* STATE CHANGE */
-        machine->state = BIT_FRAME_SYNC_WAIT;
+        machine->rx_state = BIT_FRAME_SYNC;
         machine->bit_count = 0;
 
         break;
 
     default:
-        output( ANSI_YELLOW "Unhandled state - dstar_stateMachine. State = 0x%08X" ANSI_WHITE, machine->state );
+        output( ANSI_YELLOW "Unhandled rx_state - dstar_stateMachine. State = 0x%08X" ANSI_WHITE, machine->rx_state );
         break;
     }
 

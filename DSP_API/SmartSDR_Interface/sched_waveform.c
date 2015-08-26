@@ -194,15 +194,6 @@ static BOOL _end_of_transmission = FALSE;
 
 #define FREEDV_NSAMPLES 160
 
-static void icom_byteToBits( unsigned char byte, BOOL * bits ) {
-    unsigned char mask = 0x01;
-    uint32 i = 0;
-
-    for ( i = 0 ; i < 8 ; i++, mask <<= 1 ) {
-        bits[i] = ( byte & mask ) ? TRUE : FALSE;
-    }
-}
-
 void sched_waveform_sendStatus( uint32 slice ) {
     dstar_updateStatus( _dstar, slice, STATUS_TX );
 }
@@ -488,9 +479,9 @@ static void * _sched_waveform_thread( void * param ) {
                             BOOL ambe_packet_out = FALSE;
 
                             if ( state == DEMOD_TRUE ) {
-                                ambe_packet_out = dstar_stateMachine( _dstar, TRUE, ambe_out, 9 );
+                                ambe_packet_out = dstar_rxStateMachine( _dstar, TRUE, ambe_out, 9 );
                             } else if ( state == DEMOD_FALSE ) {
-                                ambe_packet_out = dstar_stateMachine( _dstar, FALSE, ambe_out, 9 );
+                                ambe_packet_out = dstar_rxStateMachine( _dstar, FALSE, ambe_out, 9 );
                             } else {
                                 /* Nothing to do since we have not "locked" a bit out yet */
                             }
@@ -612,70 +603,20 @@ static void * _sched_waveform_thread( void * param ) {
                                 decode_out = thumbDV_encode( _dv_serial_fd, speech_in, mod_out, DV_PACKET_SAMPLES );
                             }
 
-                            float buf[DSTAR_RADIO_BIT_LENGTH];
                             uint32 j = 0;
 
                             if ( initial_tx ) {
 
                                 initial_tx = FALSE;
 
-                                /* Create Sync */
-                                for ( i = 0 ; i < 64 + 20; i += 2 ) {
-                                    gmsk_encode( _gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH );
+                                _dstar->tx_state = BIT_FRAME_SYNC;
 
-                                    for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
-                                        cbWriteFloat( TX4_cb, buf[j] );
-                                    }
+                                dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, NULL);
 
-                                    gmsk_encode( _gmsk_mod, FALSE, buf, DSTAR_RADIO_BIT_LENGTH );
+                                _dstar->tx_state = HEADER_PROCESSING;
 
-                                    for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
-                                        cbWriteFloat( TX4_cb, buf[j] );
-                                    }
-                                }
+                                dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, NULL);
 
-                                for ( i = 0 ; i < FRAME_SYNC_LENGTH_BITS ; i++ ) {
-                                    gmsk_encode( _gmsk_mod, FRAME_SYNC_BITS[i], buf, DSTAR_RADIO_BIT_LENGTH );
-
-                                    for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
-                                        cbWriteFloat( TX4_cb, buf[j] );
-                                    }
-                                }
-
-                                dstar_pfcs pfcs;
-                                pfcs.crc16 = 0xFFFF;
-
-                                unsigned char header_bytes[RADIO_HEADER_LENGTH_BITS] = {0};
-                                dstar_headerToBytes( &( _dstar->outgoing_header ), header_bytes );
-                                dstar_pfcsUpdateBuffer( &pfcs, header_bytes, 312 / 8 );
-                                dstar_pfcsResult( &pfcs, header_bytes + 312 / 8 );
-
-                                output( "Main: PFCS Bytes: 0x%08X 0x%08X\n", *( header_bytes + 312 / 8 ), *( header_bytes + 320 / 8 ) );
-
-                                BOOL bits[FEC_SECTION_LENGTH_BITS] = {0};
-
-                                gmsk_bytesToBits( header_bytes, bits, 328 );
-                                BOOL encoded[RADIO_HEADER_LENGTH_BITS * 2] = {0};
-                                BOOL interleaved[RADIO_HEADER_LENGTH_BITS * 2] = {0};
-                                BOOL scrambled[RADIO_HEADER_LENGTH_BITS * 2] = {0};
-                                uint32 outLen = 0;
-                                dstar_FECencode( bits, encoded, RADIO_HEADER_LENGTH_BITS, &outLen );
-                                //output("Encode outLen = %d\n", outLen);
-
-                                outLen = FEC_SECTION_LENGTH_BITS;
-                                dstar_interleave( encoded, interleaved, outLen );
-
-                                uint32 count = 0;
-                                dstar_scramble( interleaved, scrambled, outLen, &count );
-                                output( "Count = %d\n", count );
-
-                                for ( i = 0 ; i < count ; i++ ) {
-                                    gmsk_encode( _gmsk_mod, scrambled[i], buf, DSTAR_RADIO_BIT_LENGTH );
-
-                                    for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
-                                        cbWriteFloat( TX4_cb, buf[j] );
-                                    }
-                                }
 
                                 initial_tx_flush = TRUE;
 
@@ -685,30 +626,12 @@ static void * _sched_waveform_thread( void * param ) {
                                 float data_buf[DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH] = {0};
 
                                 if ( decode_out != 0 ) {
-                                    BOOL bits[8] = {0} ;
-                                    uint32 k = 0;
-
-                                    for ( i = 0 ; i < VOICE_FRAME_LENGTH_BYTES ; i++ ) {
-                                        icom_byteToBits( mod_out[i], bits );
-
-                                        for ( j = 0 ; j < 8 ; j++ ) {
-                                            gmsk_encode( _gmsk_mod, bits[j], buf, DSTAR_RADIO_BIT_LENGTH );
-
-                                            for ( k = 0 ; k < DSTAR_RADIO_BIT_LENGTH ; k++ ) {
-                                                cbWriteFloat( TX4_cb, buf[k] );
-                                            }
-                                        }
-                                    }
+                                    _dstar->tx_state = VOICE_FRAME;
+                                    dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, mod_out);
 
                                     if ( dstar_tx_frame_count % 21 == 0 ) {
-                                        /* Sync Bits */
-                                        unsigned char sync_bytes[3] = {0};
-                                        memcpy( sync_bytes, DATA_SYNC_BYTES, 3 );
-                                        gmsk_encodeBuffer( _gmsk_mod, sync_bytes, DATA_FRAME_LENGTH_BITS, data_buf, DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH );
-
-                                        for ( i = 0 ; i < DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
-                                            cbWriteFloat( TX4_cb, data_buf[i] );
-                                        }
+                                        _dstar->tx_state = DATA_SYNC_FRAME;
+                                        dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, NULL);
                                     } else {
 
 
@@ -780,28 +703,9 @@ static void * _sched_waveform_thread( void * param ) {
 
                             if ( _end_of_transmission && !inhibit_tx ) {
 
-                                float end_buf[END_PATTERN_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH] = {0.0};
-                                unsigned char end_bytes[END_PATTERN_LENGTH_BYTES] = {0};
-                                memcpy( end_bytes, END_PATTERN_BYTES, END_PATTERN_LENGTH_BYTES * sizeof( unsigned char ) );
-                                gmsk_encodeBuffer( _gmsk_mod, end_bytes, END_PATTERN_LENGTH_BITS, end_buf, END_PATTERN_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH );
+                                _dstar->tx_state = END_PATTERN;
 
-                                for ( i = 0 ; i < END_PATTERN_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
-                                    cbWriteFloat( TX4_cb, end_buf[i] );
-                                }
-
-                                for ( i = 0 ; i <  20 ; i += 2 ) {
-                                    gmsk_encode( _gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH );
-
-                                    for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
-                                        cbWriteFloat( TX4_cb, buf[j] );
-                                    }
-
-                                    gmsk_encode( _gmsk_mod, FALSE, buf, DSTAR_RADIO_BIT_LENGTH );
-
-                                    for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
-                                        cbWriteFloat( TX4_cb, buf[j] );
-                                    }
-                                }
+                                dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, NULL);
 
                                 flush_tx = TRUE;
                                 initial_tx_flush = TRUE;

@@ -33,6 +33,8 @@
 #include "bit_pattern_matcher.h"
 #include "DStarDefines.h"
 #include "dstar.h"
+#include "gmsk_modem.h"
+#include "circular_buffer.h"
 
 enum _slow_data_decode_state {
     FIRST_FRAME = 0,
@@ -54,13 +56,13 @@ typedef struct _slow_data_machine {
 } slow_data_machine, *SLOW_DATA_MACHINE;
 
 
-enum DSTAR_STATE {
-    BIT_FRAME_SYNC_WAIT = 0x1,
+enum DSTAR_RX_STATE {
+    BIT_FRAME_SYNC = 0x1,
     HEADER_PROCESSING,
     VOICE_FRAME,
     DATA_FRAME,
     DATA_SYNC_FRAME,
-    END_PATTERN_FOUND
+    END_PATTERN
 };
 
 enum STATUS_TYPE {
@@ -82,7 +84,8 @@ typedef struct _dstar_header {
 } dstar_header, * DSTAR_HEADER;
 
 typedef struct _dstar_machine {
-    enum DSTAR_STATE state;
+    enum DSTAR_RX_STATE rx_state;
+    enum DSTAR_RX_STATE tx_state;
     dstar_header incoming_header;
     dstar_header outgoing_header;
 
@@ -118,10 +121,13 @@ typedef union _dstar_pfcs {
     uint8 crc8[2];
 } dstar_pfcs, * DSTAR_PFCS;
 
+void icom_byteToBits( unsigned char byte, BOOL * bits );
+
 void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice , enum STATUS_TYPE type );
 DSTAR_MACHINE dstar_createMachine( void );
 void dstar_destroyMachine( DSTAR_MACHINE machine );
-BOOL dstar_stateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len );
+BOOL dstar_rxStateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * ambe_out, uint32 ambe_buf_len );
+void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Float_Buffer tx_cb, unsigned char * mod_audio);
 
 void dstar_dumpHeader( DSTAR_HEADER header );
 
