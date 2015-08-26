@@ -220,8 +220,9 @@ void sched_waveform_setDestinationRptr( uint32 slice , const char * destination_
     _dstar->outgoing_header.destination_rptr[8] = '\0';
 
     if ( strncmp( _dstar->outgoing_header.destination_rptr, "DIRECT", strlen( "DIRECT" ) ) != 0 ) {
-        output( "WOOT\n" );
         _dstar->outgoing_header.flag1 = 0x1 << 6;
+    } else {
+        _dstar->outgoing_header.flag1 = 0;
     }
 
     dstar_dumpHeader( &( _dstar->outgoing_header ) );
@@ -324,6 +325,31 @@ void sched_waveform_setOwnCall2( uint32 slice , const char * owncall2 ) {
     _dstar->outgoing_header.own_call2[4] = '\0';
 
     dstar_dumpHeader( &( _dstar->outgoing_header ) );
+}
+
+void sched_waveform_setMessage( uint32 slice, const char * message)
+{
+    /* Ignore slice for now */
+    char string[SLOW_DATA_MESSAGE_LENGTH_BYTES + 1 ];
+    strncpy( string, message, SLOW_DATA_MESSAGE_LENGTH_BYTES + 1);
+    charReplace( string, ' ', ( char )  0x7F );
+    memset(_dstar->slow_encoder->message, ' ', SLOW_DATA_MESSAGE_LENGTH_BYTES);
+
+    /* We limit the copy to the string length so that
+     * we can fill the rest of the string with spaces to
+     * comply with DSTAR
+     */
+
+    uint32 copy_len = strlen( string );
+
+    if ( copy_len > SLOW_DATA_MESSAGE_LENGTH_BYTES )
+        copy_len = SLOW_DATA_MESSAGE_LENGTH_BYTES;
+
+    strncpy(_dstar->slow_encoder->message, string, copy_len);
+
+    /* Enforce termination */
+    _dstar->slow_encoder->message[SLOW_DATA_MESSAGE_LENGTH_BYTES] = '\0';
+
 }
 
 void sched_waveform_setFD( int fd ) {
