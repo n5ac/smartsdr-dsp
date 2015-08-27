@@ -34,8 +34,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
@@ -73,14 +71,6 @@ namespace CODEC2_GUI
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // not complete code
-            reloadDStarRepeaterListToolStripMenuItem.Visible = false;
-
-            // end not complete code
-
-
-
-
             if (!string.IsNullOrEmpty(Properties.Settings.Default.MainPosition))
             {
                 string[] cords = Properties.Settings.Default.MainPosition.Split(',');
@@ -129,7 +119,6 @@ namespace CODEC2_GUI
 
         void API_RadioRemoved(Radio radio)
         {
-            //sliceFlow.Controls.Clear();
         }
 
         //*************************************
@@ -254,14 +243,15 @@ namespace CODEC2_GUI
             }
         }
 
-        private void reloadDStarRepeaterListToolStripMenuItem_Click(object sender, EventArgs e)
+        private void reloadDStarRepeaterListToolStripMenuItemList(string area)
         {
             try
             {
                 DstarInfo di = new DstarInfo();
-                di.FetchAndSaveRepeaterList();
+                di.FetchAndSaveRepeaterList(area);
                 SelectForm sf = new SelectForm();
                 sf.showOnly = true;
+                sf.repeaterOnly = true;
                 sf.Mode = SelectForm.RMode.Repeater;
                 sf.Owner = this;
                 sf.Show();
@@ -303,6 +293,45 @@ namespace CODEC2_GUI
                     sw.Close();
                 }
             }
+        }
+
+        private void reloadDStarRepeaterListToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
+        {
+            for (int idx = reloadDStarRepeaterListToolStripMenuItem.DropDownItems.Count - 1; idx > 0; idx--)
+            {
+                reloadDStarRepeaterListToolStripMenuItem.DropDownItems.RemoveAt(idx);
+            }
+            try
+            {
+                DstarInfo di = new DstarInfo();
+                List<string> areas = di.GetDStarRepeaterAreas();
+                if (areas != null && areas.Count > 0)
+                {
+                    foreach (string area in areas)
+                    {
+                        ToolStripMenuItem ti = new ToolStripMenuItem(area);
+                        ti.Click += RepeaterAreaSelection_Click;
+                        reloadDStarRepeaterListToolStripMenuItem.DropDownItems.Add(ti);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                StringBuilder sb = new StringBuilder();
+                Exception ex1 = ex;
+                while (ex1 != null)
+                {
+                    sb.AppendLine(ex1.Message);
+                    ex1 = ex1.InnerException;
+                }
+                MessageBox.Show(sb.ToString(), "Load DSTARINFO Repeater Area Info Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            }
+        }
+
+        private void RepeaterAreaSelection_Click(object sender, EventArgs e)
+        {
+            ToolStripMenuItem ti = sender as ToolStripMenuItem;
+            reloadDStarRepeaterListToolStripMenuItemList(ti.Text);
         }
     }
 

@@ -123,6 +123,7 @@
             this.urtxt.Name = "urtxt";
             this.urtxt.Size = new System.Drawing.Size(152, 28);
             this.urtxt.TabIndex = 7;
+            this.urtxt.SelectedIndexChanged += new System.EventHandler(this.urtxt_SelectedIndexChanged);
             this.urtxt.TextChanged += new System.EventHandler(this.urtxt_TextChanged);
             // 
             // rpt1txt
@@ -131,8 +132,9 @@
             this.rpt1txt.Margin = new System.Windows.Forms.Padding(4);
             this.rpt1txt.MaxLength = 8;
             this.rpt1txt.Name = "rpt1txt";
-            this.rpt1txt.Size = new System.Drawing.Size(159, 28);
+            this.rpt1txt.Size = new System.Drawing.Size(231, 28);
             this.rpt1txt.TabIndex = 10;
+            this.rpt1txt.SelectedIndexChanged += new System.EventHandler(this.rpt1txt_SelectedIndexChanged);
             this.rpt1txt.TextChanged += new System.EventHandler(this.rpt1txt_TextChanged);
             // 
             // rpt2txt
@@ -141,8 +143,9 @@
             this.rpt2txt.Margin = new System.Windows.Forms.Padding(4);
             this.rpt2txt.MaxLength = 8;
             this.rpt2txt.Name = "rpt2txt";
-            this.rpt2txt.Size = new System.Drawing.Size(159, 28);
+            this.rpt2txt.Size = new System.Drawing.Size(231, 28);
             this.rpt2txt.TabIndex = 13;
+            this.rpt2txt.SelectedIndexChanged += new System.EventHandler(this.rpt2txt_SelectedIndexChanged);
             this.rpt2txt.TextChanged += new System.EventHandler(this.rpt2txt_TextChanged);
             // 
             // rbDV
@@ -199,13 +202,13 @@
             this.btnRef.Name = "btnRef";
             this.btnRef.Size = new System.Drawing.Size(61, 31);
             this.btnRef.TabIndex = 8;
-            this.btnRef.Text = "R/R";
+            this.btnRef.Text = "Ref";
             this.btnRef.UseVisualStyleBackColor = true;
             this.btnRef.Click += new System.EventHandler(this.btnRef_Click);
             // 
             // btnRpt
             // 
-            this.btnRpt.Location = new System.Drawing.Point(566, 58);
+            this.btnRpt.Location = new System.Drawing.Point(638, 58);
             this.btnRpt.Name = "btnRpt";
             this.btnRpt.Size = new System.Drawing.Size(61, 33);
             this.btnRpt.TabIndex = 11;
@@ -234,7 +237,7 @@
             this.Font = new System.Drawing.Font("Courier New", 11F);
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "dstarctl";
-            this.Size = new System.Drawing.Size(641, 148);
+            this.Size = new System.Drawing.Size(730, 148);
             this.Load += new System.EventHandler(this.dstarctl_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

@@ -33,8 +33,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
-using System.Data;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
@@ -210,7 +208,7 @@ namespace CODEC2_GUI
             if (!string.IsNullOrEmpty(logMY) && !string.IsNullOrEmpty(logUR))
             {
                 if (LogEvent != null)
-                    LogEvent(this, new LogEventArgs(string.Format("{0} UR: {1,-8} MY: {2,-13}{3}",
+                    LogEvent(this, new LogEventArgs(string.Format("{0} CALLED: {1,-8} CALLER: {2,-13}{3}",
                     DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                     logUR,
                     logMY + (string.IsNullOrEmpty(logNote) ? string.Empty : "/" + logNote),
@@ -261,12 +259,12 @@ namespace CODEC2_GUI
                 return;
             }
             string cmd;
+            string rpt1 = string.IsNullOrEmpty(dstarctl1.RPT1) ? "DIRECT" : dstarctl1.RPT1;
             string rpt2 = string.IsNullOrEmpty(dstarctl1.RPT2) ? "DIRECT" : dstarctl1.RPT2;
             cmd = "set destination_rptr=" + rpt2.Replace(" ", "\u007f");
             _slice.SendWaveformCommand(cmd);
-            string rpt1 = string.IsNullOrEmpty(dstarctl1.RPT1) ? "DIRECT" : dstarctl1.RPT1;
-            cmd = "set departure_rptr=" + rpt1.Replace(" ", "\u007f");
-            _slice.SendWaveformCommand(cmd);
+
+
             string ur = dstarctl1.UR;
             cmd = "set companion_call=" + ur.Replace(" ", "\u007f");
             _slice.SendWaveformCommand(cmd);
@@ -276,6 +274,50 @@ namespace CODEC2_GUI
             string note = dstarctl1.NOTE;
             cmd = "set own_call2=" + note.Replace(" ", "\u007f");
             _slice.SendWaveformCommand(cmd);
+
+            if (string.IsNullOrEmpty(dstarctl1.RPT1))
+            {
+                _slice.SendWaveformCommand("set departure_rptr=DIRECT");
+            }
+            else
+            {
+                string[] srpt1 = dstarctl1.RPT1.Split('~');
+                if (srpt1.Length > 0)
+                {
+                    cmd = "set departure_rptr=" + srpt1[0].Replace(" ", "\u007f");
+                    _slice.SendWaveformCommand(cmd);
+                    if (srpt1.Length > 1)
+                    {
+                        try
+                        {
+                            _slice.Freq = Convert.ToDouble(srpt1[1]);
+                            if (srpt1.Length > 2)
+                            {
+                                double ofs = Convert.ToDouble(srpt1[2]);
+                                _slice.FMRepeaterOffsetFreq = Math.Abs(ofs);
+                                _slice.RepeaterOffsetDirection = ofs == 0 ? FMTXOffsetDirection.Simplex :
+                                    (ofs < 0 ? FMTXOffsetDirection.Down : FMTXOffsetDirection.Up);
+                            }
+                            else
+                            {
+                                _slice.FMRepeaterOffsetFreq = 0;
+                                _slice.RepeaterOffsetDirection = FMTXOffsetDirection.Simplex;
+                            }
+                        }
+                        catch(Exception ex)
+                        {
+                            StringBuilder sb = new StringBuilder();
+                            Exception ex1 = ex;
+                            while (ex1 != null)
+                            {
+                                sb.AppendLine(ex1.Message);
+                                ex1 = ex1.InnerException;
+                            }
+                            MessageBox.Show(sb.ToString(), "Set Slice Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                        }
+                    }
+                }
+            }
 
             dstarctl1.Modified = dstarctl.ModifyFlags.NOFLAGS;
 
@@ -287,7 +329,6 @@ namespace CODEC2_GUI
             dstarctl1.RPT1 = rpt1 == "DIRECT" ? string.Empty : rpt1;
             dstarctl1.RPT2 = rpt2 == "DIRECT" ? string.Empty : rpt2;
             dstarctl1.DRMode = !string.IsNullOrEmpty(dstarctl1.RPT1);
-
 
             // add new UR entry to dropdown list
             List<string> lst = new List<string>(dstarctl1.URList);

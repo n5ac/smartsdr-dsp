@@ -33,12 +33,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CODEC2_GUI
@@ -48,9 +43,10 @@ namespace CODEC2_GUI
         public enum RMode { Repeater, Reflector, ReflectorCmd };
         public RMode Mode { get; set; }
         public bool showOnly { get; set; }
-        public bool repeaterOnly { get; set;  }
+        public bool repeaterOnly { get; set; }
 
         public string SelectedName { get; set; }
+        public string SelectedDesc { get; set; }
 
         private IEnumerable<ReflectorOrRepeater> ReflectorList { get; set; }
         private IEnumerable<ReflectorOrRepeater> RepeaterList { get; set; }
@@ -77,23 +73,36 @@ namespace CODEC2_GUI
 
             DstarInfo di = new DstarInfo();
 
-            ReflectorList = di.Refelectors;
-            RepeaterList = di.Repeaters;
-
             if (repeaterOnly)
             {
                 Mode = RMode.Repeater;
                 rb1.Checked = true;
                 rb2.Visible = false;
                 rb3.Visible = false;
+
+                if (di.Repeaters == null || di.Repeaters.Count == 0)
+                {
+                    MessageBox.Show(this, "Load / Reload Repeater List from File Menu!", "Select Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    DialogResult = DialogResult.Cancel;
+                    Close();
+                    return;
+                }
+                RepeaterList = di.Repeaters;
             }
             else
             {
-                if (RepeaterList == null || RepeaterList.Count() == 0)
+                if (di.Refelectors == null || di.Refelectors.Count == 0)
                 {
-                    Mode = RMode.Reflector;
-                    rb1.Visible = false;
+                    MessageBox.Show(this, "Load / Reload Reflectors List from File Menu!", "Select Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    DialogResult = DialogResult.Cancel;
+                    Close();
+                    return;
                 }
+                ReflectorList = di.Refelectors;
+
+                rb1.Visible = false;
+                if (Mode == RMode.Repeater)
+                    Mode = RMode.Reflector;
 
                 switch (Mode)
                 {
@@ -146,9 +155,12 @@ namespace CODEC2_GUI
             if (listView1.SelectedItems.Count > 0)
             {
                 SelectedName = listView1.SelectedItems[0].Text;
-                if (Mode == RMode.Reflector)
-                    SelectedName = string.Format("{0,-7}L", SelectedName);
-
+                StringBuilder sb = new StringBuilder();
+                foreach(ListViewItem.ListViewSubItem lvi in listView1.SelectedItems[0].SubItems)
+                {
+                    sb.AppendFormat("{0}{1}", sb.Length > 0 ? "|" : string.Empty, lvi.Text);
+                }
+                SelectedDesc = sb.ToString();
                 DialogResult = DialogResult.OK;
                 Close();
             }

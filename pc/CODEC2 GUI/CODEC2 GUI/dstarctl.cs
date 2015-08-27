@@ -34,8 +34,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
-using System.Data;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
@@ -64,6 +62,8 @@ namespace CODEC2_GUI
         private string RPT1Orig = string.Empty;
         private string RPT2Orig = string.Empty;
 
+        private bool inreset;
+
         public bool DRMode
         {
             get
@@ -80,7 +80,7 @@ namespace CODEC2_GUI
                     rpt1txt.Enabled =
                     rpt1.Enabled =
                     rpt2.Enabled =
-                    //btnRpt.Visible =
+                    btnRpt.Visible =
                     rpt2txt.Enabled =
                     value;
                     OnPropertyChanged("DRMode");
@@ -158,9 +158,19 @@ namespace CODEC2_GUI
             {
                 if (value == null)
                     value = string.Empty;
-                if (string.Compare(value, rpt1txt.Text, true) != 0)
+                if (rpt1txt.Text.StartsWith(value) == false)
                 {
-                    rpt1txt.Text = value.ToUpper();
+                    inreset = true;
+                    value = value.ToUpper();
+                    int idx = rpt1txt.FindString(value);
+                    if (idx >= 0)
+                    {
+                        rpt1txt.SelectedIndex = idx;
+                        value = rpt1txt.Text;
+                    }
+                    else
+                        rpt1txt.Text = value;
+                    inreset = false;
                     Modified = Modified & ~ModifyFlags.RPT1FLAG;
                     OnPropertyChanged("RPT1");
                 }
@@ -256,6 +266,9 @@ namespace CODEC2_GUI
 
         private void OnPropertyChanged(string prop)
         {
+            if (inreset)
+                return;
+
             if (prop == "Modified")
             {
                 btnReset.Visible = Modified != ModifyFlags.NOFLAGS;
@@ -276,7 +289,7 @@ namespace CODEC2_GUI
             rpt1.Enabled = false;
             rpt2.Enabled = false;
             rpt2txt.Enabled = false;
-            //btnRpt.Visible = false;
+            btnRpt.Visible = false;
             OnPropertyChanged("DRMode");
             OnPropertyChanged("Modified");
 
@@ -291,7 +304,7 @@ namespace CODEC2_GUI
             rpt1.Enabled = true;
             rpt2.Enabled = true;
             rpt2txt.Enabled = true;
-            //btnRpt.Visible = true;
+            btnRpt.Visible = true;
             OnPropertyChanged("DRMode");
             OnPropertyChanged("Modified");
         }
@@ -307,17 +320,13 @@ namespace CODEC2_GUI
             mynotetip.SetToolTip(mynotetxt, "Note (4 chars max)");
             dvtip.SetToolTip(rbDV, "DStar Simplex Mode");
             drtip.SetToolTip(rbDR, "DStar Repeater Mode");
-
-
-            // not complete code
-            btnRpt.Visible = false;
-
-            // end not complete code
         }
 
 
         private void mytxt_TextChanged(object sender, EventArgs e)
         {
+            if (inreset)
+                return;
             Modified = Modified | ModifyFlags.MYFLAG;
             OnPropertyChanged("MY");
             OnPropertyChanged("Modified");
@@ -325,6 +334,8 @@ namespace CODEC2_GUI
 
         private void mynotetxt_TextChanged(object sender, EventArgs e)
         {
+            if (inreset)
+                return;
             Modified = Modified | ModifyFlags.NOTEFLAG;
             OnPropertyChanged("NOTE");
             OnPropertyChanged("Modified");
@@ -332,6 +343,8 @@ namespace CODEC2_GUI
 
         private void urtxt_TextChanged(object sender, EventArgs e)
         {
+            if (inreset)
+                return;
             Modified = Modified | ModifyFlags.URFLAG;
             OnPropertyChanged("UR");
             OnPropertyChanged("Modified");
@@ -339,6 +352,8 @@ namespace CODEC2_GUI
 
         private void rpt1txt_TextChanged(object sender, EventArgs e)
         {
+            if (inreset)
+                return;
             Modified = Modified | ModifyFlags.RPT1FLAG;
             OnPropertyChanged("RPT1");
             OnPropertyChanged("Modified");
@@ -346,10 +361,39 @@ namespace CODEC2_GUI
 
         private void rpt2txt_TextChanged(object sender, EventArgs e)
         {
+            if (inreset)
+                return;
             Modified = Modified | ModifyFlags.RPT2FLAG;
             OnPropertyChanged("RPT2");
             OnPropertyChanged("Modified");
         }
+        private void rpt1txt_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (inreset)
+                return;
+            Modified = Modified | ModifyFlags.RPT1FLAG;
+            OnPropertyChanged("RPT1");
+            OnPropertyChanged("Modified");
+        }
+
+        private void rpt2txt_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (inreset)
+                return;
+            Modified = Modified | ModifyFlags.RPT2FLAG;
+            OnPropertyChanged("RPT2");
+            OnPropertyChanged("Modified");
+        }
+
+        private void urtxt_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (inreset)
+                return;
+            Modified = Modified | ModifyFlags.URFLAG;
+            OnPropertyChanged("UR");
+            OnPropertyChanged("Modified");
+        }
+
 
         private void updateReset()
         {
@@ -366,6 +410,8 @@ namespace CODEC2_GUI
 
         private void btnReset_Click(object sender, EventArgs e)
         {
+            inreset = true;
+
             rbDV.Checked = !DRModeOrig;
             rbDR.Checked = DRModeOrig;
             mytxt.Text = MYOrig;
@@ -376,12 +422,13 @@ namespace CODEC2_GUI
             rpt1txt.Enabled =
             rpt1.Enabled =
             rpt2.Enabled =
-            //btnRpt.Visible = 
+            btnRpt.Visible = 
             rpt2txt.Enabled =
             DRModeOrig;
 
-            Modified = ModifyFlags.NOFLAGS;
             btnReset.Visible = false;
+            inreset = false;
+            Modified = ModifyFlags.NOFLAGS;
 
             OnPropertyChanged("MY");
             OnPropertyChanged("NOTE");
@@ -397,9 +444,18 @@ namespace CODEC2_GUI
             {
                 SelectForm sf = new SelectForm();
                 sf.Owner = this.TopLevelControl as Form;
+                sf.repeaterOnly = false;
+
                 if (sf.ShowDialog() == DialogResult.OK)
                 {
-                    urtxt.Text = sf.SelectedName;
+                    //if (sf.Mode == SelectForm.RMode.Repeater)
+                    //    urtxt.Text = "/" + sf.SelectedName.Split(' ')[0];
+                    //else 
+                    if (sf.Mode == SelectForm.RMode.Reflector)
+                        urtxt.Text = string.Format("{0,-7}L", sf.SelectedName);
+                    else
+                        urtxt.Text = sf.SelectedName;
+
                     Modified = Modified | ModifyFlags.URFLAG;
                     OnPropertyChanged("UR");
                     OnPropertyChanged("Modified");
@@ -427,10 +483,17 @@ namespace CODEC2_GUI
                 sf.Owner = this.TopLevelControl as Form;
                 if (sf.ShowDialog() == DialogResult.OK)
                 {
-                    rpt1txt.Text = sf.SelectedName;
-                    Modified = Modified | ModifyFlags.RPT1FLAG;
-                    OnPropertyChanged("RPT1");
-                    OnPropertyChanged("Modified");
+                    RepeaterModule rpm = new RepeaterModule();
+                    rpm.Owner = this.TopLevelControl as Form;
+                    rpm.RptName = sf.SelectedName;
+                    rpm.RptDesc = sf.SelectedDesc;
+                    if (rpm.ShowDialog() == DialogResult.OK)
+                    {
+                        rpt1txt.Text = rpm.SelectedRpt.RepeaterName;
+                        Modified = Modified | ModifyFlags.RPT1FLAG;
+                        OnPropertyChanged("RPT1");
+                        OnPropertyChanged("Modified");
+                    }
                 }
             }
             catch (Exception ex)
@@ -445,5 +508,6 @@ namespace CODEC2_GUI
                 MessageBox.Show(sb.ToString(), "Select DSTARINFO Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }
+
     }
 }
