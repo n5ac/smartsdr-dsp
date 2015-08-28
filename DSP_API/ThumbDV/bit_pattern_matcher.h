@@ -38,18 +38,17 @@
 
 #include "datatypes.h"
 
-typedef struct _bit_pattern_matcher
-{
+typedef struct _bit_pattern_matcher {
     BOOL * pattern;
     BOOL * data;
     uint32 length;
     uint32 data_length;
 } bit_pm, * BIT_PM;
 
-void bitPM_destroy(BIT_PM bpm);
-BIT_PM bitPM_create(const BOOL * to_match, uint32 length);
+void bitPM_destroy( BIT_PM bpm );
+BIT_PM bitPM_create( const BOOL * to_match, uint32 length );
 
-BOOL bitPM_addBit(BIT_PM bpm, BOOL bit);
-void bitPM_reset(BIT_PM bpm);
+BOOL bitPM_addBit( BIT_PM bpm, BOOL bit );
+void bitPM_reset( BIT_PM bpm );
 
 #endif /* THUMBDV_BIT_PATTERN_MATCHER_H_ */

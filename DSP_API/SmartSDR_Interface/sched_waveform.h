@@ -46,7 +46,10 @@ void sched_waveform_setDepartureRptr(uint32 slice , const char * departure_rptr 
 void sched_waveform_setCompanionCall( uint32 slice, const char * companion_call);
 void sched_waveform_setOwnCall1( uint32 slice , const char * owncall1 );
 void sched_waveform_setOwnCall2(uint32 slice , const char * owncall2 );
+void sched_waveform_setMessage( uint32 slice, const char * message);
 
 void sched_waveform_sendStatus(uint32 slice);
 void sched_waveform_setFD(int fd);
+void sched_waveform_setEndOfTX(BOOL end_of_transmission);
+void sched_waveform_setDSTARSlice( uint32 slice );
 #endif /* SCHED_WAVEFORM_H_ */

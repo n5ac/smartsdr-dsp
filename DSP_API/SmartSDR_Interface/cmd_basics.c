@@ -291,7 +291,9 @@ uint32 cmd_slice(int requester_fd, int argc, char **argv)
                 } else if ( strncmp(argv[i], "own_call2", strlen("own_call2") )  == 0 ) {
                     char * call = argv[i] + strlen("own_call2") + 1;
                     sched_waveform_setOwnCall2(slc, call);
-
+                } else if ( strncmp(argv[i], "message", strlen("message")) == 0 ) {
+                    char * message = argv[i] + strlen("message") + 1;
+                    sched_waveform_setMessage(slc, message);
                 }
 
 

@@ -45,6 +45,7 @@
 
 
 #define SUCCESS 0
+#define FAIL    1
 
 #define SMARTSDR_API_PORT           "4992"
 #define VITA_49_PORT                5000

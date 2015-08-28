@@ -38,12 +38,11 @@
 #include "common.h"
 #include "bit_pattern_matcher.h"
 
-BIT_PM bitPM_create( const BOOL * to_match, uint32 length)
-{
-    BIT_PM bpm = (BIT_PM) safe_malloc(sizeof(bit_pm));
+BIT_PM bitPM_create( const BOOL * to_match, uint32 length ) {
+    BIT_PM bpm = ( BIT_PM ) safe_malloc( sizeof( bit_pm ) );
 
-    bpm->pattern = (BOOL *) safe_malloc(sizeof(BOOL) * length);
-    bpm->data = (BOOL *) safe_malloc(sizeof(BOOL) * length);
+    bpm->pattern = ( BOOL * ) safe_malloc( sizeof( BOOL ) * length );
+    bpm->data = ( BOOL * ) safe_malloc( sizeof( BOOL ) * length );
     bpm->length = length;
     bpm->data_length = 0;
 
@@ -52,42 +51,48 @@ BIT_PM bitPM_create( const BOOL * to_match, uint32 length)
      */
     uint32 i = 0;
     uint32 n = length - 1;
+
     for ( i = 0 ; i < length; i++ ) {
         bpm->pattern[n--] = to_match[i];
     }
-    output("Creating pattern matcher !!!!!\n");
+
+    output( "Creating pattern matcher !!!!!\n" );
+
     for ( i = 0 ; i < length ; i++ ) {
-            output("%d", bpm->pattern[i]);
-    } output("\n");
+        output( "%d", bpm->pattern[i] );
+    }
+
+    output( "\n" );
+
     for ( i = 0 ; i < length ; i++ ) {
-            output("%d", to_match[i]);
-    } output("\n");
+        output( "%d", to_match[i] );
+    }
+
+    output( "\n" );
 
 
-    memset(bpm->data, 0, length * sizeof(BOOL));
+    memset( bpm->data, 0, length * sizeof( BOOL ) );
 
     return bpm;
 }
 
-void bitPM_destroy(BIT_PM bpm)
-{
-    safe_free(bpm->data);
-    safe_free(bpm->pattern);
-    safe_free(bpm);
+void bitPM_destroy( BIT_PM bpm ) {
+    safe_free( bpm->data );
+    safe_free( bpm->pattern );
+    safe_free( bpm );
 }
 
-void bitPM_reset(BIT_PM bpm)
-{
+void bitPM_reset( BIT_PM bpm ) {
     bpm->data_length = 0;
-    memset(bpm->data, 0, bpm->length * sizeof(BOOL));
+    memset( bpm->data, 0, bpm->length * sizeof( BOOL ) );
 }
 
-BOOL bitPM_addBit(BIT_PM bpm, BOOL bit)
-{
+BOOL bitPM_addBit( BIT_PM bpm, BOOL bit ) {
     uint32 i = 0;
+
     /* Shift the existing buffer to make space for new bit */
     for ( i = bpm->length - 1; i >= 1 ; i-- ) {
-        bpm->data[i] = bpm->data[i-1];
+        bpm->data[i] = bpm->data[i - 1];
     }
 
     bpm->data[0] = bit;
@@ -102,20 +107,25 @@ BOOL bitPM_addBit(BIT_PM bpm, BOOL bit)
     }
 
     for ( i = 0; i < bpm->length ; i++ ) {
-        if ( bpm->pattern[i] != bpm->data[i]) {
+        if ( bpm->pattern[i] != bpm->data[i] ) {
             return FALSE;
         }
     }
 
 #ifdef DEBUG_BIT_PM
-    output(ANSI_GREEN "Match Found\nPat: ");
+    output( ANSI_GREEN "Match Found\nPat: " );
+
     for ( i = 0; i < bpm->length ; i++ ) {
-       output("%d ", bpm->pattern[i]);
+        output( "%d ", bpm->pattern[i] );
     }
-    output("\nMat: ");
+
+    output( "\nMat: " );
+
     for ( i = 0; i < bpm->length ; i++ ) {
-            output("%d ", bpm->data[i]);
-    } output("\n");
+        output( "%d ", bpm->data[i] );
+    }
+
+    output( "\n" );
 
 
 #endif

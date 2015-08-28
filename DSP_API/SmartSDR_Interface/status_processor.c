@@ -37,6 +37,7 @@
 
 #include "common.h"
 #include "traffic_cop.h"
+#include "sched_waveform.h"
 
 static void _handle_status(char* string)
 {
@@ -81,6 +82,9 @@ static void _handle_status(char* string)
                     char cmd[512] = {0};
                     sprintf(cmd, "slice s %d fm_deviation=1250 post_demod_low=0 post_demod_high=6000 dfm_pre_de_emphasis=0 post_demod_bypass=1 squelch=0", slc);
                     tc_sendSmartSDRcommand(cmd,FALSE, NULL);
+
+                    sched_waveform_setDSTARSlice(slc);
+
                 }
                 else
                 {
@@ -140,6 +144,12 @@ static void _handle_status(char* string)
                 {
                     output(ANSI_MAGENTA "we are receiving\n");
                 }
+                else if ( strncmp(state, "UNKEY_REQUESTED", strlen("UNKEY_REQUESTED")) == 0 )
+                {
+                    output(ANSI_MAGENTA "unkey requested - sending end bits\n");
+                    sched_waveform_setEndOfTX(TRUE);
+                }
+
             }
         }
 

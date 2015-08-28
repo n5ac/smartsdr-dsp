@@ -36,7 +36,8 @@ static const BOOL DATA_SYNC_BITS[]   = {TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE
                                  TRUE,  FALSE, TRUE,  TRUE,  FALSE, TRUE,  FALSE, FALSE,
                                  FALSE, TRUE,  TRUE,  FALSE, TRUE,  FALSE, FALSE, FALSE};
 
-static const unsigned char END_PATTERN_BYTES[] = {0x55, 0x55, 0x55, 0x55, 0xC8, 0x7A};
+//static const unsigned char END_PATTERN_BYTES[] = {0x55, 0x55, 0x55, 0x55, 0xC8, 0x7A};
+static const unsigned char END_PATTERN_BYTES[] = {0xAA, 0xAA, 0xAA, 0xAA, 0x13, 0x5E};
 static const BOOL END_PATTERN_BITS[] = {TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
                                  TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
                                  TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE, TRUE,  FALSE,
@@ -75,7 +76,7 @@ static const BOOL NULL_SLOW_DATA_BITS[] = {FALSE, FALSE, FALSE, TRUE,  FALSE, TR
 #define FEC_SECTION_LENGTH_BITS    660U
 
 #define RADIO_HEADER_LENGTH_BITS    330U
-#define RADIO_HEADER_LENGTH_BYTES   41U
+#define RADIO_HEADER_LENGTH_BYTES   42U
 
 #define DATA_BLOCK_SIZE_BITS    (21U * DV_FRAME_LENGTH_BITS)
 #define DATA_BLOCK_SIZE_BYTES   (21U * DV_FRAME_LENGTH_BYTES)
@@ -96,7 +97,9 @@ static const BOOL NULL_SLOW_DATA_BITS[] = {FALSE, FALSE, FALSE, TRUE,  FALSE, TR
 #define LONG_CALLSIGN_LENGTH    8U
 #define SHORT_CALLSIGN_LENGTH   4U
 
-#define MESSAGE_LENGTH          20U
+#define SLOW_DATA_MESSAGE_LENGTH_BYTES    20U
+#define SLOW_DATA_PACKET_LEN_BYTES          3
+
 
 #define DATA_MASK             0x80U
 #define REPEATER_MASK         0x40U
