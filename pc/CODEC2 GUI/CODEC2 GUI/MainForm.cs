@@ -213,6 +213,7 @@ namespace CODEC2_GUI
                 dli.ClearMYList();
                 dli.ClearRPT1List();
                 dli.ClearRPT2List();
+                dli.ClearMESSAGEList();
             }
 
         }

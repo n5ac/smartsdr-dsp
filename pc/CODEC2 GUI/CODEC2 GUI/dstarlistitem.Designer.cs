@@ -75,6 +75,7 @@
             this.dstarctl1.Font = new System.Drawing.Font("Courier New", 11F);
             this.dstarctl1.Location = new System.Drawing.Point(-1, -1);
             this.dstarctl1.Margin = new System.Windows.Forms.Padding(4);
+            this.dstarctl1.MESSAGE = "";
             this.dstarctl1.Modified = CODEC2_GUI.dstarctl.ModifyFlags.NOFLAGS;
             this.dstarctl1.MY = "";
             this.dstarctl1.Name = "dstarctl1";
@@ -83,7 +84,7 @@
             this.dstarctl1.RPT1List = ((System.Collections.Generic.List<string>)(resources.GetObject("dstarctl1.RPT1List")));
             this.dstarctl1.RPT2 = "";
             this.dstarctl1.RPT2List = ((System.Collections.Generic.List<string>)(resources.GetObject("dstarctl1.RPT2List")));
-            this.dstarctl1.Size = new System.Drawing.Size(731, 146);
+            this.dstarctl1.Size = new System.Drawing.Size(731, 208);
             this.dstarctl1.TabIndex = 0;
             this.dstarctl1.UR = "";
             this.dstarctl1.URList = ((System.Collections.Generic.List<string>)(resources.GetObject("dstarctl1.URList")));
@@ -99,7 +100,7 @@
             this.Font = new System.Drawing.Font("Courier New", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "dstarlistitem";
-            this.Size = new System.Drawing.Size(734, 149);
+            this.Size = new System.Drawing.Size(734, 206);
             this.Load += new System.EventHandler(this.dstarlistitem_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

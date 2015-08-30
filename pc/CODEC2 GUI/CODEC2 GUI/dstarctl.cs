@@ -51,7 +51,8 @@ namespace CODEC2_GUI
             URFLAG = 4,
             RPT1FLAG = 8,
             RPT2FLAG = 16,
-            DRFLAG = 32
+            DRFLAG = 32,
+            MESSAGE = 64
         }
         public ModifyFlags Modified { get; set; }
 
@@ -61,6 +62,7 @@ namespace CODEC2_GUI
         private string UROrig = string.Empty;
         private string RPT1Orig = string.Empty;
         private string RPT2Orig = string.Empty;
+        private string MESSAGEOrig = string.Empty;
 
         private bool inreset;
 
@@ -199,6 +201,27 @@ namespace CODEC2_GUI
             }
         }
 
+        public string MESSAGE
+        {
+            get
+            {
+                return msgtxt.Text;
+            }
+            set
+            {
+                if (value == null)
+                    value = string.Empty;
+                if (string.Compare(value, msgtxt.Text, true) != 0)
+                {
+                    msgtxt.Text = value.ToUpper();
+                    Modified = Modified & ~ModifyFlags.MESSAGE;
+                    OnPropertyChanged("MESSAGE");
+                }
+                MESSAGEOrig = value;
+                updateReset();
+            }
+        }
+
         public List<string> URList
         {
             get
@@ -253,6 +276,23 @@ namespace CODEC2_GUI
                 if (value != null && value.Count > 0)
                 {
                     rpt2txt.Items.AddRange(value.ToArray());
+                }
+            }
+        }
+
+        public List<string> MESSAGEList
+        {
+            get
+            {
+                List<string> lst = new List<string>(msgtxt.Items.Cast<string>());
+                return lst;
+            }
+            set
+            {
+                msgtxt.Items.Clear();
+                if (value != null && value.Count > 0)
+                {
+                    msgtxt.Items.AddRange(value.ToArray());
                 }
             }
         }
@@ -320,6 +360,7 @@ namespace CODEC2_GUI
             mynotetip.SetToolTip(mynotetxt, "Note (4 chars max)");
             dvtip.SetToolTip(rbDV, "DStar Simplex Mode");
             drtip.SetToolTip(rbDR, "DStar Repeater Mode");
+            msgtip.SetToolTip(msgtxt, "Slow Data Message (20 chars max)");
         }
 
 
@@ -367,6 +408,17 @@ namespace CODEC2_GUI
             OnPropertyChanged("RPT2");
             OnPropertyChanged("Modified");
         }
+
+        private void msgtxt_TextChanged(object sender, EventArgs e)
+        {
+            if (inreset)
+                return;
+            Modified = Modified | ModifyFlags.MESSAGE;
+            OnPropertyChanged("MESSAGE");
+            OnPropertyChanged("Modified");
+        }
+
+
         private void rpt1txt_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (inreset)
@@ -394,10 +446,21 @@ namespace CODEC2_GUI
             OnPropertyChanged("Modified");
         }
 
+        private void msgtxt_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (inreset)
+                return;
+            Modified = Modified | ModifyFlags.MESSAGE;
+            OnPropertyChanged("MESSAGE");
+            OnPropertyChanged("Modified");
+        }
+
+
 
         private void updateReset()
         {
-            bool isorig = (MYOrig == MY && NOTEOrig == NOTE && UROrig == UR && RPT1Orig == RPT1 && RPT2Orig == RPT2);
+            bool isorig = (MYOrig == MY && NOTEOrig == NOTE && UROrig == UR && 
+                RPT1Orig == RPT1 && RPT2Orig == RPT2 && MESSAGEOrig == MESSAGE);
 
             if (btnReset.Visible == isorig)
             {
@@ -425,6 +488,7 @@ namespace CODEC2_GUI
             btnRpt.Visible = 
             rpt2txt.Enabled =
             DRModeOrig;
+            msgtxt.Text = MESSAGEOrig;
 
             btnReset.Visible = false;
             inreset = false;
@@ -435,6 +499,7 @@ namespace CODEC2_GUI
             OnPropertyChanged("UR");
             OnPropertyChanged("RPT1");
             OnPropertyChanged("RPT2");
+            OnPropertyChanged("MESSAGE");
             OnPropertyChanged("Modified");
         }
 

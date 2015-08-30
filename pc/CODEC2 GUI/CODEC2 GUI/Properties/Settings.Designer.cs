@@ -91,5 +91,17 @@ namespace CODEC2_GUI.Properties {
                 this["MYCallSign"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string MESSAGEList {
+            get {
+                return ((string)(this["MESSAGEList"]));
+            }
+            set {
+                this["MESSAGEList"] = value;
+            }
+        }
     }
 }

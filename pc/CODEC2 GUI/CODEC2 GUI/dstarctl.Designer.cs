@@ -51,6 +51,9 @@
             this.btnReset = new System.Windows.Forms.Button();
             this.btnRef = new System.Windows.Forms.Button();
             this.btnRpt = new System.Windows.Forms.Button();
+            this.msgtxt = new System.Windows.Forms.ComboBox();
+            this.lblMESSAGE = new System.Windows.Forms.Label();
+            this.msgtip = new System.Windows.Forms.ToolTip(this.components);
             this.SuspendLayout();
             // 
             // mycallsign
@@ -216,9 +219,31 @@
             this.btnRpt.UseVisualStyleBackColor = true;
             this.btnRpt.Click += new System.EventHandler(this.btnRpt_Click);
             // 
+            // msgtxt
+            // 
+            this.msgtxt.FormattingEnabled = true;
+            this.msgtxt.Location = new System.Drawing.Point(156, 157);
+            this.msgtxt.MaxLength = 20;
+            this.msgtxt.Name = "msgtxt";
+            this.msgtxt.Size = new System.Drawing.Size(462, 28);
+            this.msgtxt.TabIndex = 15;
+            this.msgtxt.SelectedIndexChanged += new System.EventHandler(this.msgtxt_SelectedIndexChanged);
+            this.msgtxt.TextChanged += new System.EventHandler(this.msgtxt_TextChanged);
+            // 
+            // lblMESSAGE
+            // 
+            this.lblMESSAGE.AutoSize = true;
+            this.lblMESSAGE.Location = new System.Drawing.Point(34, 157);
+            this.lblMESSAGE.Name = "lblMESSAGE";
+            this.lblMESSAGE.Size = new System.Drawing.Size(98, 21);
+            this.lblMESSAGE.TabIndex = 16;
+            this.lblMESSAGE.Text = "Message:";
+            // 
             // dstarctl
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
+            this.Controls.Add(this.lblMESSAGE);
+            this.Controls.Add(this.msgtxt);
             this.Controls.Add(this.btnRpt);
             this.Controls.Add(this.btnRef);
             this.Controls.Add(this.btnReset);
@@ -237,7 +262,7 @@
             this.Font = new System.Drawing.Font("Courier New", 11F);
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "dstarctl";
-            this.Size = new System.Drawing.Size(730, 148);
+            this.Size = new System.Drawing.Size(730, 198);
             this.Load += new System.EventHandler(this.dstarctl_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -268,5 +293,8 @@
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.Button btnRef;
         private System.Windows.Forms.Button btnRpt;
+        private System.Windows.Forms.ComboBox msgtxt;
+        private System.Windows.Forms.Label lblMESSAGE;
+        private System.Windows.Forms.ToolTip msgtip;
     }
 }

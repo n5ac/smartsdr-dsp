@@ -120,6 +120,11 @@ namespace CODEC2_GUI
             lblMode.Text = slc.DemodMode;
         }
 
+        private int headerCount;
+        private bool headerSent;
+        private string headerInfo;
+        private bool messageSent;
+        private string messageInfo;
 
         void slc_WaveformStatusReceived(Slice slc, string status)
         {
@@ -138,6 +143,8 @@ namespace CODEC2_GUI
             string logRPT1 = null;
             string logRPT2 = null;
             bool setDRMode = false;
+            string logMessage = null;
+            bool rxEnd = false;
 
             string[] words = status.Split(' ');
 
@@ -181,6 +188,9 @@ namespace CODEC2_GUI
                     case "own_call2_tx":
                         dstarctl1.NOTE = value;
                         break;
+                    case "message_tx":
+                        dstarctl1.MESSAGE = value;
+                        break;
 
                     case "destination_rptr_rx":
                         logRPT2 = value == "DIRECT" ? string.Empty : value;
@@ -189,6 +199,7 @@ namespace CODEC2_GUI
                         logRPT1 = value == "DIRECT" ? string.Empty : value;
                         break;
                     case "companion_call_rx":
+                        headerCount++;
                         logUR = value;
                         break;
                     case "own_call1_rx":
@@ -196,6 +207,13 @@ namespace CODEC2_GUI
                         break;
                     case "own_call2_rx":
                         logNote = value;
+                        break;
+                    case "message":
+                        logMessage = value;
+                        break;
+                    case "rx":
+                        if (value == "END")
+                            rxEnd = true;
                         break;
                 }
             }
@@ -205,20 +223,64 @@ namespace CODEC2_GUI
                 dstarctl1.DRMode = string.IsNullOrEmpty(dstarctl1.RPT1) ? false : true;
             }
 
-            if (!string.IsNullOrEmpty(logMY) && !string.IsNullOrEmpty(logUR))
+            if (LogEvent != null)
             {
-                if (LogEvent != null)
-                    LogEvent(this, new LogEventArgs(string.Format("{0} CALLED: {1,-8} CALLER: {2,-13}{3}",
-                    DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
-                    logUR,
-                    logMY + (string.IsNullOrEmpty(logNote) ? string.Empty : "/" + logNote),
-                    string.IsNullOrEmpty(logRPT1) ? string.Empty :
-                        string.Format(" RPT1: {0,-8} RPT2: {1,-8}", logRPT1, logRPT2))));
+                string msg = null;
+                // format message if present
+                if (!string.IsNullOrWhiteSpace(logMessage))
+                    msg = string.Format(" MSG:{0}", logMessage.Trim());
+                // determine if it is new
+                if (msg != null && (messageInfo == null || string.Compare(messageInfo, msg, true) != 0))
+                {
+                    messageInfo = msg;
+                    messageSent = false;
+                }
+
+                // determin if header info
+                if (!string.IsNullOrEmpty(logMY) && !string.IsNullOrEmpty(logUR))
+                {
+                    // format header info
+                    string hdr = string.Format("CALLED: {0,-8} CALLER: {1,-13}{2}",
+                            logUR, logMY + (string.IsNullOrEmpty(logNote) ? string.Empty : "/" + logNote),
+                            string.IsNullOrEmpty(logRPT1) ? string.Empty : string.Format(" RPT1: {0,-8} RPT2: {1,-8}", logRPT1, logRPT2));
+                    // see if header is new
+                    if (headerInfo == null || string.Compare(headerInfo, hdr, true) != 0)
+                    {
+                        headerInfo = hdr;
+                        headerSent = false;
+                    }
+                }
+
+                // builder header
+                StringBuilder sb = new StringBuilder();
+                bool msg2snd = (messageInfo != null && messageSent == false);
+                // log info if we get header for third time or finally got message
+                bool hdr2snd = (headerInfo != null && headerSent == false && (headerCount > 3 || msg2snd));
+                if (hdr2snd || msg2snd)
+                    sb.Append(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
+                if (hdr2snd)
+                {
+                    headerSent = true;
+                    sb.AppendFormat(" {0}", headerInfo);
+                }
+                if (msg2snd)
+                {
+                    messageSent = true;
+                    sb.AppendFormat(" {0}", logMessage);
+                }
+                if (sb.Length > 0)
+                    LogEvent(this, new LogEventArgs(sb.ToString()));
+
+                if (rxEnd) // reset header cache if end of RX
+                {
+                    headerSent = messageSent = false;
+                    headerCount = 0;
+                    headerInfo = null;
+                    messageInfo = null;
+                }
             }
             else
-            {
-                System.Diagnostics.Debug.WriteLine("log information not set");
-            }
+                headerCount = 0;
 
             btnCommit.Enabled = dstarctl1.Modified != dstarctl.ModifyFlags.NOFLAGS;
         }
@@ -239,6 +301,7 @@ namespace CODEC2_GUI
                 dstarctl1.URList = Properties.Settings.Default.URList.Split('|').ToList();
                 dstarctl1.RPT1List = Properties.Settings.Default.RPT1List.Split('|').ToList();
                 dstarctl1.RPT2List = Properties.Settings.Default.RPT2List.Split('|').ToList();
+                dstarctl1.MESSAGEList = Properties.Settings.Default.MESSAGEList.Split('|').ToList();
             }
 
         }
@@ -273,6 +336,9 @@ namespace CODEC2_GUI
             _slice.SendWaveformCommand(cmd);
             string note = dstarctl1.NOTE;
             cmd = "set own_call2=" + note.Replace(" ", "\u007f");
+            _slice.SendWaveformCommand(cmd);
+            string message = dstarctl1.MESSAGE;
+            cmd = "set message=" + message.Replace(" ", "\u007f");
             _slice.SendWaveformCommand(cmd);
 
             if (string.IsNullOrEmpty(dstarctl1.RPT1))
@@ -366,6 +432,17 @@ namespace CODEC2_GUI
                 }
             }
 
+            if (message.Length > 0)
+            {
+                lst = new List<string>(dstarctl1.MESSAGEList);
+                if (!lst.Contains(message))
+                {
+                    lst.Add(message);
+                    dstarctl1.MESSAGEList = lst;
+                    Properties.Settings.Default.MESSAGEList = string.Join("|", lst);
+                }
+            }
+
             if (!string.IsNullOrEmpty(my))
                 Properties.Settings.Default.MYCallSign = my;
 
@@ -382,6 +459,10 @@ namespace CODEC2_GUI
         public void ClearRPT2List()
         {
             dstarctl1.RPT2List = new List<string>();
+        }
+        public void ClearMESSAGEList()
+        {
+            dstarctl1.MESSAGEList = new List<string>();
         }
 
     }
