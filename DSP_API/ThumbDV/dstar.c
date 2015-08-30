@@ -603,7 +603,8 @@ void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice,  enum STATUS_TYPE 
     }
 
     char status[200] = {0};
-    char header_string[200] = {0};
+    char header_string[256] = {0};
+	char message_string[21];
 
 
     /* Make copy to replace spaces with special char */
@@ -634,19 +635,30 @@ void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice,  enum STATUS_TYPE 
 
         charReplace( ( char * )h.destination_rptr, ' ', ( char ) 0x7F );
         charReplace( ( char * )h.departure_rptr, ' ', ( char ) 0x7F );
-        charReplace( ( char * )h.companion_call, ' ', ( char ) 0x7F );
+		charReplace((char *) h.companion_call, ' ', ( char ) 0x7F );
         charReplace( ( char * )h.own_call1, ' ', ( char ) 0x7F );
         charReplace( ( char * )h.own_call2, ' ', ( char ) 0x7F );
 
         sprintf( header_string, "destination_rptr_tx=%s departure_rptr_tx=%s companion_call_tx=%s own_call1_tx=%s own_call2_tx=%s",
                  h.destination_rptr, h.departure_rptr, h.companion_call, h.own_call1, h.own_call2 );
 
+        if (machine->slow_encoder != NULL && machine->slow_encoder->message[0] != 0)
+        {
+            memcpy( message_string, machine->slow_encoder->message, sizeof( message_string ) );
+            message_string[sizeof( message_string ) - 1] = 0;
+            charReplace( message_string, ' ', ( char ) 0x7F );
+        	sprintf( header_string + strlen(header_string), " message_tx=%s", message_string);
+        }
+
         sprintf( status, "waveform status slice=%d %s", slice, header_string );
 
         tc_sendSmartSDRcommand( status, FALSE, NULL );
         break;
     case STATUS_SLOW_DATA_MESSAGE:
-        sprintf( status, "waveform status slice=%d message=%s", slice, machine->slow_decoder->message_string);
+        memcpy( message_string, machine->slow_decoder->message_string, sizeof( message_string ) );
+        message_string[sizeof( message_string ) - 1] = 0;
+        charReplace( message_string, ' ', ( char ) 0x7F );
+        sprintf( status, "waveform status slice=%d message=%s", slice, message_string);
         tc_sendSmartSDRcommand( status, FALSE, NULL );
         break;
     }
