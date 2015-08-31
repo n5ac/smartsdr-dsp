@@ -78,7 +78,8 @@ enum DSTAR_RX_STATE {
 enum STATUS_TYPE {
     STATUS_RX = 0,
     STATUS_TX,
-    STATUS_SLOW_DATA_MESSAGE
+    STATUS_SLOW_DATA_MESSAGE,
+    STATUS_END_RX
 };
 
 typedef struct _dstar_header {

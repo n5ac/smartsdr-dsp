@@ -661,6 +661,14 @@ void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice,  enum STATUS_TYPE 
         sprintf( status, "waveform status slice=%d message=%s", slice, message_string);
         tc_sendSmartSDRcommand( status, FALSE, NULL );
         break;
+    case STATUS_END_RX:
+    {
+        char msg[64];
+        sprintf( msg, "waveform status slice=%d RX=END", machine->slice);
+        tc_sendSmartSDRcommand( msg, FALSE, NULL );
+    }
+        break;
+
     }
 }
 
@@ -1004,6 +1012,7 @@ BOOL dstar_rxStateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * a
 
             bitPM_reset( machine->data_sync_pm );
 
+            dstar_updateStatus(machine, machine->slice, STATUS_END_RX);
             /* STATE CHANGE */
             machine->rx_state = BIT_FRAME_SYNC;
             machine->bit_count = 0;
@@ -1016,7 +1025,10 @@ BOOL dstar_rxStateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * a
 
     case END_PATTERN:
 
-        output( "Found end pattern bits\n" );
+        output( "Found end pattern bits -- sending status update\n" );
+
+        dstar_updateStatus(machine, machine->slice, STATUS_END_RX);
+
         bitPM_reset( machine->end_pm );
         bitPM_reset( machine->syn_pm );
 

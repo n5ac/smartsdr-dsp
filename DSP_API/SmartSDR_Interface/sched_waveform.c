@@ -522,12 +522,6 @@ static void * _sched_waveform_thread( void * param ) {
                                     cbWriteShort( RX3_cb, speech_out[j] );
                             }
 
-                            if (_dstar->rx_state == END_PATTERN)
-                            {
-                            	char msg[64];
-                                sprintf( msg, "waveform status slice=%d RX=END", _dstar->slice);
-                            	tc_sendSmartSDRcommand( msg, FALSE, NULL );
-                            }
                         }
 
 
