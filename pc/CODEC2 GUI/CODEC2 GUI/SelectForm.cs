@@ -32,6 +32,7 @@
 
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows.Forms;
@@ -199,6 +200,56 @@ namespace CODEC2_GUI
                 Mode = RMode.ReflectorCmd;
                 setlistitems();
             }
+        }
+
+        private int sortColumn;
+
+        private void listView1_ColumnClick(object sender, ColumnClickEventArgs e)
+        {
+            if (e.Column != sortColumn)
+            {
+                // Set the sort column to the new column.
+                sortColumn = e.Column;
+                // Set the sort order to ascending by default.
+                listView1.Sorting = SortOrder.Ascending;
+            }
+            else
+            {
+                // Determine what the last sort order was and change it.
+                if (listView1.Sorting == SortOrder.Ascending)
+                    listView1.Sorting = SortOrder.Descending;
+                else
+                    listView1.Sorting = SortOrder.Ascending;
+            }
+
+            ColumnHeader ch = listView1.Columns[e.Column];
+            listView1.ListViewItemSorter = new ListViewSorter(e.Column, listView1.Sorting);
+            listView1.Sort();            
+        }
+    }
+
+    class ListViewSorter : IComparer
+    {
+        int col;
+        SortOrder sortOrder;
+
+        public ListViewSorter()
+        {
+            col = 0;
+            sortOrder = SortOrder.Ascending;
+        }
+        public ListViewSorter(int scol, SortOrder sorder)
+        {
+            col = scol;
+            sortOrder = sorder;
+        }
+        public int Compare(object x, Object y)
+        {
+            int returnVal = String.Compare(((ListViewItem)x).SubItems[col].Text,
+                ((ListViewItem)y).SubItems[col].Text, true);
+            if (sortOrder == SortOrder.Descending)
+                returnVal *= -1;
+            return returnVal;
         }
     }
 }

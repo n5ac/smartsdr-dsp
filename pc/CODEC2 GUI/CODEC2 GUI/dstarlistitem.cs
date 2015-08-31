@@ -334,61 +334,71 @@ namespace CODEC2_GUI
                     rpt2 = dstarctl1.RPT2;
             }
 
-            string ur = dstarctl1.UR;
-            cmd = "set companion_call=" + ur.Replace(" ", "\u007f");
+            cmd = "set destination_rptr=" + rpt2.Replace(" ", "\u007f");
             _slice.SendWaveformCommand(cmd);
-            string my = dstarctl1.MY;
-            cmd = "set own_call1=" + my.Replace(" ", "\u007f");
-            _slice.SendWaveformCommand(cmd);
-            string note = dstarctl1.NOTE;
-            cmd = "set own_call2=" + note.Replace(" ", "\u007f");
-            _slice.SendWaveformCommand(cmd);
-            string message = dstarctl1.MESSAGE;
-            cmd = "set message=" + message.Replace(" ", "\u007f");
-            _slice.SendWaveformCommand(cmd);
+            //System.Diagnostics.Debug.WriteLine(cmd.Replace("\u007f", " "));
 
             string[] srpt1 = rpt1.Split('~');
             if (srpt1.Length > 0)
             {
                 cmd = "set departure_rptr=" + srpt1[0].Replace(" ", "\u007f");
                 _slice.SendWaveformCommand(cmd);
-                if (srpt1.Length > 1)
+                //System.Diagnostics.Debug.WriteLine(cmd.Replace("\u007f", " "));
+            }
+
+            string ur = dstarctl1.UR;
+            cmd = "set companion_call=" + ur.Replace(" ", "\u007f");
+            _slice.SendWaveformCommand(cmd);
+            //System.Diagnostics.Debug.WriteLine(cmd.Replace("\u007f", " "));
+
+            string my = dstarctl1.MY;
+            cmd = "set own_call1=" + my.Replace(" ", "\u007f");
+            _slice.SendWaveformCommand(cmd);
+            //System.Diagnostics.Debug.WriteLine(cmd.Replace("\u007f", " "));
+
+            string note = dstarctl1.NOTE;
+            cmd = "set own_call2=" + note.Replace(" ", "\u007f");
+            _slice.SendWaveformCommand(cmd);
+            //System.Diagnostics.Debug.WriteLine(cmd.Replace("\u007f", " "));
+
+            string message = dstarctl1.MESSAGE;
+            cmd = "set message=" + message.Replace(" ", "\u007f");
+            _slice.SendWaveformCommand(cmd);
+            //System.Diagnostics.Debug.WriteLine(cmd.Replace("\u007f", " "));
+
+            if (srpt1.Length > 1)
+            {
+                try
                 {
-                    try
+                    _slice.Freq = Convert.ToDouble(srpt1[1]);
+                    if (srpt1.Length > 2)
                     {
-                        _slice.Freq = Convert.ToDouble(srpt1[1]);
-                        if (srpt1.Length > 2)
-                        {
-                            double ofs = Convert.ToDouble(srpt1[2]);
-                            _slice.FMRepeaterOffsetFreq = Math.Abs(ofs);
-                            _slice.RepeaterOffsetDirection = ofs == 0 ? FMTXOffsetDirection.Simplex :
-                                (ofs < 0 ? FMTXOffsetDirection.Down : FMTXOffsetDirection.Up);
-                        }
-                        else
-                        {
-                            _slice.FMRepeaterOffsetFreq = 0;
-                            _slice.RepeaterOffsetDirection = FMTXOffsetDirection.Simplex;
-                        }
+                        double ofs = Convert.ToDouble(srpt1[2]);
+                        _slice.FMRepeaterOffsetFreq = Math.Abs(ofs);
+                        _slice.RepeaterOffsetDirection = ofs == 0 ? FMTXOffsetDirection.Simplex :
+                            (ofs < 0 ? FMTXOffsetDirection.Down : FMTXOffsetDirection.Up);
                     }
-                    catch(Exception ex)
+                    else
                     {
-                        StringBuilder sb = new StringBuilder();
-                        Exception ex1 = ex;
-                        while (ex1 != null)
-                        {
-                            sb.AppendLine(ex1.Message);
-                            ex1 = ex1.InnerException;
-                        }
-                        MessageBox.Show(sb.ToString(), "Set Slice Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                        _slice.FMRepeaterOffsetFreq = 0;
+                        _slice.RepeaterOffsetDirection = FMTXOffsetDirection.Simplex;
                     }
                 }
+                catch (Exception ex)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    Exception ex1 = ex;
+                    while (ex1 != null)
+                    {
+                        sb.AppendLine(ex1.Message);
+                        ex1 = ex1.InnerException;
+                    }
+                    MessageBox.Show(sb.ToString(), "Set Slice Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                }
             }
-            cmd = "set destination_rptr=" + rpt2.Replace(" ", "\u007f");
-            _slice.SendWaveformCommand(cmd);
+
 
             dstarctl1.Modified = dstarctl.ModifyFlags.NOFLAGS;
-
-            btnCommit.Enabled = false;
 
             dstarctl1.MY = my;
             dstarctl1.NOTE = note;
@@ -396,6 +406,8 @@ namespace CODEC2_GUI
             dstarctl1.RPT1 = rpt1 == "DIRECT" ? string.Empty : rpt1;
             dstarctl1.RPT2 = rpt2 == "DIRECT" ? string.Empty : rpt2;
             dstarctl1.DRMode = !string.IsNullOrEmpty(dstarctl1.RPT1);
+
+            btnCommit.Enabled = false;
 
             // add new UR entry to dropdown list
             List<string> lst = new List<string>(dstarctl1.URList);

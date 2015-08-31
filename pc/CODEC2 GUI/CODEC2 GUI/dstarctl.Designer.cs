@@ -133,7 +133,6 @@
             // 
             this.rpt1txt.Location = new System.Drawing.Point(387, 60);
             this.rpt1txt.Margin = new System.Windows.Forms.Padding(4);
-            this.rpt1txt.MaxLength = 8;
             this.rpt1txt.Name = "rpt1txt";
             this.rpt1txt.Size = new System.Drawing.Size(231, 28);
             this.rpt1txt.TabIndex = 10;
