@@ -322,11 +322,17 @@ namespace CODEC2_GUI
                 return;
             }
             string cmd;
-            string rpt1 = string.IsNullOrEmpty(dstarctl1.RPT1) ? "DIRECT" : dstarctl1.RPT1;
-            string rpt2 = string.IsNullOrEmpty(dstarctl1.RPT2) ? "DIRECT" : dstarctl1.RPT2;
-            cmd = "set destination_rptr=" + rpt2.Replace(" ", "\u007f");
-            _slice.SendWaveformCommand(cmd);
 
+
+            string rpt1 = "DIRECT";
+            string rpt2 = "DIRECT";
+            if (!string.IsNullOrEmpty(dstarctl1.RPT1))
+            {
+                rpt1 = dstarctl1.RPT1;
+                rpt2 = string.Empty;
+                if (!string.IsNullOrWhiteSpace(dstarctl1.RPT2))
+                    rpt2 = dstarctl1.RPT2;
+            }
 
             string ur = dstarctl1.UR;
             cmd = "set companion_call=" + ur.Replace(" ", "\u007f");
@@ -341,49 +347,44 @@ namespace CODEC2_GUI
             cmd = "set message=" + message.Replace(" ", "\u007f");
             _slice.SendWaveformCommand(cmd);
 
-            if (string.IsNullOrEmpty(dstarctl1.RPT1))
+            string[] srpt1 = rpt1.Split('~');
+            if (srpt1.Length > 0)
             {
-                _slice.SendWaveformCommand("set departure_rptr=DIRECT");
-            }
-            else
-            {
-                string[] srpt1 = dstarctl1.RPT1.Split('~');
-                if (srpt1.Length > 0)
+                cmd = "set departure_rptr=" + srpt1[0].Replace(" ", "\u007f");
+                _slice.SendWaveformCommand(cmd);
+                if (srpt1.Length > 1)
                 {
-                    cmd = "set departure_rptr=" + srpt1[0].Replace(" ", "\u007f");
-                    _slice.SendWaveformCommand(cmd);
-                    if (srpt1.Length > 1)
+                    try
                     {
-                        try
+                        _slice.Freq = Convert.ToDouble(srpt1[1]);
+                        if (srpt1.Length > 2)
                         {
-                            _slice.Freq = Convert.ToDouble(srpt1[1]);
-                            if (srpt1.Length > 2)
-                            {
-                                double ofs = Convert.ToDouble(srpt1[2]);
-                                _slice.FMRepeaterOffsetFreq = Math.Abs(ofs);
-                                _slice.RepeaterOffsetDirection = ofs == 0 ? FMTXOffsetDirection.Simplex :
-                                    (ofs < 0 ? FMTXOffsetDirection.Down : FMTXOffsetDirection.Up);
-                            }
-                            else
-                            {
-                                _slice.FMRepeaterOffsetFreq = 0;
-                                _slice.RepeaterOffsetDirection = FMTXOffsetDirection.Simplex;
-                            }
+                            double ofs = Convert.ToDouble(srpt1[2]);
+                            _slice.FMRepeaterOffsetFreq = Math.Abs(ofs);
+                            _slice.RepeaterOffsetDirection = ofs == 0 ? FMTXOffsetDirection.Simplex :
+                                (ofs < 0 ? FMTXOffsetDirection.Down : FMTXOffsetDirection.Up);
                         }
-                        catch(Exception ex)
+                        else
                         {
-                            StringBuilder sb = new StringBuilder();
-                            Exception ex1 = ex;
-                            while (ex1 != null)
-                            {
-                                sb.AppendLine(ex1.Message);
-                                ex1 = ex1.InnerException;
-                            }
-                            MessageBox.Show(sb.ToString(), "Set Slice Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                            _slice.FMRepeaterOffsetFreq = 0;
+                            _slice.RepeaterOffsetDirection = FMTXOffsetDirection.Simplex;
                         }
+                    }
+                    catch(Exception ex)
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        Exception ex1 = ex;
+                        while (ex1 != null)
+                        {
+                            sb.AppendLine(ex1.Message);
+                            ex1 = ex1.InnerException;
+                        }
+                        MessageBox.Show(sb.ToString(), "Set Slice Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     }
                 }
             }
+            cmd = "set destination_rptr=" + rpt2.Replace(" ", "\u007f");
+            _slice.SendWaveformCommand(cmd);
 
             dstarctl1.Modified = dstarctl.ModifyFlags.NOFLAGS;
 
