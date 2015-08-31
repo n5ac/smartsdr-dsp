@@ -54,6 +54,7 @@
 #include "cmd.h"
 
 #include "main.h"
+#include "sched_waveform.h"
 
 
 /* *****************************************************************************
@@ -262,12 +263,48 @@ uint32 cmd_slice(int requester_fd, int argc, char **argv)
             return SL_BAD_COMMAND;
         }
 
-        if(strncmp(argv[2], "string", strlen("string")) == 0)
+        if(strncmp(argv[2], "set", strlen("set")) == 0)
         {
-            char* new_string = argv[2]+strlen("string")+1;
-            charReplace(new_string, (char) 0x7F, ' ');
-            freedv_set_string(slc, new_string);
+            // charReplace(new_string, (char) 0x7F, ' ');
+
+            uint8 i = 0;
+            for ( i = 3 ; i < argc ; i++ ) {
+
+                if ( strncmp(argv[i], "destination_rptr", strlen("destination_rptr") )  == 0 ) {
+
+                    char * rptr = argv[i] + strlen("destination_rptr") + 1;
+                    sched_waveform_setDestinationRptr(slc, rptr);
+
+                } else if ( strncmp(argv[i], "departure_rptr", strlen("departure_rptr") )  == 0 ) {
+
+                    char * rptr = argv[i] + strlen("departure_rptr") + 1;
+                    sched_waveform_setDepartureRptr(slc, rptr);
+
+                } else if ( strncmp(argv[i], "companion_call", strlen("companion_call") )  == 0 ) {
+                    char * call = argv[i] + strlen("companion_call") + 1;
+                    sched_waveform_setCompanionCall(slc, call);
+
+                } else if ( strncmp(argv[i], "own_call1", strlen("own_call1") )  == 0 ) {
+                    char * call = argv[i] + strlen("own_call1") + 1;
+                    sched_waveform_setOwnCall1(slc, call);
+
+                } else if ( strncmp(argv[i], "own_call2", strlen("own_call2") )  == 0 ) {
+                    char * call = argv[i] + strlen("own_call2") + 1;
+                    sched_waveform_setOwnCall2(slc, call);
+                } else if ( strncmp(argv[i], "message", strlen("message")) == 0 ) {
+                    char * message = argv[i] + strlen("message") + 1;
+                    sched_waveform_setMessage(slc, message);
+                }
+
+
+
+            }
+
             return SUCCESS;
+        }
+        else if (strncmp(argv[2], "status", strlen("status")) == 0 )
+        {
+            sched_waveform_sendStatus(slc);
         }
     }
 

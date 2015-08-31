@@ -59,8 +59,8 @@
 #include "common.h"
 
 
-const char* APP_NAME = "FreeDV";            // Name of Application
-//const char* CFG_FILE = "FreeDV.cfg";        // Name of associated configuration file
+const char* APP_NAME = "ThumbDV";            // Name of Application - must match .cfg filename
+
 char * cfg_path = NULL;
 
 static sem_t shutdown_sem;
@@ -100,7 +100,7 @@ void segfault_sigaction(int signal, siginfo_t *si, void *arg)
 
     	// Get's line number of fault
     	char syscom[256];
-    	sprintf(syscom,"eu-addr2line -e %s %p","./freedv" , array[i]);
+    	sprintf(syscom,"eu-addr2line -e %s %p","./thumbdv" , array[i]);
     	system(syscom);
     }
 

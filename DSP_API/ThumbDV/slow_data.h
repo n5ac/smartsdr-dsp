@@ -1,15 +1,14 @@
+///*!   \file slow_data.h
+// *
+// *    Handles scrambling and descrambling of DSTAR Header
+// *
+// *    \date 25-AUG-2015
+// *    \author Ed Gonzalez KG5FBT
+// */
+
 /* *****************************************************************************
- * 	datatypes.h
  *
- *		datatypes definition file
- *
- *
- *     \date Sep 15, 2011
- *	\author Eric
- *
- * *****************************************************************************
- *
- *  Copyright (C) 2014 FlexRadio Systems.
+ *  Copyright (C) 2012-2014 FlexRadio Systems.
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,38 +27,17 @@
  *
  * ************************************************************************** */
 
+#ifndef THUMBDV_SLOW_DATA_H_
+#define THUMBDV_SLOW_DATA_H_
 
-#ifndef _DATATYPES_H
-#define _DATATYPES_H
+#include "dstar.h"
+#include "common.h"
+#include "DStarDefines.h"
 
+void slow_data_addDecodeData(DSTAR_MACHINE dstar, unsigned char * data, uint32 data_len);
+void slow_data_resetDecoder(DSTAR_MACHINE dstar);
+void slow_data_resetEncoder(DSTAR_MACHINE dstar);
+void slow_data_getEncodeBytes( DSTAR_MACHINE dstar, unsigned char * bytes, uint32 num_bytes );
+void slow_data_createEncodeBytes(DSTAR_MACHINE dstar);
+#endif /* THUMBDV_SLOW_DATA_H_*/
 
-typedef unsigned char  uint8;
-typedef unsigned short uint16;
-typedef unsigned int   uint32;
-typedef unsigned long long uint64;
-
-typedef signed char int8;
-typedef signed short int16;
-typedef signed int int32;
-typedef signed long long int64;
-
-typedef uint8 BOOL;
-
-/// VITA-49 format frequency data
-typedef int64 VITAfrequency;
-typedef int16 VITAfrequency_trunc;
-typedef int32 VITAdb;
-typedef int16 VITAdb_trunc;
-typedef uint32 packedVITAcalPoint;
-typedef int32 VITAtemp;
-typedef int16 VITAtemp_trunc;
-
-
-typedef uint32 ant_port_id_type;
-
-#define TRUE (uint8)1
-#define FALSE (uint8)0
-
-#define INVALID -1
-
-#endif // _DATATYPES_H

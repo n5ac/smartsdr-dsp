@@ -359,6 +359,8 @@ static void* _tc_thread(void* arg)
     	tc_abort();
     }
 
+    tc_sendSmartSDRcommand("sub slice all", FALSE, NULL);
+
     /* Initialize UDP connections for TX */
     vita_output_Init(_hostname);
 

@@ -1,12 +1,13 @@
-///*!   \file sched_waveform.h
-// *    \brief Schedule Wavefrom Streams
+///*!   \file thumbdv.h
+// *    \brief Functions required to communicate and decode packets from ThumbDV
 // *
 // *    \copyright  Copyright 2012-2014 FlexRadio Systems.  All Rights Reserved.
 // *                Unauthorized use, duplication or distribution of this software is
 // *                strictly prohibited by law.
 // *
-// *    \date 29-AUG-2014
-// *    \author Ed Gonzalez
+// *    \date 26-MAY-2015
+// *    \author     Ed Gonzalez
+// *
 // *
 // */
 
@@ -31,25 +32,16 @@
  *
  * ************************************************************************** */
 
-#ifndef SCHED_WAVEFORM_H_
-#define SCHED_WAVEFORM_H_
 
-#include "hal_buffer.h"
+#ifndef THUMBDV_THUMBDV_H_
+#define THUMBDV_THUMBDV_H_
 
-void sched_waveform_Schedule(BufferDescriptor buf);
-void sched_waveform_Init(void);
-void sched_waveform_signal(void);
-void sched_waveformTreadExit(void);
+void thumbDV_init( int * serial_fd );
+int thumbDV_openSerial( const char * tty_name );
+int thumbDV_processSerial( int serial_fd );
 
-void sched_waveform_setDestinationRptr(uint32 slice , const char * destination_rptr );
-void sched_waveform_setDepartureRptr(uint32 slice , const char * departure_rptr );
-void sched_waveform_setCompanionCall( uint32 slice, const char * companion_call);
-void sched_waveform_setOwnCall1( uint32 slice , const char * owncall1 );
-void sched_waveform_setOwnCall2(uint32 slice , const char * owncall2 );
-void sched_waveform_setMessage( uint32 slice, const char * message);
+int thumbDV_encode( int serial_fd, short * speech_in, unsigned char * packet_out, uint8 num_of_samples );
+int thumbDV_decode( int serial_fd, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet );
 
-void sched_waveform_sendStatus(uint32 slice);
-void sched_waveform_setFD(int fd);
-void sched_waveform_setEndOfTX(BOOL end_of_transmission);
-void sched_waveform_setDSTARSlice( uint32 slice );
-#endif /* SCHED_WAVEFORM_H_ */
+void thumbDV_dump( char * text, unsigned char * data, unsigned int length );
+#endif /* THUMBDV_THUMBDV_ */

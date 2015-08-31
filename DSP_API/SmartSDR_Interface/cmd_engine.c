@@ -94,9 +94,9 @@ static command_def commands[] =
 // #################################################################
 unsigned int command(void)
 {
-	char line[80];
+	char line[512];
 	char *pLine = line;
-	get_line(pLine, sizeof(line));
+	get_line(pLine, 512 * sizeof(char));
 
 	process_command(line);
 
@@ -110,6 +110,7 @@ uint32 process_command(char* command_txt)
 	int argc;
 	char *argv[MAX_ARGC + 1];		//Add one extra so we can null terminate the array
 
+	output("CMD Received = '%s'\n", command_txt);
 
 	tokenize(command_txt, &argc, argv, MAX_ARGC);
 

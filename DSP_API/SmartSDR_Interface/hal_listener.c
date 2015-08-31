@@ -530,9 +530,10 @@ void hal_Listener_Init(void)
 {
 	output("Vita Listener Init: Opening socket");
 
+	errno = 0;
 	if((fpga_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
 	{
-		output("...failed! (socket call returned -1)\n");
+		output("...failed! (socket call returned -1) - errno = %d\n", errno);
 		return;
 	}
 

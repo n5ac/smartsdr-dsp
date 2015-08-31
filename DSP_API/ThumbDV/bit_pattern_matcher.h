@@ -1,12 +1,13 @@
-///*!   \file sched_waveform.h
-// *    \brief Schedule Wavefrom Streams
+///*!   \file bit_pattern_matcher.h
+// *    \brief Allows matching of a pattern in an array ob gits.
 // *
 // *    \copyright  Copyright 2012-2014 FlexRadio Systems.  All Rights Reserved.
 // *                Unauthorized use, duplication or distribution of this software is
 // *                strictly prohibited by law.
 // *
-// *    \date 29-AUG-2014
-// *    \author Ed Gonzalez
+// *    \date 26-MAY-2015
+// *    \author     Ed Gonzalez
+// *
 // *
 // */
 
@@ -31,25 +32,23 @@
  *
  * ************************************************************************** */
 
-#ifndef SCHED_WAVEFORM_H_
-#define SCHED_WAVEFORM_H_
 
-#include "hal_buffer.h"
+#ifndef THUMBDV_BIT_PATTERN_MATCHER_H_
+#define THUMBDV_BIT_PATTERN_MATCHER_H_
 
-void sched_waveform_Schedule(BufferDescriptor buf);
-void sched_waveform_Init(void);
-void sched_waveform_signal(void);
-void sched_waveformTreadExit(void);
+#include "datatypes.h"
 
-void sched_waveform_setDestinationRptr(uint32 slice , const char * destination_rptr );
-void sched_waveform_setDepartureRptr(uint32 slice , const char * departure_rptr );
-void sched_waveform_setCompanionCall( uint32 slice, const char * companion_call);
-void sched_waveform_setOwnCall1( uint32 slice , const char * owncall1 );
-void sched_waveform_setOwnCall2(uint32 slice , const char * owncall2 );
-void sched_waveform_setMessage( uint32 slice, const char * message);
+typedef struct _bit_pattern_matcher {
+    BOOL * pattern;
+    BOOL * data;
+    uint32 length;
+    uint32 data_length;
+} bit_pm, * BIT_PM;
 
-void sched_waveform_sendStatus(uint32 slice);
-void sched_waveform_setFD(int fd);
-void sched_waveform_setEndOfTX(BOOL end_of_transmission);
-void sched_waveform_setDSTARSlice( uint32 slice );
-#endif /* SCHED_WAVEFORM_H_ */
+void bitPM_destroy( BIT_PM bpm );
+BIT_PM bitPM_create( const BOOL * to_match, uint32 length );
+
+BOOL bitPM_addBit( BIT_PM bpm, BOOL bit );
+void bitPM_reset( BIT_PM bpm );
+
+#endif /* THUMBDV_BIT_PATTERN_MATCHER_H_ */

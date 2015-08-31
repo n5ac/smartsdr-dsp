@@ -37,12 +37,20 @@
 #include <semaphore.h>
 #include <string.h>		// for memset
 #include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <ctype.h>
 
 #include "common.h"
 #include "datatypes.h"
 #include "hal_buffer.h"
 #include "sched_waveform.h"
 #include "vita_output.h"
+#include "thumbDV.h"
+#include "bit_pattern_matcher.h"
+#include "dstar.h"
+#include "DStarDefines.h"
+#include "slow_data.h"
 
 //static Queue sched_fft_queue;
 static pthread_rwlock_t _list_lock;
@@ -53,77 +61,65 @@ static BOOL _waveform_thread_abort = FALSE;
 
 static sem_t sched_waveform_sem;
 
-static void _dsp_convertBufEndian(BufferDescriptor buf_desc)
-{
-	int i;
+static void _dsp_convertBufEndian( BufferDescriptor buf_desc ) {
+    int i;
 
-	if(buf_desc->sample_size != 8)
-	{
-		//TODO: horrendous error here
-		return;
-	}
+    if ( buf_desc->sample_size != 8 ) {
+        //TODO: horrendous error here
+        return;
+    }
 
-	for(i = 0; i < buf_desc->num_samples*2; i++)
-		((int32*)buf_desc->buf_ptr)[i] = htonl(((int32*)buf_desc->buf_ptr)[i]);
+    for ( i = 0; i < buf_desc->num_samples * 2; i++ )
+        ( ( int32 * )buf_desc->buf_ptr )[i] = htonl( ( ( int32 * )buf_desc->buf_ptr )[i] );
 }
 
-static BufferDescriptor _WaveformList_UnlinkHead(void)
-{
-	BufferDescriptor buf_desc = NULL;
-	pthread_rwlock_wrlock(&_list_lock);
+static BufferDescriptor _WaveformList_UnlinkHead( void ) {
+    BufferDescriptor buf_desc = NULL;
+    pthread_rwlock_wrlock( &_list_lock );
 
-	if (_root == NULL || _root->next == NULL)
-	{
-		output("Attempt to unlink from a NULL head");
-		pthread_rwlock_unlock(&_list_lock);
-		return NULL;
-	}
+    if ( _root == NULL || _root->next == NULL ) {
+        output( "Attempt to unlink from a NULL head" );
+        pthread_rwlock_unlock( &_list_lock );
+        return NULL;
+    }
 
-	if(_root->next != _root)
-		buf_desc = _root->next;
+    if ( _root->next != _root )
+        buf_desc = _root->next;
 
-	if(buf_desc != NULL)
-	{
-		// make sure buffer exists and is actually linked
-		if(!buf_desc || !buf_desc->prev || !buf_desc->next)
-		{
-			output( "Invalid buffer descriptor");
-			buf_desc = NULL;
-		}
-		else
-		{
-			buf_desc->next->prev = buf_desc->prev;
-			buf_desc->prev->next = buf_desc->next;
-			buf_desc->next = NULL;
-			buf_desc->prev = NULL;
-		}
-	}
+    if ( buf_desc != NULL ) {
+        // make sure buffer exists and is actually linked
+        if ( !buf_desc || !buf_desc->prev || !buf_desc->next ) {
+            output( "Invalid buffer descriptor" );
+            buf_desc = NULL;
+        } else {
+            buf_desc->next->prev = buf_desc->prev;
+            buf_desc->prev->next = buf_desc->next;
+            buf_desc->next = NULL;
+            buf_desc->prev = NULL;
+        }
+    }
 
-	pthread_rwlock_unlock(&_list_lock);
-	return buf_desc;
+    pthread_rwlock_unlock( &_list_lock );
+    return buf_desc;
 }
 
-static void _WaveformList_LinkTail(BufferDescriptor buf_desc)
-{
-	pthread_rwlock_wrlock(&_list_lock);
-	buf_desc->next = _root;
-	buf_desc->prev = _root->prev;
-	_root->prev->next = buf_desc;
-	_root->prev = buf_desc;
-	pthread_rwlock_unlock(&_list_lock);
+static void _WaveformList_LinkTail( BufferDescriptor buf_desc ) {
+    pthread_rwlock_wrlock( &_list_lock );
+    buf_desc->next = _root;
+    buf_desc->prev = _root->prev;
+    _root->prev->next = buf_desc;
+    _root->prev = buf_desc;
+    pthread_rwlock_unlock( &_list_lock );
 }
 
-void sched_waveform_Schedule(BufferDescriptor buf_desc)
-{
-	_WaveformList_LinkTail(buf_desc);
-	sem_post(&sched_waveform_sem);
+void sched_waveform_Schedule( BufferDescriptor buf_desc ) {
+    _WaveformList_LinkTail( buf_desc );
+    sem_post( &sched_waveform_sem );
 }
 
-void sched_waveform_signal()
-{
-	sem_post(&sched_waveform_sem);
+void sched_waveform_signal() {
+    sem_post( &sched_waveform_sem );
 }
-
 
 /* *********************************************************************************************
  * *********************************************************************************************
@@ -134,16 +130,28 @@ void sched_waveform_signal()
  * ****************************************************************************************** */
 
 #include <stdio.h>
-#include "freedv_api.h"
 #include "circular_buffer.h"
 #include "resampler.h"
 
-#define PACKET_SAMPLES  128
+#include "gmsk_modem.h"
 
-#define SCALE_RX_IN  	 8000.0 	// Multiplier   // Was 16000 GGH Jan 30, 2015
-#define SCALE_RX_OUT     8000.0		// Divisor
-#define SCALE_TX_IN     32000.0 	// Multiplier   // Was 16000 GGH Jan 30, 2015
-#define SCALE_TX_OUT    32768.0 	// Divisor
+#define PACKET_SAMPLES  128
+#define DV_PACKET_SAMPLES 160
+
+#define SCALE_AMBE      32767.0f
+//
+//#define SCALE_RX_IN      32767.0f   // Multiplier   // Was 16000 GGH Jan 30, 2015
+//#define SCALE_RX_OUT     32767.0f       // Divisor
+//#define SCALE_TX_IN     32767.0f    // Multiplier   // Was 16000 GGH Jan 30, 2015
+//#define SCALE_TX_OUT    32767.0f    // Divisor
+
+#define SCALE_RX_IN     SCALE_AMBE
+#define SCALE_TX_OUT    SCALE_AMBE
+
+
+#define SCALE_RX_OUT    SCALE_AMBE
+#define SCALE_TX_IN     SCALE_AMBE
+
 
 #define FILTER_TAPS	48
 #define DECIMATION_FACTOR 	3
@@ -152,30 +160,17 @@ void sched_waveform_signal()
 #define MEM_24		FILTER_TAPS					   /* Memory required in 24kHz buffer */
 #define MEM_8		FILTER_TAPS/DECIMATION_FACTOR   /* Memory required in 8kHz buffer */
 
-
-
-static struct freedv *_freedvS;         // Initialize Coder structure
-static struct my_callback_state  _my_cb_state;
-#define MAX_RX_STRING_LENGTH 40
-static char _rx_string[MAX_RX_STRING_LENGTH + 5];
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //	Circular Buffer Declarations
 
-float RX1_buff[(PACKET_SAMPLES * 12)+1];		// RX1 Packet Input Buffer
-short RX2_buff[(PACKET_SAMPLES * 12)+1];		// RX2 Vocoder input buffer
-short RX3_buff[(PACKET_SAMPLES * 12)+1];		// RX3 Vocoder output buffer
-float RX4_buff[(PACKET_SAMPLES * 12)+1];		// RX4 Packet output Buffer
+short RX3_buff[( DV_PACKET_SAMPLES * 12 ) + 1];		// RX3 Vocoder output buffer
+float RX4_buff[( DV_PACKET_SAMPLES * 12 * 40 ) + 1];		// RX4 Packet output Buffer
 
-float TX1_buff[(PACKET_SAMPLES * 12) +1];		// TX1 Packet Input Buffer
-short TX2_buff[(PACKET_SAMPLES * 12)+1];		// TX2 Vocoder input buffer
-short TX3_buff[(PACKET_SAMPLES * 12)+1];		// TX3 Vocoder output buffer
-float TX4_buff[(PACKET_SAMPLES * 12)+1];		// TX4 Packet output Buffer
+float TX1_buff[( DV_PACKET_SAMPLES * 12 ) + 1];		// TX1 Packet Input Buffer
+short TX2_buff[( DV_PACKET_SAMPLES * 12 ) + 1];		// TX2 Vocoder input buffer
+short TX3_buff[( DV_PACKET_SAMPLES * 12 ) + 1];		// TX3 Vocoder output buffer
+float TX4_buff[( DV_PACKET_SAMPLES * 12 * 40 ) + 1];		// TX4 Packet output Buffer
 
-circular_float_buffer rx1_cb;
-Circular_Float_Buffer RX1_cb = &rx1_cb;
-circular_short_buffer rx2_cb;
-Circular_Short_Buffer RX2_cb = &rx2_cb;
 circular_short_buffer rx3_cb;
 Circular_Short_Buffer RX3_cb = &rx3_cb;
 circular_float_buffer rx4_cb;
@@ -190,507 +185,611 @@ Circular_Short_Buffer TX3_cb = &tx3_cb;
 circular_float_buffer tx4_cb;
 Circular_Float_Buffer TX4_cb = &tx4_cb;
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// Callbacks for embedded ASCII stream, transmit and receive
+static int _dv_serial_fd = 0;
 
-void my_put_next_rx_char(void *callback_state, char c)
-{
-    char new_char[2];
-    if ( (uint32) c < 32 || (uint32) c > 126 ) {
-    	/* Treat all control chars as spaces */
-    	//output(ANSI_YELLOW "Non-valid RX_STRING char. ASCII code = %d\n", (uint32) c);
-    	new_char[0] = (char) 0x7F;
-    } else if ( c == ' ' ) {
-    	/* Encode spaces differently */
-    	new_char[0] = (char) 0x7F;
+static GMSK_DEMOD _gmsk_demod = NULL;
+static GMSK_MOD   _gmsk_mod = NULL;
+static DSTAR_MACHINE _dstar = NULL;
+static BOOL _end_of_transmission = FALSE;
+
+#define FREEDV_NSAMPLES 160
+
+void sched_waveform_sendStatus( uint32 slice ) {
+    dstar_updateStatus( _dstar, slice, STATUS_TX );
+}
+
+void sched_waveform_setDestinationRptr( uint32 slice , const char * destination_rptr ) {
+    /* Ignore slice for now */
+
+    char string[10];
+    strncpy( string, destination_rptr, 9 );
+    charReplace( string, ( char ) 0x7F, ' ' );
+
+    memset( _dstar->outgoing_header.destination_rptr, ' ', 8 );
+    /* We limit the copy to the string length so that
+     * we can fill the rest of the string with spaces to
+     * comply with DSTAR
+     */
+    uint32 copy_len = strlen( destination_rptr );
+
+    if ( copy_len > 9 )
+        copy_len = 9;
+
+    strncpy( _dstar->outgoing_header.destination_rptr, string, copy_len );
+    /* Enforce termination */
+    _dstar->outgoing_header.destination_rptr[8] = '\0';
+
+    if ( strncmp( _dstar->outgoing_header.destination_rptr, "DIRECT", strlen( "DIRECT" ) ) != 0 ) {
+        _dstar->outgoing_header.flag1 = 0x1 << 6;
     } else {
-    	new_char[0] = c;
+        _dstar->outgoing_header.flag1 = 0;
     }
 
-    new_char[1] = 0;
+    dstar_dumpHeader( &( _dstar->outgoing_header ) );
+}
 
-    strncat(_rx_string, new_char, MAX_RX_STRING_LENGTH+4);
-    if (strlen(_rx_string) > MAX_RX_STRING_LENGTH)
+void sched_waveform_setDepartureRptr( uint32 slice , const char * departure_rptr ) {
+    /* Ignore slice for now */
+
+    char string[10];
+    strncpy( string, departure_rptr, 9 );
+    charReplace( string, ( char ) 0x7F, ' ' );
+
+    /* Replace all fields with spaces to meet DSTAR requirements for blanks */
+    memset( _dstar->outgoing_header.departure_rptr, ' ', 8 );
+    /* We limit the copy to the string length so that
+     * we can fill the rest of the string with spaces to
+     * comply with DSTAR
+     */
+    uint32 copy_len = strlen( departure_rptr );
+
+    if ( copy_len > 9 )
+        copy_len = 9;
+
+    strncpy( _dstar->outgoing_header.departure_rptr, string, copy_len );
+    /* Terminate just in case */
+    _dstar->outgoing_header.departure_rptr[8] = '\0';
+
+    dstar_dumpHeader( &( _dstar->outgoing_header ) );
+}
+
+void sched_waveform_setCompanionCall( uint32 slice, const char * companion_call ) {
+    /* Ignore slice for now */
+
+    char string[10];
+    strncpy( string, companion_call, 9 );
+    charReplace( string, ( char ) 0x7F, ' ' );
+
+    memset( _dstar->outgoing_header.companion_call, ' ', 8 );
+    /* We limit the copy to the string length so that
+     * we can fill the rest of the string with spaces to
+     * comply with DSTAR
+     */
+    uint32 copy_len = strlen( companion_call );
+
+    if ( copy_len > 9 )
+        copy_len = 9;
+
+    strncpy( _dstar->outgoing_header.companion_call, string, copy_len );
+
+    _dstar->outgoing_header.companion_call[8] = '\0';
+
+    dstar_dumpHeader( &( _dstar->outgoing_header ) );
+}
+
+void sched_waveform_setOwnCall1( uint32 slice , const char * owncall1 ) {
+    /* Ignore slice for now */
+
+    char string[10];
+    strncpy( string, owncall1, 9 );
+    charReplace( string, ( char ) 0x7F, ' ' );
+
+    memset( _dstar->outgoing_header.own_call1, ' ', 8 );
+
+    /* We limit the copy to the string length so that
+     * we can fill the rest of the string with spaces to
+     * comply with DSTAR
+     */
+    uint32 copy_len = strlen( owncall1 );
+
+    if ( copy_len > 9 )
+        copy_len = 9;
+
+    strncpy( _dstar->outgoing_header.own_call1, string, copy_len );
+
+    /* Enforce termination */
+    _dstar->outgoing_header.own_call1[8] = '\0';
+
+    dstar_dumpHeader( &( _dstar->outgoing_header ) );
+}
+
+void sched_waveform_setOwnCall2( uint32 slice , const char * owncall2 ) {
+    char string[10];
+    /* We limit the copy to the string length so that
+     * we can fill the rest of the string with spaces to
+     * comply with DSTAR
+     */
+    memset( _dstar->outgoing_header.own_call2, ' ', 4 );
+    /* Enforce termination */
+    _dstar->outgoing_header.own_call2[4] = '\0';
+
+    if (strlen(owncall2) > 0)
     {
-        // lop off first character
-        strcpy(_rx_string, _rx_string+1);
+    	strncpy( string, owncall2, 4);
+    	string[4] = 0;
+    	charReplace( string, ( char ) 0x7F, ' ' );
+    	uint32 copy_len = strlen( owncall2 );
+    	if ( copy_len > 4 )
+    		copy_len = 4;
+    	strncpy( _dstar->outgoing_header.own_call2, string, copy_len );
     }
-    //output(ANSI_MAGENTA "new string = '%s'\n",_rx_string);
 
-    char* api_cmd = safe_malloc(80);
-    sprintf(api_cmd, "waveform status slice=%d string=\"%s\"",0,_rx_string);
-    tc_sendSmartSDRcommand(api_cmd,FALSE,NULL);
-    safe_free(api_cmd);
+    dstar_dumpHeader( &( _dstar->outgoing_header ) );
 }
 
-struct my_callback_state
+void sched_waveform_setMessage( uint32 slice, const char * message)
 {
-    char  tx_str[80];
-    char *ptx_str;
-};
+    char string[SLOW_DATA_MESSAGE_LENGTH_BYTES + 1 ];
+    /* We limit the copy to the string length so that
+     * we can fill the rest of the string with spaces to
+     * comply with DSTAR
+     */
+    memset(_dstar->slow_encoder->message, ' ', SLOW_DATA_MESSAGE_LENGTH_BYTES);
+    /* Enforce termination */
+    _dstar->slow_encoder->message[SLOW_DATA_MESSAGE_LENGTH_BYTES] = '\0';
 
-char my_get_next_tx_char(void *callback_state)
-{
-    struct my_callback_state* pstate = (struct my_callback_state*)callback_state;
-    char  c = *pstate->ptx_str++;
-
-    if (*pstate->ptx_str == 0)
+    /* Ignore slice for now */
+    if (strlen(message) > 0)
     {
-        pstate->ptx_str = pstate->tx_str;
+    	strncpy( string, message, SLOW_DATA_MESSAGE_LENGTH_BYTES);
+    	string[SLOW_DATA_MESSAGE_LENGTH_BYTES] = 0;
+    	charReplace( string, ( char ) 0x7F, ' ' );
+        uint32 copy_len = strlen( string );
+        if ( copy_len > SLOW_DATA_MESSAGE_LENGTH_BYTES )
+            copy_len = SLOW_DATA_MESSAGE_LENGTH_BYTES;
+        strncpy(_dstar->slow_encoder->message, string, copy_len);
     }
 
-    return c;
+    output( "TX Message: '%s'\n", _dstar->slow_encoder->message );
 }
 
-void freedv_set_string(uint32 slice, char* string)
-{
-    strcpy(_my_cb_state.tx_str, string);
-    _my_cb_state.ptx_str = _my_cb_state.tx_str;
-    output(ANSI_MAGENTA "new TX string is '%s'\n",string);
+void sched_waveform_setFD( int fd ) {
+    _dv_serial_fd = fd;
 }
 
+void sched_waveform_setEndOfTX( BOOL end_of_transmission ) {
+    _end_of_transmission = TRUE;
+}
 
-
-
-static void* _sched_waveform_thread(void* param)
+void sched_waveform_setDSTARSlice( uint32 slice )
 {
-    int 	nin, nout;
+    if ( _dstar != NULL ) {
+        _dstar->slice = slice;
+    }
+}
+
+static void * _sched_waveform_thread( void * param ) {
+    int 	nout;
 
     int		i;			// for loop counter
     float	fsample;	// a float sample
 //    float   Sig2Noise;	// Signal to noise ratio
 
     // Flags ...
-    int		initial_tx = 1; 		// Flags for TX circular buffer, clear if starting transmit
-    int		initial_rx = 1;			// Flags for RX circular buffer, clear if starting receive
+    int		initial_tx = TRUE; 		// Flags for TX circular buffer, clear if starting transmit
+    int		initial_rx = TRUE;			// Flags for RX circular buffer, clear if starting receive
 
-	// VOCODER I/O BUFFERS
-    short	speech_in[FREEDV_NSAMPLES];
-    short 	speech_out[FREEDV_NSAMPLES];
-    short 	demod_in[FREEDV_NSAMPLES];
-    short 	mod_out[FREEDV_NSAMPLES];
+    // VOCODER I/O BUFFERS
+    short	speech_in[DV_PACKET_SAMPLES];
+    short 	speech_out[DV_PACKET_SAMPLES];
+    //short 	demod_in[FREEDV_NSAMPLES];
+    unsigned char 	mod_out[DV_PACKET_SAMPLES];
+
+    //unsigned char packet_out[FREEDV_NSAMPLES];
 
     // RX RESAMPLER I/O BUFFERS
-    float 	float_in_8k[PACKET_SAMPLES + FILTER_TAPS];
-    float 	float_out_8k[PACKET_SAMPLES];
+    float 	float_in_8k[DV_PACKET_SAMPLES + FILTER_TAPS];
+    //float 	float_out_8k[DV_PACKET_SAMPLES];
 
-    float 	float_in_24k[PACKET_SAMPLES * DECIMATION_FACTOR + FILTER_TAPS];
-    float 	float_out_24k[PACKET_SAMPLES * DECIMATION_FACTOR ];
+    float 	float_in_24k[DV_PACKET_SAMPLES * DECIMATION_FACTOR + FILTER_TAPS];
+    float 	float_out_24k[DV_PACKET_SAMPLES * DECIMATION_FACTOR ];
 
     // TX RESAMPLER I/O BUFFERS
-    float 	tx_float_in_8k[PACKET_SAMPLES + FILTER_TAPS];
-    float 	tx_float_out_8k[PACKET_SAMPLES];
+    float 	tx_float_in_8k[DV_PACKET_SAMPLES + FILTER_TAPS];
+    float 	tx_float_out_8k[DV_PACKET_SAMPLES];
 
-    float 	tx_float_in_24k[PACKET_SAMPLES * DECIMATION_FACTOR + FILTER_TAPS];
-    float 	tx_float_out_24k[PACKET_SAMPLES * DECIMATION_FACTOR ];
+    float 	tx_float_in_24k[DV_PACKET_SAMPLES * DECIMATION_FACTOR + FILTER_TAPS];
 
-
-
+    BOOL inhibit_tx = FALSE;
+    BOOL flush_tx = FALSE;
 
     // =======================  Initialization Section =========================
-    _freedvS = freedv_open(FREEDV_MODE_1600);	// Default system, only
-    //assert(_freedvS != NULL);					// debug only
+
+    thumbDV_init( &_dv_serial_fd );
 
     // Initialize the Circular Buffers
 
-	RX1_cb->size  = PACKET_SAMPLES*6 +1;		// size = no.elements in array+1
-	RX1_cb->start = 0;
-	RX1_cb->end	  = 0;
-	RX1_cb->elems = RX1_buff;
-	RX2_cb->size  = PACKET_SAMPLES*6 +1;		// size = no.elements in array+1
-	RX2_cb->start = 0;
-	RX2_cb->end	  = 0;
-	RX2_cb->elems = RX2_buff;
-	RX3_cb->size  = PACKET_SAMPLES*6 +1;		// size = no.elements in array+1
-	RX3_cb->start = 0;
-	RX3_cb->end	  = 0;
-	RX3_cb->elems = RX3_buff;
-	RX4_cb->size  = PACKET_SAMPLES*12 +1;		// size = no.elements in array+1
-	RX4_cb->start = 0;
-	RX4_cb->end	  = 0;
-	RX4_cb->elems = RX4_buff;
+    RX3_cb->size  = DV_PACKET_SAMPLES * 12 + 1;		// size = no.elements in array+1
+    RX3_cb->start = 0;
+    RX3_cb->end	  = 0;
+    RX3_cb->elems = RX3_buff;
+    strncpy( RX3_cb->name, "RX3", 4 );
 
-	TX1_cb->size  = PACKET_SAMPLES*6 +1;		// size = no.elements in array+1
-	TX1_cb->start = 0;
-	TX1_cb->end	  = 0;
-	TX1_cb->elems = TX1_buff;
-	TX2_cb->size  = PACKET_SAMPLES*6 +1;		// size = no.elements in array+1
-	TX2_cb->start = 0;
-	TX2_cb->end	  = 0;
-	TX2_cb->elems = TX2_buff;
-	TX3_cb->size  = PACKET_SAMPLES *6 +1;		// size = no.elements in array+1
-	TX3_cb->start = 0;
-	TX3_cb->end	  = 0;
-	TX3_cb->elems = TX3_buff;
-	TX4_cb->size  = PACKET_SAMPLES *12 +1;		// size = no.elements in array+1
-	TX4_cb->start = 0;
-	TX4_cb->end	  = 0;
-	TX4_cb->elems = TX4_buff;
+    RX4_cb->size  = DV_PACKET_SAMPLES * ( 12 * 40 ) + 1;		// size = no.elements in array+1
+    RX4_cb->start = 0;
+    RX4_cb->end	  = 0;
+    RX4_cb->elems = RX4_buff;
+    strncpy( RX4_cb->name, "RX4", 4 );
 
-	initial_tx = TRUE;
-	initial_rx = TRUE;
+    TX1_cb->size  = DV_PACKET_SAMPLES * 12 + 1;		// size = no.elements in array+1
+    TX1_cb->start = 0;
+    TX1_cb->end	  = 0;
+    TX1_cb->elems = TX1_buff;
+    strncpy( TX1_cb->name, "TX1", 4 );
 
-    // initialize the rx callback
-    _freedvS->freedv_put_next_rx_char = &my_put_next_rx_char;
+    TX2_cb->size  = DV_PACKET_SAMPLES * 12 + 1;		// size = no.elements in array+1
+    TX2_cb->start = 0;
+    TX2_cb->end	  = 0;
+    TX2_cb->elems = TX2_buff;
+    strncpy( TX2_cb->name, "TX2", 4 );
 
-    // Set up callback for txt msg chars
-    // clear tx_string
-    memset(_my_cb_state.tx_str,0,80);
-    _my_cb_state.ptx_str = _my_cb_state.tx_str;
-    _freedvS->callback_state = (void*)&_my_cb_state;
-    _freedvS->freedv_get_next_tx_char = &my_get_next_tx_char;
+    TX3_cb->size  = DV_PACKET_SAMPLES * 12 + 1;		// size = no.elements in array+1
+    TX3_cb->start = 0;
+    TX3_cb->end	  = 0;
+    TX3_cb->elems = TX3_buff;
+    strncpy( TX3_cb->name, "TX3", 4 );
 
-    uint32 bypass_count = 0;
-    BOOL bypass_demod = TRUE;
+    TX4_cb->size  = DV_PACKET_SAMPLES * ( 12 * 40 ) + 1;		// size = no.elements in array+1
+    TX4_cb->start = 0;
+    TX4_cb->end	  = 0;
+    TX4_cb->elems = TX4_buff;
+    strncpy( TX4_cb->name, "TX4", 4 );
 
-	// show that we are running
-	BufferDescriptor buf_desc;
+    initial_tx = TRUE;
+    initial_rx = TRUE;
+    BOOL initial_tx_flush = FALSE;
+    uint32 dstar_tx_frame_count = 0;
 
-	while( !_waveform_thread_abort )
-	{
-		// wait for a buffer descriptor to get posted
-		sem_wait(&sched_waveform_sem);
+    // show that we are running
+    BufferDescriptor buf_desc;
 
-		if(!_waveform_thread_abort)
-		{
-			do {
-				buf_desc = _WaveformList_UnlinkHead();
-				// if we got signalled, but there was no new data, something's wrong
-				// and we'll just wait for the next packet
-				if (buf_desc == NULL)
-				{
-					//output( "We were signaled that there was another buffer descriptor, but there's not one here");
-					break;
-				}
-				else
-				{
-					// convert the buffer to little endian
-					_dsp_convertBufEndian(buf_desc);
+    while ( !_waveform_thread_abort ) {
+        // wait for a buffer descriptor to get posted
+        sem_wait( &sched_waveform_sem );
 
-					//output(" \"Processed\" buffer stream id = 0x%08X\n", buf_desc->stream_id);
+        if ( !_waveform_thread_abort ) {
+            do {
+                buf_desc = _WaveformList_UnlinkHead();
 
-					if( (buf_desc->stream_id & 1) == 0) { //RX BUFFER
-						//	If 'initial_rx' flag, clear buffers RX1, RX2, RX3, RX4
-						if(initial_rx)
-						{
-							RX1_cb->start = 0;	// Clear buffers RX1, RX2, RX3, RX4
-							RX1_cb->end	  = 0;
-							RX2_cb->start = 0;
-							RX2_cb->end	  = 0;
-							RX3_cb->start = 0;
-							RX3_cb->end	  = 0;
-							RX4_cb->start = 0;
-							RX4_cb->end	  = 0;
+                // if we got signalled, but there was no new data, something's wrong
+                // and we'll just wait for the next packet
+                if ( buf_desc == NULL ) {
+                    //output( "We were signaled that there was another buffer descriptor, but there's not one here");
+                    break;
+                } else {
+                    // convert the buffer to little endian
+                    _dsp_convertBufEndian( buf_desc );
+
+                    //output(" \"Processed\" buffer stream id = 0x%08X\n", buf_desc->stream_id);
+
+                    if ( ( buf_desc->stream_id & 1 ) == 0 ) { //RX BUFFER
+                        //	If 'initial_rx' flag, clear buffers RX1, RX2, RX3, RX4
+                        if ( initial_rx ) {
+                            RX3_cb->start = 0;
+                            RX3_cb->end	  = 0;
+                            RX4_cb->start = 0;
+                            RX4_cb->end	  = 0;
 
 
-							/* Clear filter memory */
-							memset(float_in_24k, 0, MEM_24 * sizeof(float));
-							memset(float_in_8k, 0, MEM_8 * sizeof(float));
+                            /* Clear filter memory */
+                            memset( float_in_24k, 0, MEM_24 * sizeof( float ) );
+                            memset( float_in_8k, 0, MEM_8 * sizeof( float ) );
 
-							/* Requires us to set initial_rx to FALSE which we do at the end of
-							 * the first loop
-							 */
-						}
+                            /* Requires us to set initial_rx to FALSE which we do at the end of
+                             * the first loop
+                             */
+                        }
 
-						//	Set the transmit 'initial' flag
-						initial_tx = TRUE;
+                        //	Set the transmit 'initial' flag
+                        initial_tx = TRUE;
+                        inhibit_tx = FALSE;
+                        flush_tx = FALSE;
+                        _end_of_transmission = FALSE;
+                        gmsk_resetMODFilter( _gmsk_mod );
 
-						// Check for new receiver input packet & move to RX1_cb.
-						// TODO - If transmit packet, discard here?
+                        enum DEMOD_STATE state = DEMOD_UNKNOWN;
 
+                        for ( i = 0 ; i < PACKET_SAMPLES ; i++ ) {
+                            state = gmsk_decode( _gmsk_demod, ( ( Complex * )buf_desc->buf_ptr )[i].real );
 
-						for( i = 0 ; i < PACKET_SAMPLES ; i++)
-						{
-							//output("Outputting ")
-							//	fsample = Get next float from packet;
-							cbWriteFloat(RX1_cb, ((Complex*)buf_desc->buf_ptr)[i].real);
+                            unsigned char ambe_out[9] = {0};
+                            BOOL ambe_packet_out = FALSE;
 
-						}
+                            if ( state == DEMOD_TRUE ) {
+                                ambe_packet_out = dstar_rxStateMachine( _dstar, TRUE, ambe_out, 9 );
+                            } else if ( state == DEMOD_FALSE ) {
+                                ambe_packet_out = dstar_rxStateMachine( _dstar, FALSE, ambe_out, 9 );
+                            } else {
+                                /* Nothing to do since we have not "locked" a bit out yet */
+                            }
 
-//
-						// Check for >= 384 samples in RX1_cb and spin downsampler
-						//	Convert to shorts and move to RX2_cb.
-						if(cfbContains(RX1_cb) >= 384)
-						{
-							for(i=0 ; i<384 ; i++)
-							{
-								float_in_24k[i + MEM_24] = cbReadFloat(RX1_cb);
-							}
+                            if ( ambe_packet_out == TRUE ) {
+                                nout = 0;
+                                nout = thumbDV_decode( _dv_serial_fd, ambe_out, speech_out, DV_PACKET_SAMPLES );
+                                uint32 j = 0;
 
-							fdmdv_24_to_8(float_out_8k, &float_in_24k[MEM_24], 128);
+                                for ( j = 0 ; j < nout ; j++ )
+                                    cbWriteShort( RX3_cb, speech_out[j] );
+                            }
 
-							for(i=0 ; i<128 ; i++)
-							{
-								cbWriteShort(RX2_cb, (short) (float_out_8k[i]*SCALE_RX_IN));
-
-							}
-
-						}
-//
-//						// Check for >= 320 samples in RX2_cb and spin vocoder
-						// 	Move output to RX3_cb.
-//						do {
-							nin = freedv_nin(_freedvS); // TODO Is nin, nout really necessary?
-
-							if ( csbContains(RX2_cb) >= nin )
-							{
-	//
-								for( i=0 ; i< nin ; i++)
-								{
-									demod_in[i] = cbReadShort(RX2_cb);
-								}
-
-								nout = freedv_rx(_freedvS, speech_out, demod_in);
+                            if (_dstar->rx_state == END_PATTERN)
+                            {
+                            	char msg[64];
+                                sprintf( msg, "waveform status slice=%d RX=END", _dstar->slice);
+                            	tc_sendSmartSDRcommand( msg, FALSE, NULL );
+                            }
+                        }
 
 
+                        // Check for >= 160 samples in RX3_cb, convert to floats
+                        //	and spin the upsampler. Move output to RX4_cb.
 
-								if ( _freedvS->fdmdv_stats.sync ) {
-									/* Increase count for turning bypass off */
-									if ( bypass_count < 10) bypass_count++;
-								} else {
-									if ( bypass_count > 0 ) bypass_count--;
-								}
+                        if ( csbContains( RX3_cb ) >= DV_PACKET_SAMPLES ) {
+                            for ( i = 0 ; i < DV_PACKET_SAMPLES ; i++ ) {
+                                float_in_8k[i + MEM_8] = ( ( float )( cbReadShort( RX3_cb ) / SCALE_RX_OUT ) );
+                            }
 
-								if ( bypass_count > 7 ) {
-									//if ( bypass_demod ) output("baypass_demod transitioning to FALSE\n");
+                            fdmdv_8_to_24( float_out_24k, &float_in_8k[MEM_8], DV_PACKET_SAMPLES );
 
-									bypass_demod = FALSE;
-								}
-								else if ( bypass_count < 2 ) {
-									//if ( !bypass_demod ) output("baypass_demod transitioning to TRUE \n");
-									bypass_demod = TRUE;
-								}
-								if ( bypass_demod ) {
-									for ( i = 0 ; i < nin ; i++ ) {
-										cbWriteShort(RX3_cb, demod_in[i]);
-									}
-								} else {
-									for( i=0 ; i < nout ; i++)
-									{
-										cbWriteShort(RX3_cb, speech_out[i]);
-									}
-								}
+                            for ( i = 0 ; i < DV_PACKET_SAMPLES * DECIMATION_FACTOR ; i++ ) {
+                                cbWriteFloat( RX4_cb, float_out_24k[i] );
+                            }
+                        }
 
-								//output("%d\n", bypass_count);
+                        // Check for >= 128 samples in RX4_cb. Form packet and
+                        //	export.
 
-							}
-	//						} else {
-		//						break; /* Break out of while loop */
-							//}
-						//} while (1);
-//
-						// Check for >= 128 samples in RX3_cb, convert to floats
-						//	and spin the upsampler. Move output to RX4_cb.
+                        uint32 check_samples = PACKET_SAMPLES;
 
-						if(csbContains(RX3_cb) >= 128)
-						{
-							for( i=0 ; i<128 ; i++)
-							{
-								float_in_8k[i+MEM_8] = ((float)  (cbReadShort(RX3_cb) / SCALE_RX_OUT)     );
-							}
+                        if ( cfbContains( RX4_cb ) >= check_samples ) {
+                            for ( i = 0 ; i < PACKET_SAMPLES ; i++ ) {
+                                // Set up the outbound packet
+                                fsample = cbReadFloat( RX4_cb );
+//								// put the fsample into the outbound packet
 
-							fdmdv_8_to_24(float_out_24k, &float_in_8k[MEM_8], 128);
+                                ( ( Complex * )buf_desc->buf_ptr )[i].real = fsample;
+                                ( ( Complex * )buf_desc->buf_ptr )[i].imag = fsample;
 
-							for( i=0 ; i<384 ; i++)
-							{
-								cbWriteFloat(RX4_cb, float_out_24k[i]);
-							}
-							//Sig2Noise = (_freedvS->fdmdv_stats.snr_est);
-						}
+                            }
+                        } else {
+                            memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof( Complex ) );
+                        }
 
-						// Check for >= 128 samples in RX4_cb. Form packet and
-						//	export.
+                        if ( initial_rx )
+                            initial_rx = FALSE;
 
-						uint32 check_samples = PACKET_SAMPLES;
+                        emit_waveform_output( buf_desc );
 
-						if(initial_rx)
-							check_samples = PACKET_SAMPLES * 3;
-
-						if(cfbContains(RX4_cb) >= check_samples )
-						{
-							for( i=0 ; i<128 ; i++)
-							{
-								//output("Fetching from end buffer \n");
-								// Set up the outbound packet
-								fsample = cbReadFloat(RX4_cb);
-								// put the fsample into the outbound packet
-
-								((Complex*)buf_desc->buf_ptr)[i].real = fsample;
-								((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
-
-							}
-						} else {
-							//output("RX Starved buffer out\n");
-
-							memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
-
-							if(initial_rx)
-								initial_rx = FALSE;
-						}
+                    } else if ( ( buf_desc->stream_id & 1 ) == 1 ) { //TX BUFFER
+                        //	If 'initial_rx' flag, clear buffers TX1, TX2, TX3, TX4
+                        if ( initial_tx ) {
+                            TX1_cb->start = 0;	// Clear buffers RX1, RX2, RX3, RX4
+                            TX1_cb->end	  = 0;
+                            TX2_cb->start = 0;
+                            TX2_cb->end	  = 0;
+                            TX3_cb->start = 0;
+                            TX3_cb->end	  = 0;
+                            TX4_cb->start = 0;
+                            TX4_cb->end	  = 0;
 
 
-					} else if ( (buf_desc->stream_id & 1) == 1) { //TX BUFFER
-						//	If 'initial_rx' flag, clear buffers TX1, TX2, TX3, TX4
-						if(initial_tx)
-						{
-							TX1_cb->start = 0;	// Clear buffers RX1, RX2, RX3, RX4
-							TX1_cb->end	  = 0;
-							TX2_cb->start = 0;
-							TX2_cb->end	  = 0;
-							TX3_cb->start = 0;
-							TX3_cb->end	  = 0;
-							TX4_cb->start = 0;
-							TX4_cb->end	  = 0;
+                            /* Clear filter memory */
+
+                            memset( tx_float_in_24k, 0, MEM_24 * sizeof( float ) );
+                            memset( tx_float_in_8k, 0, MEM_8 * sizeof( float ) );
+
+                            /* Requires us to set initial_rx to FALSE which we do at the end of
+                             * the first loop
+                             */
+                        }
 
 
-							/* Clear filter memory */
+                        initial_rx = TRUE;
+                        // Check for new receiver input packet & move to TX1_cb.
 
-							memset(tx_float_in_24k, 0, MEM_24 * sizeof(float));
-							memset(tx_float_in_8k, 0, MEM_8 * sizeof(float));
-
-							/* Requires us to set initial_rx to FALSE which we do at the end of
-							 * the first loop
-							 */
-						}
+                        if ( !inhibit_tx ) {
 
 
-						initial_rx = TRUE;
-						// Check for new receiver input packet & move to TX1_cb.
-						// TODO - If transmit packet, discard here?
+                            for ( i = 0 ; i < PACKET_SAMPLES ; i++ ) {
+                                //output("Outputting ")
+                                //	fsample = Get next float from packet;
+                                cbWriteFloat( TX1_cb, ( ( Complex * )buf_desc->buf_ptr )[i].real );
 
-
-						for( i = 0 ; i < PACKET_SAMPLES ; i++ )
-						{
-							//output("Outputting ")
-							//	fsample = Get next float from packet;
-							cbWriteFloat(TX1_cb, ((Complex*)buf_desc->buf_ptr)[i].real);
-
-						}
+                            }
 
 //
-						// Check for >= 384 samples in TX1_cb and spin downsampler
-						//	Convert to shorts and move to TX2_cb.
-						if(cfbContains(TX1_cb) >= 384)
-						{
-							for(i=0 ; i<384 ; i++)
-							{
-								tx_float_in_24k[i + MEM_24] = cbReadFloat(TX1_cb);
-							}
+                            // Check for >= 384 samples in TX1_cb and spin downsampler
+                            //	Convert to shorts and move to TX2_cb.
+                            if ( cfbContains( TX1_cb ) >= DV_PACKET_SAMPLES * DECIMATION_FACTOR ) {
+                                for ( i = 0 ; i < DV_PACKET_SAMPLES * DECIMATION_FACTOR ; i++ ) {
+                                    tx_float_in_24k[i + MEM_24] = cbReadFloat( TX1_cb );
+                                }
 
-							fdmdv_24_to_8(tx_float_out_8k, &tx_float_in_24k[MEM_24], 128);
+                                fdmdv_24_to_8( tx_float_out_8k, &tx_float_in_24k[MEM_24], DV_PACKET_SAMPLES );
 
-							for(i=0 ; i<128 ; i++)
-							{
-								cbWriteShort(TX2_cb, (short) (tx_float_out_8k[i]*SCALE_TX_IN));
+                                for ( i = 0 ; i < DV_PACKET_SAMPLES ; i++ ) {
+                                    cbWriteShort( TX2_cb, ( short )( tx_float_out_8k[i]*SCALE_TX_IN ) );
+                                }
 
-							}
+                            }
 
-						}
 //
 //						// Check for >= 320 samples in TX2_cb and spin vocoder
-						// 	Move output to TX3_cb.
+                            // 	Move output to TX3_cb.
 
+                            uint32 decode_out  = 0;
 
-							if ( csbContains(TX2_cb) >= 320 )
-							{
-								for( i=0 ; i< 320 ; i++)
-								{
-									speech_in[i] = cbReadShort(TX2_cb);
-								}
+                            if ( csbContains( TX2_cb ) >= DV_PACKET_SAMPLES ) {
+                                for ( i = 0 ; i < DV_PACKET_SAMPLES ; i++ ) {
+                                    speech_in[i] = cbReadShort( TX2_cb );
+                                }
 
-								freedv_tx(_freedvS, mod_out, speech_in);
+                                /* DECODE */
+                                decode_out = thumbDV_encode( _dv_serial_fd, speech_in, mod_out, DV_PACKET_SAMPLES );
+                            }
 
-								for( i=0 ; i < 320 ; i++)
-								{
-									cbWriteShort(TX3_cb, mod_out[i]);
-								}
-							}
+                            if ( initial_tx ) {
 
-						// Check for >= 128 samples in TX3_cb, convert to floats
-						//	and spin the upsampler. Move output to TX4_cb.
+                                initial_tx = FALSE;
 
-						if(csbContains(TX3_cb) >= 128)
-						{
-							for( i=0 ; i<128 ; i++)
-							{
-								tx_float_in_8k[i+MEM_8] = ((float)  (cbReadShort(TX3_cb) / SCALE_TX_OUT));
-							}
+                                _dstar->tx_state = BIT_FRAME_SYNC;
 
-							fdmdv_8_to_24(tx_float_out_24k, &tx_float_in_8k[MEM_8], 128);
+                                dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, NULL);
 
-							for( i=0 ; i<384 ; i++)
-							{
-								cbWriteFloat(TX4_cb, tx_float_out_24k[i]);
-							}
-							//Sig2Noise = (_freedvS->fdmdv_stats.snr_est);
-						}
+                                _dstar->tx_state = HEADER_PROCESSING;
 
-						// Check for >= 128 samples in RX4_cb. Form packet and
-						//	export.
+                                dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, NULL);
 
-						uint32 tx_check_samples = PACKET_SAMPLES;
+                                slow_data_createEncodeBytes(_dstar);
 
-						if(initial_tx)
-							tx_check_samples = PACKET_SAMPLES * 3;
+                                initial_tx_flush = TRUE;
 
-						if(cfbContains(TX4_cb) >= tx_check_samples )
-						{
-							for( i = 0 ; i < PACKET_SAMPLES ; i++)
-							{
-								//output("Fetching from end buffer \n");
-								// Set up the outbound packet
-								fsample = cbReadFloat(TX4_cb);
-								// put the fsample into the outbound packet
-								((Complex*)buf_desc->buf_ptr)[i].real = fsample;
-								((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
-							}
-						} else {
-							//output("TX Starved buffer out\n");
+                                dstar_tx_frame_count = 0;
+                            } else {
+                                /* Data and Voice */
 
-							memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
+                                if ( decode_out != 0 ) {
+                                    _dstar->tx_state = VOICE_FRAME;
+                                    dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, mod_out);
 
-							if(initial_tx)
-								initial_tx = FALSE;
-						}
+                                    if ( dstar_tx_frame_count % 21 == 0 ) {
+                                        _dstar->tx_state = DATA_SYNC_FRAME;
+                                        dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, NULL);
+                                        if ( _dstar->slow_encoder->encode_state == HEADER_TX )
+                                            _dstar->slow_encoder->header_index = 0;
+                                    } else {
 
+                                        _dstar->tx_state = DATA_FRAME;
+                                        dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, NULL);
+                                    }
 
-					}
+                                    dstar_tx_frame_count++;
+                                }
+                            }
 
+                            if ( _end_of_transmission && !inhibit_tx ) {
 
-					emit_waveform_output(buf_desc);
+                                _dstar->tx_state = END_PATTERN;
 
-					hal_BufferRelease(&buf_desc);
-				}
-			} while(1); // Seems infinite loop but will exit once there are no longer any buffers linked in _Waveformlist
-		}
-	}
-	_waveform_thread_abort = TRUE;
-	 freedv_close(_freedvS);
-	return NULL;
+                                dstar_txStateMachine(_dstar, _gmsk_mod, TX4_cb, NULL);
+
+                                flush_tx = TRUE;
+                                initial_tx_flush = TRUE;
+                            }
+
+                        }
+
+                        if ( !inhibit_tx ) {
+                            uint32 tx_check_samples = PACKET_SAMPLES;
+
+                            if ( cfbContains( TX4_cb ) >= tx_check_samples ) {
+                                for ( i = 0 ; i < PACKET_SAMPLES ; i++ ) {
+                                    // Set up the outbound packet
+                                    fsample = cbReadFloat( TX4_cb );
+
+                                    // put the fsample into the outbound packet
+                                    ( ( Complex * )buf_desc->buf_ptr )[i].real = fsample;
+                                    ( ( Complex * )buf_desc->buf_ptr )[i].imag = fsample;
+                                }
+                            } else {
+                                memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof( Complex ) );
+                            }
+
+                            emit_waveform_output( buf_desc );
+
+                            if ( flush_tx && initial_tx_flush ) {
+                                initial_tx_flush = FALSE;
+                                inhibit_tx = TRUE;
+
+                                //output("TX4_cb has %d samples\n", cfbContains(TX4_cb));
+                                while ( cfbContains( TX4_cb ) > 0 ) {
+
+                                    if ( cfbContains( TX4_cb ) > PACKET_SAMPLES ) {
+                                        for ( i = 0 ; i < PACKET_SAMPLES ; i++ ) {
+                                            // Set up the outbound packet
+                                            fsample = cbReadFloat( TX4_cb );
+
+                                            // put the fsample into the outbound packet
+                                            ( ( Complex * )buf_desc->buf_ptr )[i].real = fsample;
+                                            ( ( Complex * )buf_desc->buf_ptr )[i].imag = fsample;
+                                        }
+                                    } else {
+                                        int end_index = 0;
+
+                                        for ( i = 0 ; i <= cfbContains( TX4_cb ); i++ ) {
+                                            fsample = cbReadFloat( TX4_cb );
+                                            ( ( Complex * )buf_desc->buf_ptr )[i].real = fsample;
+                                            ( ( Complex * )buf_desc->buf_ptr )[i].imag = fsample;
+                                            end_index = i + 1;
+                                        }
+
+                                        for ( i = end_index ; i < PACKET_SAMPLES ; i++ ) {
+                                            ( ( Complex * )buf_desc->buf_ptr )[i].real = 0.0f;
+                                            ( ( Complex * )buf_desc->buf_ptr )[i].imag = 0.0f;
+                                        }
+
+                                    }
+
+                                    emit_waveform_output( buf_desc );
+
+                                }
+                            }
+
+                        }
+                    }
+
+                    hal_BufferRelease( &buf_desc );
+                }
+            } while ( 1 ); // Seems infinite loop but will exit once there are no longer any buffers linked in _Waveformlist
+        }
+    }
+
+    _waveform_thread_abort = TRUE;
+
+    gmsk_destroyDemodulator( _gmsk_demod );
+    gmsk_destroyModulator( _gmsk_mod );
+    dstar_destroyMachine( _dstar );
+
+    return NULL;
 }
 
-void sched_waveform_Init(void)
-{
-	pthread_rwlock_init(&_list_lock, NULL);
+void sched_waveform_Init( void ) {
 
-	pthread_rwlock_wrlock(&_list_lock);
-	_root = (BufferDescriptor)safe_malloc(sizeof(buffer_descriptor));
-	memset(_root, 0, sizeof(buffer_descriptor));
-	_root->next = _root;
-	_root->prev = _root;
-	pthread_rwlock_unlock(&_list_lock);
+    _dstar = dstar_createMachine();
 
-	sem_init(&sched_waveform_sem, 0, 0);
+    _gmsk_demod = gmsk_createDemodulator();
+    _gmsk_mod = gmsk_createModulator();
+    _gmsk_mod->m_invert = TRUE;
 
-	pthread_create(&_waveform_thread, NULL, &_sched_waveform_thread, NULL);
+    pthread_rwlock_init( &_list_lock, NULL );
 
-	struct sched_param fifo_param;
-	fifo_param.sched_priority = 30;
-	pthread_setschedparam(_waveform_thread, SCHED_FIFO, &fifo_param);
+    pthread_rwlock_wrlock( &_list_lock );
+    _root = ( BufferDescriptor )safe_malloc( sizeof( buffer_descriptor ) );
+    memset( _root, 0, sizeof( buffer_descriptor ) );
+    _root->next = _root;
+    _root->prev = _root;
+    pthread_rwlock_unlock( &_list_lock );
+
+    sem_init( &sched_waveform_sem, 0, 0 );
+
+    pthread_create( &_waveform_thread, NULL, &_sched_waveform_thread, NULL );
+
+    struct sched_param fifo_param;
+    fifo_param.sched_priority = 30;
+    pthread_setschedparam( _waveform_thread, SCHED_FIFO, &fifo_param );
 }
 
-void sched_waveformThreadExit()
-{
-	_waveform_thread_abort = TRUE;
-	sem_post(&sched_waveform_sem);
+void sched_waveformThreadExit() {
+    _waveform_thread_abort = TRUE;
+    sem_post( &sched_waveform_sem );
 }
