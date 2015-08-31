@@ -1,14 +1,15 @@
 ﻿/*******************************************************************************
- *	Program.cs									  			
+ * ReflectorOrRepeater.cs									  			
  *
- * 	An example GUI showing how to interface to the FlexRadio Modem API
+ * 	DStar Repeater / Reflector Model
  *
- *  Created on: 2014-08-29
- *      Author: Eric / KE5DTO
+ *  Created on: 2015-08-27
+ *      Author: Mark Hanson / AA3RK / MKCM Software, LLC.
+ *
  *
  *******************************************************************************
  *
- *	Copyright (C) 2014 FlexRadio Systems.
+ *	Copyright (C) 2015 FlexRadio Systems.
  *	This program is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 3 of the License, or
@@ -29,24 +30,22 @@
  *
  ******************************************************************************/
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Windows.Forms;
-
 namespace CODEC2_GUI
 {
-    static class Program
+    public class ReflectorOrRepeater
     {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
-        [STAThread]
-        static void Main()
+        public string Name { get; set; }
+        public string Desc { get; set; }
+        public double Frequency { get; set; }
+        public double Offset { get; set; }
+        public string RepeaterName
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            get
+            {
+                if (Frequency == 0)
+                    return Name;
+                return string.Format("{0}~{1}~{2}", Name ?? string.Empty, Frequency, Offset);
+            }
         }
     }
 }

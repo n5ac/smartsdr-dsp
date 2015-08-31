@@ -3,6 +3,7 @@
 *.ko
 *.obj
 *.elf
+obj
 
 # Libraries
 *.lib
@@ -21,3 +22,11 @@
 *.i*86
 *.x86_64
 *.hex
+
+# Others
+.metadata
+.vs
+bin
+Debug
+Release
+.settings

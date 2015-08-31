@@ -304,52 +304,53 @@ void sched_waveform_setOwnCall1( uint32 slice , const char * owncall1 ) {
 }
 
 void sched_waveform_setOwnCall2( uint32 slice , const char * owncall2 ) {
-    /* Ignore slice for now */
-
     char string[10];
-    strncpy( string, owncall2, 5 );
-    charReplace( string, ' ', ( char ) 0x7F );
-    memset( _dstar->outgoing_header.own_call2, ' ', 4 );
     /* We limit the copy to the string length so that
      * we can fill the rest of the string with spaces to
      * comply with DSTAR
      */
-    uint32 copy_len = strlen( owncall2 );
-
-    if ( copy_len > 5 )
-        copy_len = 5;
-
-    strncpy( _dstar->outgoing_header.own_call2, string, copy_len );
-
+    memset( _dstar->outgoing_header.own_call2, ' ', 4 );
     /* Enforce termination */
     _dstar->outgoing_header.own_call2[4] = '\0';
+
+    if (strlen(owncall2) > 0)
+    {
+    	strncpy( string, owncall2, 4);
+    	string[4] = 0;
+    	charReplace( string, ( char ) 0x7F, ' ' );
+    	uint32 copy_len = strlen( owncall2 );
+    	if ( copy_len > 4 )
+    		copy_len = 4;
+    	strncpy( _dstar->outgoing_header.own_call2, string, copy_len );
+    }
 
     dstar_dumpHeader( &( _dstar->outgoing_header ) );
 }
 
 void sched_waveform_setMessage( uint32 slice, const char * message)
 {
-    /* Ignore slice for now */
     char string[SLOW_DATA_MESSAGE_LENGTH_BYTES + 1 ];
-    strncpy( string, message, SLOW_DATA_MESSAGE_LENGTH_BYTES + 1);
-    charReplace( string, ' ', ( char )  0x7F );
-    memset(_dstar->slow_encoder->message, ' ', SLOW_DATA_MESSAGE_LENGTH_BYTES);
-
     /* We limit the copy to the string length so that
      * we can fill the rest of the string with spaces to
      * comply with DSTAR
      */
-
-    uint32 copy_len = strlen( string );
-
-    if ( copy_len > SLOW_DATA_MESSAGE_LENGTH_BYTES )
-        copy_len = SLOW_DATA_MESSAGE_LENGTH_BYTES;
-
-    strncpy(_dstar->slow_encoder->message, string, copy_len);
-
+    memset(_dstar->slow_encoder->message, ' ', SLOW_DATA_MESSAGE_LENGTH_BYTES);
     /* Enforce termination */
     _dstar->slow_encoder->message[SLOW_DATA_MESSAGE_LENGTH_BYTES] = '\0';
 
+    /* Ignore slice for now */
+    if (strlen(message) > 0)
+    {
+    	strncpy( string, message, SLOW_DATA_MESSAGE_LENGTH_BYTES);
+    	string[SLOW_DATA_MESSAGE_LENGTH_BYTES] = 0;
+    	charReplace( string, ( char ) 0x7F, ' ' );
+        uint32 copy_len = strlen( string );
+        if ( copy_len > SLOW_DATA_MESSAGE_LENGTH_BYTES )
+            copy_len = SLOW_DATA_MESSAGE_LENGTH_BYTES;
+        strncpy(_dstar->slow_encoder->message, string, copy_len);
+    }
+
+    output( "TX Message: '%s'\n", _dstar->slow_encoder->message );
 }
 
 void sched_waveform_setFD( int fd ) {
@@ -520,7 +521,15 @@ static void * _sched_waveform_thread( void * param ) {
                                 for ( j = 0 ; j < nout ; j++ )
                                     cbWriteShort( RX3_cb, speech_out[j] );
                             }
+
+                            if (_dstar->rx_state == END_PATTERN)
+                            {
+                            	char msg[64];
+                                sprintf( msg, "waveform status slice=%d RX=END", _dstar->slice);
+                            	tc_sendSmartSDRcommand( msg, FALSE, NULL );
+                            }
                         }
+
 
                         // Check for >= 160 samples in RX3_cb, convert to floats
                         //	and spin the upsampler. Move output to RX4_cb.
