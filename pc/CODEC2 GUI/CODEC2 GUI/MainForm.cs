@@ -86,7 +86,10 @@ namespace CODEC2_GUI
 
             API.RadioAdded += new API.RadioAddedEventHandler(API_RadioAdded);
             API.RadioRemoved += new API.RadioRemovedEventHandler(API_RadioRemoved);
+
+            API.ProgramName = "ThumbDV_DSTAR";
             API.Init();
+
 
             LogQueue = new BindingList<string>();
             logList.DataSource = LogQueue;

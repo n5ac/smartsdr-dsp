@@ -1,7 +1,7 @@
 ;
 
 #define MyAppName "Flex DSTAR Waveform"
-#define MyAppVersion "1.4.0.2"
+#define MyAppVersion "1.4.0.3"
 #define MyAppPublisher "FlexRadio Systems, LLC"
 #define MyAppURL "http://www.flexradio.com/"
 #define MyAppExeName "ThumbDV_DSTAR_GUI.exe"
