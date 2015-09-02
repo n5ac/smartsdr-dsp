@@ -395,7 +395,26 @@ namespace CODEC2_GUI
         {
             if (inreset)
                 return;
+            
+            string rtxt = rpt1txt.Text;
+            if (!string.IsNullOrWhiteSpace(rtxt))
+            {
+                string[] srtxt = rtxt.Split('~');
+                if (srtxt.Length > 0 && srtxt[0].Length > 0)
+                {
+                    if (srtxt[0].Length > 8)
+                    {
+                        srtxt[0] = srtxt[0].Substring(0, 8);
+                        rtxt = string.Join("~", srtxt);
+                        rpt1txt.Text = rtxt;
+                        rpt1txt.SelectionStart = 7;
+                        rpt1txt.SelectionLength = 0;
+                    }
+                }
+            }
+
             Modified = Modified | ModifyFlags.RPT1FLAG;
+            updateRpt2();
             OnPropertyChanged("RPT1");
             OnPropertyChanged("Modified");
         }
@@ -424,6 +443,7 @@ namespace CODEC2_GUI
             if (inreset)
                 return;
             Modified = Modified | ModifyFlags.RPT1FLAG;
+            updateRpt2();
             OnPropertyChanged("RPT1");
             OnPropertyChanged("Modified");
         }
@@ -556,6 +576,7 @@ namespace CODEC2_GUI
                     {
                         rpt1txt.Text = rpm.SelectedRpt.RepeaterName;
                         Modified = Modified | ModifyFlags.RPT1FLAG;
+                        updateRpt2();
                         OnPropertyChanged("RPT1");
                         OnPropertyChanged("Modified");
                     }
@@ -574,5 +595,33 @@ namespace CODEC2_GUI
             }
         }
 
+        private void updateRpt2()
+        {
+            string[] srpt1 = rpt1txt.Text.Split('~');
+            if (srpt1.Length > 0 && srpt1[0].Length > 0 && !srpt1[0].StartsWith("DIRECT"))
+            {
+                char last = 'G';
+                if (rpt2txt.Text.Length > 0)
+                    last = rpt2txt.Text.Last();
+                string rcs = srpt1[0].ToUpper().Trim();
+                int idx = rcs.IndexOf(' ');
+                if (idx > 0)
+                    rcs = rcs.Substring(0, idx);
+                else if (rcs.Length > 7)
+                    rcs = rcs.Substring(0, 7); 
+                string rpts = string.Format("{0,-7}S", rcs);
+                string rptg = string.Format("{0,-7}G", rcs);
+                RPT2List = new List<string>() { rptg, rpts };
+                if (rpt2txt.Text != rptg && rpt2txt.Text != rpts)
+                {
+                    if (last == 'S')
+                        rpt2txt.SelectedIndex = 1;
+                    else 
+                        rpt2txt.SelectedIndex = 0;
+                }
+                OnPropertyChanged("RPT2");
+            }
+        }
     }
+
 }
