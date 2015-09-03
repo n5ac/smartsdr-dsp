@@ -269,6 +269,40 @@ const float MOD_COEFFS_TABLE[] = {
 
 #define MOD_COEFFS_LENGTH 41U
 
+#define eiline(n) (iir->in_line[(n)])
+#define eoline(n) (iir->out_line[(n)])
+
+static float _process_iir_filter(IIR_FILTER iir, float sample)
+{
+
+    float * a = iir->a;
+    float * b = iir->b;
+    float N = 16.0f; // Scaling value for IIR Filter Realization
+    float N_IV = 1.0f / N;
+    float N_2 = N / 2.0f;
+
+    float local_out;
+    //Shift Input Line
+    eiline( 2) = eiline( 1);
+    eiline( 1) = eiline( 0);
+
+    eiline( 0) = sample;
+
+    eoline( 2) = eoline( 1);
+    eoline( 1) = eoline( 0);
+
+    local_out = 0.0f;
+
+
+    local_out = 2.0f * ((-a[1]*0.5f * eoline(
+                                1)) - (a[2]*0.5f * eoline( 2))
+                               + N_2 * ((b[0]*N_IV * eiline( 0)) + (b[1]*N_IV
+                                       * eiline( 1)) + (b[2]*N_IV * eiline( 2))));
+
+    eoline(0) = local_out;
+    return local_out;
+}
+
 uint32 gmsk_encode( GMSK_MOD mod, BOOL bit, float * buffer, unsigned int length ) {
 
     if ( length != DSTAR_RADIO_BIT_LENGTH ) {
@@ -286,6 +320,9 @@ uint32 gmsk_encode( GMSK_MOD mod, BOOL bit, float * buffer, unsigned int length 
         } else {
             buffer[i] = gmsk_FilterProcessSingle( mod->filter, 0.75f );
         }
+
+        buffer[i] = _process_iir_filter(mod->iir, buffer[i]);
+
     }
 
     return DSTAR_RADIO_BIT_LENGTH;
@@ -355,11 +392,77 @@ GMSK_DEMOD gmsk_createDemodulator( void ) {
     return demod;
 }
 
+
+float convertVITAdbToFloat(VITAdb vita)
+{
+    int32 db = (int32)((int16)(vita & 0xFFFF));
+    return (float)db / 128.0;
+}
+// always assume the float is in dB (see the parameter name)
+VITAdb convertFloatToVITAdb(float db)
+{
+    return ((int32)(db * 128) & 0xFFFF);
+}
+
 GMSK_MOD gmsk_createModulator( void ) {
     GMSK_MOD mod = ( GMSK_MOD ) safe_malloc( sizeof( gmsk_mod ) );
     mod->m_invert = FALSE;
 
     mod->filter = gmsk_createFilter( MOD_COEFFS_TABLE, MOD_COEFFS_LENGTH );
+
+
+    mod->iir = safe_malloc(sizeof(iir_filter));
+
+    IIR_FILTER filter = mod->iir;
+
+    float * a = filter->a;
+    float * b = filter->b;
+    uint32 freq_hz = 4800;
+    uint32 sample_rate_hz = 24000;
+    uint32 level = 10;
+    float q_level = 0.2;
+        float w0 = 2.0 * M_PI * freq_hz/
+                                      (float)sample_rate_hz;
+        VITAdb db_gain = convertFloatToVITAdb(level);
+        float q_factor;
+        if ( level > 0 ) {
+            q_factor = q_level;
+        } else {
+            q_factor = 4.0f * q_level;
+        }
+        float A = pow(10, convertVITAdbToFloat(db_gain) / 40);
+        float alpha = sin(w0) / (2 * A * q_factor);
+        //flex_printf(LOG_ALWAYS, "w0 = %lf, A = %lf, alpha = %lf", w0, A, alpha);
+
+        //float linearGain = pow(10,  convertVITAdbToFloat(db_gain) / 20);
+
+        if (level != 0 ) {
+            // Peaking EQ from AUDIO COOKBOOK
+            b[0] = 1 + alpha * A;
+            b[1] = -2 * cos(w0);
+            b[2] = 1 - alpha * A;
+
+            a[0] = 1 + alpha/A;
+            a[1] = -2 * cos(w0);
+            a[2] = 1 - alpha / A;
+        } else {
+            b[0] = 0;
+            b[1] = 0;
+            b[2] = 0;
+            a[0] = 1;
+            a[1] = 0;
+            a[2] = 0;
+        }
+
+        // Normalize by a[0] so that a[0] = 1
+        b[0] = b[0]  / a[0];
+        b[1] = b[1]  / a[0];
+        b[2] = b[2]  / a[0];
+
+        a[1] = a[1]  / a[0];
+        a[2] = a[2]  / a[0];
+        a[0] = a[0]  / a[0];
+
 
     return mod;
 }
@@ -381,6 +484,7 @@ void gmsk_destroyModulator( GMSK_MOD mod ) {
     }
 
     gmsk_destroyFilter( mod->filter );
+    safe_free(mod->iir);
     safe_free( mod );
 
 }
