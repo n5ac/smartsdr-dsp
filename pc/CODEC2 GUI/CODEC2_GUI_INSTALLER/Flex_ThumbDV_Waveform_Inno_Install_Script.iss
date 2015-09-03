@@ -1,7 +1,11 @@
 ;
+; INNO Setup Compiler Script
+; for Flex DSTAR Waveform and GUI
+; Author: Mark Hanson, AA3RK
+;
 
 #define MyAppName "FlexRadio DSTAR Waveform"
-#define MyAppVersion "1.4.0.3"
+#define MyAppVersion "1.4.0.4"
 #define MyAppPublisher "FlexRadio Systems, LLC"
 #define MyAppURL "http://www.flexradio.com/"
 #define MyAppExeName "ThumbDV_DSTAR_GUI.exe"
