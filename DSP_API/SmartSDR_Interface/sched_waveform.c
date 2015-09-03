@@ -350,7 +350,7 @@ void sched_waveform_setMessage( uint32 slice, const char * message)
         strncpy(_dstar->slow_encoder->message, string, copy_len);
     }
 
-    output( "TX Message: '%s'\n", _dstar->slow_encoder->message );
+    output( "TX Message: '%s' : strlen() = %d \n", _dstar->slow_encoder->message , strlen(_dstar->slow_encoder->message));
 }
 
 void sched_waveform_setFD( int fd ) {
