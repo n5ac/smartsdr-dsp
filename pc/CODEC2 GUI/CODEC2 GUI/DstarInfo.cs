@@ -509,7 +509,7 @@ namespace CODEC2_GUI
 
                 AssemblyInfo ai = new AssemblyInfo(Assembly.GetAssembly(typeof(MainForm)));
 
-                string mybasepath = System.IO.Path.Combine(basepath, ai.Company.Replace(' ', '_'), ai.ProductTitle.Replace(' ', '_'));
+                string mybasepath = System.IO.Path.Combine(basepath, ai.Company, ai.ProductTitle);
                 if (!System.IO.Directory.Exists(mybasepath))
                     System.IO.Directory.CreateDirectory(mybasepath);
 
