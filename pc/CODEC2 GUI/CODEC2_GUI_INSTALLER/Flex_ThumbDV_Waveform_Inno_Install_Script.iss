@@ -5,8 +5,9 @@
 ;
 
 #define MyAppName "FlexRadio DSTAR Waveform"
-#define MyAppVersion "1.4.0.4"
-#define MyAppPublisher "FlexRadio Systems, LLC"
+#define MyAppVersion "0.0.4"
+#define MyAppVersionWithV "v0.0.4"
+#define MyAppPublisher "FlexRadio Systems"
 #define MyAppURL "http://www.flexradio.com/"
 #define MyAppExeName "ThumbDV_DSTAR_GUI.exe"
 
@@ -20,11 +21,11 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName=FlexRadio Systems\ThumbDV DSTAR
+DefaultDirName={pf}\{#MyAppPublisher}\{#MyAppName} {#MyAppVersionWithV}
 DisableDirPage=yes
 DefaultGroupName=FlexRadio DSTAR Waveform
 DisableProgramGroupPage=yes
-OutputBaseFilename=FlexRadioDSTARWaveform
+OutputBaseFilename=FlexRadioDSTARWaveform_Installer
 SetupIconFile=..\CODEC2 GUI\Images\dstar.ico
 Compression=lzma
 SolidCompression=yes
