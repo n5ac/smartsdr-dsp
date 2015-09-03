@@ -518,9 +518,6 @@ DSTAR_MACHINE dstar_createMachine( void ) {
     machine->slow_decoder = safe_malloc(sizeof(slow_data_decoder));
     machine->slow_encoder = safe_malloc(sizeof(slow_data_encoder));
 
-    /* Temporary */
-    strcpy(machine->slow_encoder->message, "12345678901234567890");
-
     machine->slice = 0;
 
     return machine;
@@ -661,6 +658,14 @@ void dstar_updateStatus( DSTAR_MACHINE machine, uint32 slice,  enum STATUS_TYPE 
         sprintf( status, "waveform status slice=%d message=%s", slice, message_string);
         tc_sendSmartSDRcommand( status, FALSE, NULL );
         break;
+    case STATUS_END_RX:
+    {
+        char msg[64];
+        sprintf( msg, "waveform status slice=%d RX=END", machine->slice);
+        tc_sendSmartSDRcommand( msg, FALSE, NULL );
+    }
+        break;
+
     }
 }
 
@@ -670,21 +675,34 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
     uint32 j = 0;
     float buf[DSTAR_RADIO_BIT_LENGTH];
     dstar_pfcs pfcs;
+#ifdef DUMP_GMSK_MOD
+    static FILE * dump_file = NULL;
+
+    if ( dump_file == NULL ) {
+        dump_file = fopen("/tmp/gmsk_encoding.dat", "w");
+    }
+#endif
 
     switch ( machine->tx_state ) {
     case BIT_FRAME_SYNC:
         /* Create Sync */
-        for ( i = 0 ; i < 64 * 7; i += 2 ) {
+        for ( i = 0 ; i < 64 * 5; i += 2 ) {
             gmsk_encode( gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH );
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
                 cbWriteFloat( tx_cb, buf[j] );
+#ifdef DUMP_GMSK_MOD
+                fprintf(dump_file, "%6.6f\n", buf[j]);
+#endif
             }
 
             gmsk_encode( gmsk_mod, FALSE, buf, DSTAR_RADIO_BIT_LENGTH );
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
                 cbWriteFloat( tx_cb, buf[j] );
+#ifdef DUMP_GMSK_MOD
+                fprintf(dump_file, "%6.6f\n", buf[j]);
+#endif
             }
         }
 
@@ -693,6 +711,9 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
                 cbWriteFloat( tx_cb, buf[j] );
+#ifdef DUMP_GMSK_MOD
+                fprintf(dump_file, "%6.6f\n", buf[j]);
+#endif
             }
         }
         break;
@@ -722,13 +743,16 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
         uint32 count = 0;
         dstar_scramble( interleaved, scrambled, outLen, &count );
-        output( "Count = %d\n", count );
+        //output( "Count = %d\n", count );
 
         for ( i = 0 ; i < count ; i++ ) {
             gmsk_encode( gmsk_mod, scrambled[i], buf, DSTAR_RADIO_BIT_LENGTH );
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
                 cbWriteFloat( tx_cb, buf[j] );
+#ifdef DUMP_GMSK_MOD
+                fprintf(dump_file, "%6.6f\n", buf[j]);
+#endif
             }
         }
         break;
@@ -745,6 +769,9 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
                 for ( k = 0 ; k < DSTAR_RADIO_BIT_LENGTH ; k++ ) {
                     cbWriteFloat( tx_cb, buf[k] );
+#ifdef DUMP_GMSK_MOD
+                    fprintf(dump_file, "%6.6f\n", buf[k]);
+#endif
                 }
             }
         }
@@ -767,12 +794,16 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
         dstar_scramble(encode_bits, encode_bits_scrambled, DATA_FRAME_LENGTH_BITS, &count);
 
+
         gmsk_bitsToBytes(encode_bits_scrambled, encode_bytes_scrambled, DATA_FRAME_LENGTH_BITS);
 
         gmsk_encodeBuffer(gmsk_mod, encode_bytes_scrambled, DATA_FRAME_LENGTH_BITS, data_buf, DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH);
 
         for ( i = 0 ; i < DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
             cbWriteFloat(tx_cb, data_buf[i]);
+#ifdef DUMP_GMSK_MOD
+            fprintf(dump_file, "%6.6f\n", data_buf[i]);
+#endif
         }
 
         break;
@@ -787,7 +818,11 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
         for ( i = 0 ; i < DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
             cbWriteFloat( tx_cb, sync_buf[i] );
+#ifdef DUMP_GMSK_MOD
+            fprintf(dump_file, "%6.6f\n", sync_buf[i]);
+#endif
         }
+
         break;
     }
     case END_PATTERN:
@@ -799,21 +834,37 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
         for ( i = 0 ; i < END_PATTERN_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
             cbWriteFloat( tx_cb, end_buf[i] );
+#ifdef DUMP_GMSK_MOD
+            fprintf(dump_file, "%6.6f\n", end_buf[i]);
+#endif
         }
 
-        for ( i = 0 ; i <  100 ; i += 2 ) {
+        for ( i = 0 ; i <  22 ; i += 2 ) {
             gmsk_encode( gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH );
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
                 cbWriteFloat( tx_cb, buf[j] );
+#ifdef DUMP_GMSK_MOD
+                fprintf(dump_file, "%6.6f\n", buf[j]);
+#endif
             }
 
             gmsk_encode( gmsk_mod, FALSE, buf, DSTAR_RADIO_BIT_LENGTH );
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
                 cbWriteFloat( tx_cb, buf[j] );
+#ifdef DUMP_GMSK_MOD
+                fprintf(dump_file, "%6.6f\n", buf[j]);
+#endif
             }
         }
+
+#ifdef DUMP_GMSK_MOD
+      fclose(dump_file);
+      dump_file = NULL;
+#endif
+
+        slow_data_resetEncoder(machine);
 
         break;
     }
@@ -1004,6 +1055,7 @@ BOOL dstar_rxStateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * a
 
             bitPM_reset( machine->data_sync_pm );
 
+            dstar_updateStatus(machine, machine->slice, STATUS_END_RX);
             /* STATE CHANGE */
             machine->rx_state = BIT_FRAME_SYNC;
             machine->bit_count = 0;
@@ -1016,7 +1068,10 @@ BOOL dstar_rxStateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * a
 
     case END_PATTERN:
 
-        output( "Found end pattern bits\n" );
+        output( "Found end pattern bits -- sending status update\n" );
+
+        dstar_updateStatus(machine, machine->slice, STATUS_END_RX);
+
         bitPM_reset( machine->end_pm );
         bitPM_reset( machine->syn_pm );
 

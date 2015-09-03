@@ -258,8 +258,8 @@ void slow_data_addDecodeData(DSTAR_MACHINE dstar, unsigned char * data, uint32 d
             uint32 message_index = data[0] & SLOW_DATA_LENGTH_MASK;
 
             if ( message_index != slow_decoder->message_index ) {
-                output("Out of order SLOW DATA MESSAGE SKIPPING\n");
-                slow_decoder->message_index = 0;
+                output("Out of order SLOW DATA MESSAGE setting to new index\n");
+                slow_decoder->message_index = message_index;
                 break;
             }
 

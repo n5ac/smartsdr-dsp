@@ -122,6 +122,13 @@ namespace CODEC2_GUI
 
         void API_RadioRemoved(Radio radio)
         {
+            _radio.SliceAdded -= _radio_SliceAdded;
+            _radio.SliceRemoved -= _radio_SliceRemoved;
+
+            _radio.Disconnect();
+
+            _radio = null;
+            _radioConnected = false;
         }
 
         //*************************************

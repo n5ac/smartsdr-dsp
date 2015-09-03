@@ -76,7 +76,7 @@
 static pthread_t _read_thread;
 BOOL _readThreadAbort = FALSE;
 
-static uint32 _buffering_target = 4;
+static uint32 _buffering_target = 1;
 
 static pthread_rwlock_t _encoded_list_lock;
 static BufferDescriptor _encoded_root;
@@ -217,6 +217,26 @@ static void delay( unsigned int delay ) {
     tim.tv_nsec = delay * 1000UL;
     nanosleep( &tim, &tim2 );
 };
+
+void thumbDV_flushLists(void)
+{
+    BufferDescriptor buf_desc = NULL;
+
+    do
+    {
+        buf_desc = _thumbDVEncodedList_UnlinkHead();
+        if ( buf_desc != NULL )
+            hal_BufferRelease(&buf_desc);
+    } while (buf_desc != NULL );
+
+
+    do
+    {
+        buf_desc = _thumbDVDecodedList_UnlinkHead();
+        if ( buf_desc != NULL )
+            hal_BufferRelease(&buf_desc);
+    } while (buf_desc != NULL );
+}
 
 void thumbDV_dump( char * text, unsigned char * data, unsigned int length ) {
     unsigned int offset = 0U;
@@ -555,7 +575,8 @@ int thumbDV_decode( int serial_fd, unsigned char * packet_in, short * speech_out
 
         if ( samples_returned != 160 ) output( "Rate Mismatch expected %d got %d\n", 160, samples_returned );
 
-        safe_free( desc );
+//        safe_free( desc );
+        hal_BufferRelease(&desc);
     } else {
         /* Do nothing for now */
     }
@@ -622,7 +643,8 @@ int thumbDV_encode( int serial_fd, short * speech_in, unsigned char * packet_out
     if ( desc != NULL ) {
         memcpy( packet_out, desc->buf_ptr + 6, desc->sample_size * ( desc->num_samples - 6 ) );
         samples_returned = desc->num_samples - 6;
-        safe_free( desc );
+        //safe_free( desc );
+        hal_BufferRelease(&desc);
         //thumbDV_dump(ANSI_BLUE "Coded Packet" ANSI_WHITE, packet_out, desc->num_samples - 6);
 
     } else {

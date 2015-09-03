@@ -350,7 +350,7 @@ void sched_waveform_setMessage( uint32 slice, const char * message)
         strncpy(_dstar->slow_encoder->message, string, copy_len);
     }
 
-    output( "TX Message: '%s'\n", _dstar->slow_encoder->message );
+    output( "TX Message: '%s' : strlen() = %d \n", _dstar->slow_encoder->message , strlen(_dstar->slow_encoder->message));
 }
 
 void sched_waveform_setFD( int fd ) {
@@ -485,6 +485,7 @@ static void * _sched_waveform_thread( void * param ) {
                             memset( float_in_24k, 0, MEM_24 * sizeof( float ) );
                             memset( float_in_8k, 0, MEM_8 * sizeof( float ) );
 
+                            thumbDV_flushLists();
                             /* Requires us to set initial_rx to FALSE which we do at the end of
                              * the first loop
                              */
@@ -522,12 +523,6 @@ static void * _sched_waveform_thread( void * param ) {
                                     cbWriteShort( RX3_cb, speech_out[j] );
                             }
 
-                            if (_dstar->rx_state == END_PATTERN)
-                            {
-                            	char msg[64];
-                                sprintf( msg, "waveform status slice=%d RX=END", _dstar->slice);
-                            	tc_sendSmartSDRcommand( msg, FALSE, NULL );
-                            }
                         }
 
 
@@ -587,6 +582,8 @@ static void * _sched_waveform_thread( void * param ) {
 
                             memset( tx_float_in_24k, 0, MEM_24 * sizeof( float ) );
                             memset( tx_float_in_8k, 0, MEM_8 * sizeof( float ) );
+
+                            thumbDV_flushLists();
 
                             /* Requires us to set initial_rx to FALSE which we do at the end of
                              * the first loop

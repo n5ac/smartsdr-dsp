@@ -27,11 +27,24 @@
 #ifndef THUMBDV_GMSK_MODEM_H_
 #define THUMBDV_GMSK_MODEM_H_
 
+#include "common.h"
+
 enum DEMOD_STATE {
     DEMOD_FALSE,
     DEMOD_TRUE,
     DEMOD_UNKNOWN
 };
+
+#define SC_EQ_MAX_DEPTH     3
+#define SC_EQ_FILTER_LEN    3
+
+typedef struct _iir_filter
+{
+    float in_line[SC_EQ_FILTER_LEN];
+    float out_line[SC_EQ_FILTER_LEN];
+    float a[SC_EQ_FILTER_LEN];
+    float b[SC_EQ_FILTER_LEN];
+} iir_filter, * IIR_FILTER;
 
 typedef struct _fir_filter {
     float * taps;
@@ -52,6 +65,7 @@ typedef struct _gmsk_mod {
     BOOL m_invert;
 
     FIR_FILTER filter;
+    IIR_FILTER iir;
 } gmsk_mod, * GMSK_MOD;
 
 void gmsk_testBitsAndEncodeDecode( void );
