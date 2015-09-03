@@ -255,7 +255,7 @@ namespace CODEC2_GUI
                 StringBuilder sb = new StringBuilder();
                 bool msg2snd = (messageInfo != null && messageSent == false);
                 // log info if we get header for third time or finally got message
-                bool hdr2snd = (headerInfo != null && headerSent == false && (headerCount > 3 || msg2snd));
+                bool hdr2snd = (headerInfo != null && headerSent == false && (headerCount > 0 || msg2snd));
                 if (hdr2snd || msg2snd)
                     sb.Append(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
                 if (hdr2snd)
