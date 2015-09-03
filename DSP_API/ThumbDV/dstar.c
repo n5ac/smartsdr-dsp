@@ -682,7 +682,7 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
     switch ( machine->tx_state ) {
     case BIT_FRAME_SYNC:
         /* Create Sync */
-        for ( i = 0 ; i < 64 * 7; i += 2 ) {
+        for ( i = 0 ; i < 64 * 5; i += 2 ) {
             gmsk_encode( gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH );
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
@@ -730,7 +730,7 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
         uint32 count = 0;
         dstar_scramble( interleaved, scrambled, outLen, &count );
-        output( "Count = %d\n", count );
+        //output( "Count = %d\n", count );
 
         for ( i = 0 ; i < count ; i++ ) {
             gmsk_encode( gmsk_mod, scrambled[i], buf, DSTAR_RADIO_BIT_LENGTH );
@@ -809,7 +809,7 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
             cbWriteFloat( tx_cb, end_buf[i] );
         }
 
-        for ( i = 0 ; i <  100 ; i += 2 ) {
+        for ( i = 0 ; i <  22 ; i += 2 ) {
             gmsk_encode( gmsk_mod, TRUE, buf, DSTAR_RADIO_BIT_LENGTH );
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
@@ -822,6 +822,8 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
                 cbWriteFloat( tx_cb, buf[j] );
             }
         }
+
+        slow_data_resetEncoder(machine);
 
         break;
     }
