@@ -39,7 +39,7 @@ Source: "..\CODEC2 GUI\bin\x86\Release\FlexLib.dll"; DestDir: "{app}"; Flags: ig
 Source: "..\CODEC2 GUI\bin\x86\Release\Ionic.Zip.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\CODEC2 GUI\bin\x86\Release\Util.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\CODEC2 GUI\bin\x86\Release\Vita.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\..\..\DSP_API\ThumbDV_Release\ThumbDV.ssdr_waveform"; DestDir: {userappdata}\FlexRadio Systems\Waveforms; Flags: ignoreversion
+Source: "..\..\..\DSP_API\Waveform\ThumbDV.ssdr_waveform"; DestDir: {userappdata}\FlexRadio Systems\Waveforms; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
