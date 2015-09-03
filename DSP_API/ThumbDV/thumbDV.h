@@ -44,4 +44,5 @@ int thumbDV_encode( int serial_fd, short * speech_in, unsigned char * packet_out
 int thumbDV_decode( int serial_fd, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet );
 
 void thumbDV_dump( char * text, unsigned char * data, unsigned int length );
+void thumbDV_flushLists(void);
 #endif /* THUMBDV_THUMBDV_ */
