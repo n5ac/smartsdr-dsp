@@ -518,9 +518,6 @@ DSTAR_MACHINE dstar_createMachine( void ) {
     machine->slow_decoder = safe_malloc(sizeof(slow_data_decoder));
     machine->slow_encoder = safe_malloc(sizeof(slow_data_encoder));
 
-    /* Temporary */
-    strcpy(machine->slow_encoder->message, "12345678901234567890");
-
     machine->slice = 0;
 
     return machine;
