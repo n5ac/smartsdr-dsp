@@ -678,6 +678,13 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
     uint32 j = 0;
     float buf[DSTAR_RADIO_BIT_LENGTH];
     dstar_pfcs pfcs;
+#ifdef DUMP_GMSK_MOD
+    static FILE * dump_file = NULL;
+
+    if ( dump_file == NULL ) {
+        dump_file = fopen("/tmp/gmsk_encoding.dat", "w");
+    }
+#endif
 
     switch ( machine->tx_state ) {
     case BIT_FRAME_SYNC:
@@ -687,12 +694,18 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
                 cbWriteFloat( tx_cb, buf[j] );
+#ifdef DUMP_GMSK_MOD
+                fprintf(dump_file, "%6.6f\n", buf[j]);
+#endif
             }
 
             gmsk_encode( gmsk_mod, FALSE, buf, DSTAR_RADIO_BIT_LENGTH );
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
                 cbWriteFloat( tx_cb, buf[j] );
+#ifdef DUMP_GMSK_MOD
+                fprintf(dump_file, "%6.6f\n", buf[j]);
+#endif
             }
         }
 
@@ -701,6 +714,9 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
                 cbWriteFloat( tx_cb, buf[j] );
+#ifdef DUMP_GMSK_MOD
+                fprintf(dump_file, "%6.6f\n", buf[j]);
+#endif
             }
         }
         break;
@@ -737,6 +753,9 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
                 cbWriteFloat( tx_cb, buf[j] );
+#ifdef DUMP_GMSK_MOD
+                fprintf(dump_file, "%6.6f\n", buf[j]);
+#endif
             }
         }
         break;
@@ -753,6 +772,9 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
                 for ( k = 0 ; k < DSTAR_RADIO_BIT_LENGTH ; k++ ) {
                     cbWriteFloat( tx_cb, buf[k] );
+#ifdef DUMP_GMSK_MOD
+                    fprintf(dump_file, "%6.6f\n", buf[k]);
+#endif
                 }
             }
         }
@@ -775,12 +797,16 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
         dstar_scramble(encode_bits, encode_bits_scrambled, DATA_FRAME_LENGTH_BITS, &count);
 
+
         gmsk_bitsToBytes(encode_bits_scrambled, encode_bytes_scrambled, DATA_FRAME_LENGTH_BITS);
 
         gmsk_encodeBuffer(gmsk_mod, encode_bytes_scrambled, DATA_FRAME_LENGTH_BITS, data_buf, DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH);
 
         for ( i = 0 ; i < DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
             cbWriteFloat(tx_cb, data_buf[i]);
+#ifdef DUMP_GMSK_MOD
+            fprintf(dump_file, "%6.6f\n", data_buf[i]);
+#endif
         }
 
         break;
@@ -795,7 +821,11 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
         for ( i = 0 ; i < DATA_FRAME_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
             cbWriteFloat( tx_cb, sync_buf[i] );
+#ifdef DUMP_GMSK_MOD
+            fprintf(dump_file, "%6.6f\n", sync_buf[i]);
+#endif
         }
+
         break;
     }
     case END_PATTERN:
@@ -807,6 +837,9 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
         for ( i = 0 ; i < END_PATTERN_LENGTH_BITS * DSTAR_RADIO_BIT_LENGTH ; i++ ) {
             cbWriteFloat( tx_cb, end_buf[i] );
+#ifdef DUMP_GMSK_MOD
+            fprintf(dump_file, "%6.6f\n", end_buf[i]);
+#endif
         }
 
         for ( i = 0 ; i <  22 ; i += 2 ) {
@@ -814,14 +847,25 @@ void dstar_txStateMachine( DSTAR_MACHINE machine, GMSK_MOD gmsk_mod, Circular_Fl
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
                 cbWriteFloat( tx_cb, buf[j] );
+#ifdef DUMP_GMSK_MOD
+                fprintf(dump_file, "%6.6f\n", buf[j]);
+#endif
             }
 
             gmsk_encode( gmsk_mod, FALSE, buf, DSTAR_RADIO_BIT_LENGTH );
 
             for ( j = 0 ; j < DSTAR_RADIO_BIT_LENGTH ; j++ ) {
                 cbWriteFloat( tx_cb, buf[j] );
+#ifdef DUMP_GMSK_MOD
+                fprintf(dump_file, "%6.6f\n", buf[j]);
+#endif
             }
         }
+
+#ifdef DUMP_GMSK_MOD
+      fclose(dump_file);
+      dump_file = NULL;
+#endif
 
         slow_data_resetEncoder(machine);
 
