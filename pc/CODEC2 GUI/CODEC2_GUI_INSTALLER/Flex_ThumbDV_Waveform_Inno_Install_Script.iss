@@ -4,9 +4,9 @@
 ; Author: Mark Hanson, AA3RK
 ;
 
-#define MyAppName "FlexRadio DSTAR Waveform"
-#define MyAppVersion "0.0.4"
-#define MyAppVersionWithV "v0.0.4"
+#define MyAppName "SmartSDR DSTAR Waveform"
+#define MyAppVersion "1.5.0.5"
+#define MyAppVersionWithV "v1.5.0.5"
 #define MyAppPublisher "FlexRadio Systems"
 #define MyAppURL "http://www.flexradio.com/"
 #define MyAppExeName "ThumbDV_DSTAR_GUI.exe"
@@ -23,9 +23,9 @@ AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 DefaultDirName={pf}\{#MyAppPublisher}\{#MyAppName} {#MyAppVersionWithV}
 DisableDirPage=yes
-DefaultGroupName=FlexRadio DSTAR Waveform
+DefaultGroupName=DSTAR Waveform
 DisableProgramGroupPage=yes
-OutputBaseFilename=FlexRadioDSTARWaveform_Installer
+OutputBaseFilename=DSTAR_Waveform_Installer
 SetupIconFile=..\CODEC2 GUI\Images\dstar.ico
 Compression=lzma
 SolidCompression=yes
@@ -53,4 +53,76 @@ Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: 
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+
+const
+// constants for Firewall access exception
+  NET_FW_ACTION_ALLOW = 1;
+  NET_FW_IP_PROTOCOL_TCP = 6;
+  NET_FW_IP_PROTOCOL_UDP = 17;
+  
+  NET_FW_SCOPE_ALL = 0;
+  NET_FW_IP_VERSION_ANY = 2;
+  NET_FW_PROFILE_DOMAIN = 0;
+	NET_FW_PROFILE_STANDARD = 1;
+
+
+//===========================================================================
+procedure SetFirewallExceptionVista(AppName,FileName:string);
+//===========================================================================
+//create SmartSDR wirewall in-bound exception for Vista and greater
+
+var
+  FirewallRule: Variant;
+  FirewallPolicy: Variant;
+
+begin
+    try
+    FirewallRule := CreateOleObject('HNetCfg.FWRule');
+    FirewallRule.Name := AppName;
+    FirewallRule.Description := 'UDP In-bound Firewall rule for SmartSDR DSTAR Waveform';
+    FirewallRule.ApplicationName := FileName;
+    FirewallRule.Protocol := NET_FW_IP_PROTOCOL_UDP;
+    FirewallRule.EdgeTraversal := True;
+    FirewallRule.Action := NET_FW_ACTION_ALLOW;
+    FirewallRule.Enabled := True;
+    // FirewallRule.InterfaceTypes := 'All';
+    FirewallPolicy := CreateOleObject('HNetCfg.FwPolicy2');
+    FirewallPolicy.Rules.Add(FirewallRule);  
+  except
+  end;
+  
+  try
+    FirewallRule := CreateOleObject('HNetCfg.FWRule');
+    FirewallRule.Name := AppName;
+    FirewallRule.Description := 'TCP In-bound Firewall rule for SmartSDR DSTAR Waveform';
+    FirewallRule.ApplicationName := FileName;
+    FirewallRule.Protocol := NET_FW_IP_PROTOCOL_TCP;
+    FirewallRule.EdgeTraversal := True;
+    FirewallRule.Action := NET_FW_ACTION_ALLOW;
+    FirewallRule.Enabled := True;
+    // FirewallRule.InterfaceTypes := 'All';
+    FirewallPolicy := CreateOleObject('HNetCfg.FwPolicy2');
+    FirewallPolicy.Rules.Add(FirewallRule); 
+  except
+  end;  
+end;
+
+
+//===========================================================================
+procedure CurStepChanged(CurStep: TSetupStep);
+//===========================================================================
+// runs after setup completes DSTAR Waveform
+
+begin   
+  if (CurStep=ssInstall) then
+  begin   
+      
+    // Add Vista and greater Firewall rules
+    SetFirewallExceptionVista('{#SetupSetting("AppVerName")}', ExpandConstant('{app}')+'\{#MyAppExeName}'); 
+  
+  end;
+end;
+
 
