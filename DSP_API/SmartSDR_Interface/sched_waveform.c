@@ -159,6 +159,8 @@ static struct my_callback_state  _my_cb_state;
 #define MAX_RX_STRING_LENGTH 40
 static char _rx_string[MAX_RX_STRING_LENGTH + 5];
 
+static BOOL _end_of_transmission = FALSE;
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //	Circular Buffer Declarations
 
@@ -249,6 +251,10 @@ void freedv_set_string(uint32 slice, char* string)
     output(ANSI_MAGENTA "new TX string is '%s'\n",string);
 }
 
+void sched_waveform_setEndOfTX(BOOL end_of_transmission)
+{
+    _end_of_transmission = TRUE;
+}
 
 
 
@@ -284,7 +290,8 @@ static void* _sched_waveform_thread(void* param)
     float 	tx_float_in_24k[PACKET_SAMPLES * DECIMATION_FACTOR + FILTER_TAPS];
     float 	tx_float_out_24k[PACKET_SAMPLES * DECIMATION_FACTOR ];
 
-
+    BOOL inhibit_tx = FALSE;
+    BOOL flush_tx = FALSE;
 
 
     // =======================  Initialization Section =========================
@@ -394,7 +401,9 @@ static void* _sched_waveform_thread(void* param)
 
 						//	Set the transmit 'initial' flag
 						initial_tx = TRUE;
-
+						inhibit_tx = FALSE;
+						flush_tx = FALSE;
+						_end_of_transmission = FALSE;
 						// Check for new receiver input packet & move to RX1_cb.
 						// TODO - If transmit packet, discard here?
 
@@ -528,6 +537,7 @@ static void* _sched_waveform_thread(void* param)
 								initial_rx = FALSE;
 						}
 
+						emit_waveform_output(buf_desc);
 
 					} else if ( (buf_desc->stream_id & 1) == 1) { //TX BUFFER
 						//	If 'initial_rx' flag, clear buffers TX1, TX2, TX3, TX4
@@ -558,73 +568,73 @@ static void* _sched_waveform_thread(void* param)
 						// Check for new receiver input packet & move to TX1_cb.
 						// TODO - If transmit packet, discard here?
 
+						if ( !inhibit_tx ) {
+                            for( i = 0 ; i < PACKET_SAMPLES ; i++ )
+                            {
+                                //output("Outputting ")
+                                //	fsample = Get next float from packet;
+                                cbWriteFloat(TX1_cb, ((Complex*)buf_desc->buf_ptr)[i].real);
 
-						for( i = 0 ; i < PACKET_SAMPLES ; i++ )
-						{
-							//output("Outputting ")
-							//	fsample = Get next float from packet;
-							cbWriteFloat(TX1_cb, ((Complex*)buf_desc->buf_ptr)[i].real);
+                            }
 
-						}
+    //
+                            // Check for >= 384 samples in TX1_cb and spin downsampler
+                            //	Convert to shorts and move to TX2_cb.
+                            if(cfbContains(TX1_cb) >= 384)
+                            {
+                                for(i=0 ; i<384 ; i++)
+                                {
+                                    tx_float_in_24k[i + MEM_24] = cbReadFloat(TX1_cb);
+                                }
 
-//
-						// Check for >= 384 samples in TX1_cb and spin downsampler
-						//	Convert to shorts and move to TX2_cb.
-						if(cfbContains(TX1_cb) >= 384)
-						{
-							for(i=0 ; i<384 ; i++)
-							{
-								tx_float_in_24k[i + MEM_24] = cbReadFloat(TX1_cb);
-							}
+                                fdmdv_24_to_8(tx_float_out_8k, &tx_float_in_24k[MEM_24], 128);
 
-							fdmdv_24_to_8(tx_float_out_8k, &tx_float_in_24k[MEM_24], 128);
+                                for(i=0 ; i<128 ; i++)
+                                {
+                                    cbWriteShort(TX2_cb, (short) (tx_float_out_8k[i]*SCALE_TX_IN));
 
-							for(i=0 ; i<128 ; i++)
-							{
-								cbWriteShort(TX2_cb, (short) (tx_float_out_8k[i]*SCALE_TX_IN));
+                                }
 
-							}
-
-						}
-//
-//						// Check for >= 320 samples in TX2_cb and spin vocoder
-						// 	Move output to TX3_cb.
+                            }
+    //
+    //						// Check for >= 320 samples in TX2_cb and spin vocoder
+                            // 	Move output to TX3_cb.
 
 
-							if ( csbContains(TX2_cb) >= 320 )
-							{
-								for( i=0 ; i< 320 ; i++)
-								{
-									speech_in[i] = cbReadShort(TX2_cb);
-								}
+                                if ( csbContains(TX2_cb) >= 320 )
+                                {
+                                    for( i=0 ; i< 320 ; i++)
+                                    {
+                                        speech_in[i] = cbReadShort(TX2_cb);
+                                    }
 
-								freedv_tx(_freedvS, mod_out, speech_in);
+                                    freedv_tx(_freedvS, mod_out, speech_in);
 
-								for( i=0 ; i < 320 ; i++)
-								{
-									cbWriteShort(TX3_cb, mod_out[i]);
-								}
-							}
+                                    for( i=0 ; i < 320 ; i++)
+                                    {
+                                        cbWriteShort(TX3_cb, mod_out[i]);
+                                    }
+                                }
 
-						// Check for >= 128 samples in TX3_cb, convert to floats
-						//	and spin the upsampler. Move output to TX4_cb.
+                            // Check for >= 128 samples in TX3_cb, convert to floats
+                            //	and spin the upsampler. Move output to TX4_cb.
 
-						if(csbContains(TX3_cb) >= 128)
-						{
-							for( i=0 ; i<128 ; i++)
-							{
-								tx_float_in_8k[i+MEM_8] = ((float)  (cbReadShort(TX3_cb) / SCALE_TX_OUT));
-							}
+                            if(csbContains(TX3_cb) >= 128)
+                            {
+                                for( i=0 ; i<128 ; i++)
+                                {
+                                    tx_float_in_8k[i+MEM_8] = ((float)  (cbReadShort(TX3_cb) / SCALE_TX_OUT));
+                                }
 
-							fdmdv_8_to_24(tx_float_out_24k, &tx_float_in_8k[MEM_8], 128);
+                                fdmdv_8_to_24(tx_float_out_24k, &tx_float_in_8k[MEM_8], 128);
 
-							for( i=0 ; i<384 ; i++)
-							{
-								cbWriteFloat(TX4_cb, tx_float_out_24k[i]);
-							}
-							//Sig2Noise = (_freedvS->fdmdv_stats.snr_est);
-						}
-
+                                for( i=0 ; i<384 ; i++)
+                                {
+                                    cbWriteFloat(TX4_cb, tx_float_out_24k[i]);
+                                }
+                                //Sig2Noise = (_freedvS->fdmdv_stats.snr_est);
+                            }
+					    }
 						// Check for >= 128 samples in RX4_cb. Form packet and
 						//	export.
 
@@ -633,31 +643,72 @@ static void* _sched_waveform_thread(void* param)
 						if(initial_tx)
 							tx_check_samples = PACKET_SAMPLES * 3;
 
-						if(cfbContains(TX4_cb) >= tx_check_samples )
-						{
-							for( i = 0 ; i < PACKET_SAMPLES ; i++)
-							{
-								//output("Fetching from end buffer \n");
-								// Set up the outbound packet
-								fsample = cbReadFloat(TX4_cb);
-								// put the fsample into the outbound packet
-								((Complex*)buf_desc->buf_ptr)[i].real = fsample;
-								((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
-							}
-						} else {
-							//output("TX Starved buffer out\n");
+						if ( _end_of_transmission )
+						    flush_tx = TRUE;
 
-							memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
+						if ( !inhibit_tx ) {
+                            if(cfbContains(TX4_cb) >= tx_check_samples )
+                            {
+                                for( i = 0 ; i < PACKET_SAMPLES ; i++)
+                                {
+                                    //output("Fetching from end buffer \n");
+                                    // Set up the outbound packet
+                                    fsample = cbReadFloat(TX4_cb);
+                                    // put the fsample into the outbound packet
+                                    ((Complex*)buf_desc->buf_ptr)[i].real = fsample;
+                                    ((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
+                                }
+                            } else {
+                                //output("TX Starved buffer out\n");
 
-							if(initial_tx)
-								initial_tx = FALSE;
+                                memset( buf_desc->buf_ptr, 0, PACKET_SAMPLES * sizeof(Complex));
+
+                                if(initial_tx)
+                                    initial_tx = FALSE;
+                            }
+
+                            emit_waveform_output(buf_desc);
+
+                            if ( flush_tx ) {
+                                inhibit_tx = TRUE;
+
+                                while ( cfbContains(TX4_cb) > 0 ) {
+
+                                    if ( cfbContains(TX4_cb) > PACKET_SAMPLES ) {
+                                        for( i = 0 ; i < PACKET_SAMPLES ; i++)
+                                        {
+                                            // Set up the outbound packet
+                                            fsample = cbReadFloat(TX4_cb);
+
+                                            // put the fsample into the outbound packet
+                                            ((Complex*)buf_desc->buf_ptr)[i].real = fsample;
+                                            ((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
+                                        }
+                                    } else {
+                                        int end_index = 0;
+                                        for ( i = 0 ; i <= cfbContains(TX4_cb); i++ ) {
+                                            fsample = cbReadFloat(TX4_cb);
+                                            ((Complex*)buf_desc->buf_ptr)[i].real = fsample;
+                                            ((Complex*)buf_desc->buf_ptr)[i].imag = fsample;
+                                            end_index = i+1;
+                                        }
+
+                                        for ( i = end_index ; i < PACKET_SAMPLES ; i++ ) {
+                                            ((Complex*)buf_desc->buf_ptr)[i].real = 0.0f;
+                                            ((Complex*)buf_desc->buf_ptr)[i].imag = 0.0f;
+                                        }
+
+                                    }
+                                    emit_waveform_output(buf_desc);
+
+                                }
+                            }
+
 						}
-
-
 					}
 
 
-					emit_waveform_output(buf_desc);
+
 
 					hal_BufferRelease(&buf_desc);
 				}
