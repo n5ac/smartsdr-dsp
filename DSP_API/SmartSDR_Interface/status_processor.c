@@ -49,6 +49,7 @@ static void _handle_status(char* string)
     char* start = strtok_r(string,"|",&save);
     start = strtok_r(NULL,"|",&save);
 
+
     // first let's look for a slice status -- these are most important
     if (strncmp(start, "slice", strlen("slice")) == 0)
     {
@@ -77,7 +78,13 @@ static void _handle_status(char* string)
                 if (strncmp(smode,"FDV",3) == 0)
                 {
                     // we are now in FDV mode
-                    output(ANSI_MAGENTA "slice %d is now in FDV mode\n",slc);
+                    output(ANSI_MAGENTA "slice %d is now in FDV mode - sendig commands\n",slc);
+
+                    char cmd[512] = {0};
+                    sprintf(cmd, "slice s %d digu_offset=1500", slc);
+                    tc_sendSmartSDRcommand(cmd, FALSE, NULL);
+                    sprintf(cmd, "audio client 0 slice %d gain 90", slc);
+                    tc_sendSmartSDRcommand(cmd, FALSE, NULL);
                 }
                 else
                 {

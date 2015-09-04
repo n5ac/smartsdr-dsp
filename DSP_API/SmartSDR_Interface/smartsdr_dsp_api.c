@@ -312,6 +312,8 @@ uint32 register_mode(void)
         output(ANSI_CYAN "FreeDV: SUCCESS, closed config file %s\n", cfg_file);
     }
 
+    tc_sendSmartSDRcommand("sub slice all", FALSE, NULL);
+
     return SUCCESS;
 }
 
