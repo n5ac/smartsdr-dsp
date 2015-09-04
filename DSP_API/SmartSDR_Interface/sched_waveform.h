@@ -41,5 +41,5 @@ void sched_waveform_Init(void);
 void sched_waveform_signal(void);
 void sched_waveformTreadExit(void);
 
-
+void sched_waveform_setEndOfTX(BOOL end_of_transmission);
 #endif /* SCHED_WAVEFORM_H_ */
