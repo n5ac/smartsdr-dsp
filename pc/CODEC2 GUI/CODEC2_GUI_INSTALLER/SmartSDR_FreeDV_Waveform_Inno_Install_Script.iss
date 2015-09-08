@@ -12,7 +12,7 @@
 #define MyAppExeName "SmartSDR_FreeDV_Waveform.exe"
 
 [Setup]
-AppId={{2AA4AC17-A170-4825-9BE9-D9974CCC9444}
+AppId={{69CD74EA-0824-438C-A3DF-1759AEF3F7D2}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 VersionInfoVersion={#MyAppVersion}
