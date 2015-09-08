@@ -5,8 +5,8 @@
 ;
 
 #define MyAppName "SmartSDR DSTAR Waveform"
-#define MyAppVersion "1.5.0.5"
-#define MyAppVersionWithV "v1.5.0.5"
+#define MyAppVersion "1.5.0.6"
+#define MyAppVersionWithV "v1.5.0.6"
 #define MyAppPublisher "FlexRadio Systems"
 #define MyAppURL "http://www.flexradio.com/"
 #define MyAppExeName "ThumbDV_DSTAR_GUI.exe"
@@ -34,7 +34,7 @@ SolidCompression=yes
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}";
 
 [Files]
 Source: "..\CODEC2 GUI\bin\x86\Release\ThumbDV_DSTAR_GUI.exe"; DestDir: "{app}"; Flags: ignoreversion
