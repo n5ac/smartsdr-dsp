@@ -4,12 +4,12 @@
 ; Author: Mark Hanson, AA3RK
 ;
 
-#define MyAppName "SmartSDR DSTAR Waveform"
+#define MyAppName "SmartSDR D-STAR Waveform"
 #define MyAppVersion "1.5.0.6"
 #define MyAppVersionWithV "v1.5.0.6"
 #define MyAppPublisher "FlexRadio Systems"
 #define MyAppURL "http://www.flexradio.com/"
-#define MyAppExeName "ThumbDV_DSTAR_GUI.exe"
+#define MyAppExeName "SmartSDR_D-STAR_Waveform.exe"
 
 [Setup]
 AppId={{2AA4AC17-A170-4825-9BE9-D9974CCC9444}
@@ -37,8 +37,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}";
 
 [Files]
-Source: "..\CODEC2 GUI\bin\x86\Release\ThumbDV_DSTAR_GUI.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\CODEC2 GUI\bin\x86\Release\ThumbDV_DSTAR_GUI.exe.config"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\CODEC2 GUI\bin\x86\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\CODEC2 GUI\bin\x86\Release\{#MyAppExeName}.config"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\CODEC2 GUI\bin\x86\Release\Flex.UiWpfFramework.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\CODEC2 GUI\bin\x86\Release\FlexLib.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\CODEC2 GUI\bin\x86\Release\Ionic.Zip.dll"; DestDir: "{app}"; Flags: ignoreversion
