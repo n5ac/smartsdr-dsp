@@ -12,7 +12,7 @@
 #define MyAppExeName "SmartSDR_D-STAR_Waveform.exe"
 
 [Setup]
-AppId={{2AA4AC17-A170-4825-9BE9-D9974CCC9444}
+AppId={{6A900659-244F-467B-94D6-F0D0B1F72B81}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 VersionInfoVersion={#MyAppVersion}
