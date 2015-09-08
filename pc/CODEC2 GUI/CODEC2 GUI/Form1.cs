@@ -292,7 +292,7 @@ namespace CODEC2_GUI
             if(status.StartsWith("string"))
             {
                 Debug.WriteLine(status);
-                string x = "ASDLKFJASLDKJ";
+                //string x = "ASDLKFJASLDKJ";
 
                 int start_pos = status.IndexOf("\"");
                 // did we find beginning quotes?

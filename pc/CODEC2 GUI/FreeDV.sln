@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FreeDV", "CODEC2 GUI\FreeDV.csproj", "{19634B34-7569-4D1D-8182-B10AC27E13FF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FreeDV", "CODEC2 GUI\FreeDV.csproj", "{51F7B7D3-E411-4E6B-86A2-B4290DBFF89E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexLib", "..\..\..\smartsdr-win\FlexLib\FlexLib.csproj", "{7927817C-D5EF-4A9E-B38E-29668F308343}"
 EndProject
@@ -21,14 +21,14 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{19634B34-7569-4D1D-8182-B10AC27E13FF}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{19634B34-7569-4D1D-8182-B10AC27E13FF}.Debug|Any CPU.Build.0 = Debug|x86
-		{19634B34-7569-4D1D-8182-B10AC27E13FF}.Debug|x86.ActiveCfg = Debug|x86
-		{19634B34-7569-4D1D-8182-B10AC27E13FF}.Debug|x86.Build.0 = Debug|x86
-		{19634B34-7569-4D1D-8182-B10AC27E13FF}.Release|Any CPU.ActiveCfg = Release|x86
-		{19634B34-7569-4D1D-8182-B10AC27E13FF}.Release|Any CPU.Build.0 = Release|x86
-		{19634B34-7569-4D1D-8182-B10AC27E13FF}.Release|x86.ActiveCfg = Release|x86
-		{19634B34-7569-4D1D-8182-B10AC27E13FF}.Release|x86.Build.0 = Release|x86
+		{51F7B7D3-E411-4E6B-86A2-B4290DBFF89E}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{51F7B7D3-E411-4E6B-86A2-B4290DBFF89E}.Debug|Any CPU.Build.0 = Debug|x86
+		{51F7B7D3-E411-4E6B-86A2-B4290DBFF89E}.Debug|x86.ActiveCfg = Debug|x86
+		{51F7B7D3-E411-4E6B-86A2-B4290DBFF89E}.Debug|x86.Build.0 = Debug|x86
+		{51F7B7D3-E411-4E6B-86A2-B4290DBFF89E}.Release|Any CPU.ActiveCfg = Release|x86
+		{51F7B7D3-E411-4E6B-86A2-B4290DBFF89E}.Release|Any CPU.Build.0 = Release|x86
+		{51F7B7D3-E411-4E6B-86A2-B4290DBFF89E}.Release|x86.ActiveCfg = Release|x86
+		{51F7B7D3-E411-4E6B-86A2-B4290DBFF89E}.Release|x86.Build.0 = Release|x86
 		{7927817C-D5EF-4A9E-B38E-29668F308343}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7927817C-D5EF-4A9E-B38E-29668F308343}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7927817C-D5EF-4A9E-B38E-29668F308343}.Debug|x86.ActiveCfg = Debug|x86
