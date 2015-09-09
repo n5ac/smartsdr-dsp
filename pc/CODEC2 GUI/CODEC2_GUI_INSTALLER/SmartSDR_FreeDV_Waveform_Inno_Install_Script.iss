@@ -5,8 +5,8 @@
 ;
 
 #define MyAppName "SmartSDR FreeDV Waveform"
-#define MyAppVersion "1.5.0.6"
-#define MyAppVersionWithV "v1.5.0.6"
+#define MyAppVersion "1.0.3"
+#define MyAppVersionWithV "v1.0.3"
 #define MyAppPublisher "FlexRadio Systems"
 #define MyAppURL "http://www.flexradio.com/"
 #define MyAppExeName "SmartSDR_FreeDV_Waveform.exe"
@@ -49,7 +49,7 @@ Source: "..\..\..\DSP_API\Waveform\FreeDV.ssdr_waveform"; DestDir: "{userappdata
 
 [Icons]
 Name: "{commonprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\FDVLogo.ico"
-Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}";  Tasks: desktopicon; IconFilename: "{app}\FDVLogo.ico"
+Name: "{commondesktop}\{#MyAppName} {#MyAppVersionWithV}"; Filename: "{app}\{#MyAppExeName}";  Tasks: desktopicon; IconFilename: "{app}\FDVLogo.ico"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
