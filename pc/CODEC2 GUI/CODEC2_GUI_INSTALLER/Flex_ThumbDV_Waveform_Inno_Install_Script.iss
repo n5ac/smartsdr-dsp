@@ -5,8 +5,8 @@
 ;
 
 #define MyAppName "SmartSDR D-STAR Waveform"
-#define MyAppVersion "1.5.0.6"
-#define MyAppVersionWithV "v1.5.0.6"
+#define MyAppVersion "1.0.6.0"
+#define MyAppVersionWithV "v1.0.6.0"
 #define MyAppPublisher "FlexRadio Systems"
 #define MyAppURL "http://www.flexradio.com/"
 #define MyAppExeName "SmartSDR_D-STAR_Waveform.exe"
@@ -25,7 +25,7 @@ DefaultDirName={pf}\{#MyAppPublisher}\{#MyAppName} {#MyAppVersionWithV}
 DisableDirPage=yes
 DefaultGroupName=DSTAR Waveform
 DisableProgramGroupPage=yes
-OutputBaseFilename=DSTAR_Waveform_Installer
+OutputBaseFilename=SmartSDR_D-STAR_Waveform_Installer_{#MyAppVersionWithV}
 SetupIconFile=..\CODEC2 GUI\Images\dstar.ico
 Compression=lzma
 SolidCompression=yes
@@ -49,7 +49,7 @@ Source: "..\..\..\DSP_API\Waveform\ThumbDV.ssdr_waveform"; DestDir: "{userappdat
 
 [Icons]
 Name: "{commonprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{commondesktop}\{#MyAppName} {#MyAppVersionWithV}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
