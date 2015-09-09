@@ -4,12 +4,21 @@
 ; Author: Mark Hanson, AA3RK
 ;
 
+; The App Versions can be passed in and will match the AssemblyInfo for the application
+#ifndef MyAppVersion
+  #define MyAppVersion "1.0.3.0"
+#endif
+
+#ifndef MyAppVersionWithV
+  #define MyAppVersionWithV "v1.0.3.0"
+#endif
+
 #define MyAppName "SmartSDR FreeDV Waveform"
-#define MyAppVersion "1.0.3"
-#define MyAppVersionWithV "v1.0.3"
 #define MyAppPublisher "FlexRadio Systems"
 #define MyAppURL "http://www.flexradio.com/"
 #define MyAppExeName "SmartSDR_FreeDV_Waveform.exe"
+
+
 
 [Setup]
 AppId={{69CD74EA-0824-438C-A3DF-1759AEF3F7D2}
