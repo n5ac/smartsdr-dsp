@@ -228,7 +228,7 @@
             this.Margin = new System.Windows.Forms.Padding(4);
             this.MinimumSize = new System.Drawing.Size(200, 200);
             this.Name = "MainForm";
-            this.Text = "FLEX 6000 DSTAR";
+            this.Text = "SmartSDR DSTAR Waveform";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.menuStrip1.ResumeLayout(false);

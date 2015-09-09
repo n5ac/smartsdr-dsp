@@ -4,15 +4,22 @@
 ; Author: Mark Hanson, AA3RK
 ;
 
-#define MyAppName "SmartSDR DSTAR Waveform"
-#define MyAppVersion "1.5.0.5"
-#define MyAppVersionWithV "v1.5.0.5"
+; The App Versions can be passed in and will match the AssemblyInfo for the application
+#ifndef MyAppVersion
+  #define MyAppVersion "1.0.6.0"
+#endif
+
+#ifndef MyAppVersionWithV
+  #define MyAppVersionWithV "v1.0.6.0"
+#endif
+
+#define MyAppName "SmartSDR D-STAR Waveform"
 #define MyAppPublisher "FlexRadio Systems"
 #define MyAppURL "http://www.flexradio.com/"
-#define MyAppExeName "ThumbDV_DSTAR_GUI.exe"
+#define MyAppExeName "SmartSDR_D-STAR_Waveform.exe"
 
 [Setup]
-AppId={{2AA4AC17-A170-4825-9BE9-D9974CCC9444}
+AppId={{6A900659-244F-467B-94D6-F0D0B1F72B81}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 VersionInfoVersion={#MyAppVersion}
@@ -25,7 +32,7 @@ DefaultDirName={pf}\{#MyAppPublisher}\{#MyAppName} {#MyAppVersionWithV}
 DisableDirPage=yes
 DefaultGroupName=DSTAR Waveform
 DisableProgramGroupPage=yes
-OutputBaseFilename=DSTAR_Waveform_Installer
+OutputBaseFilename=SmartSDR_D-STAR_Waveform_Installer_{#MyAppVersionWithV}
 SetupIconFile=..\CODEC2 GUI\Images\dstar.ico
 Compression=lzma
 SolidCompression=yes
@@ -34,11 +41,11 @@ SolidCompression=yes
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}";
 
 [Files]
-Source: "..\CODEC2 GUI\bin\x86\Release\ThumbDV_DSTAR_GUI.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\CODEC2 GUI\bin\x86\Release\ThumbDV_DSTAR_GUI.exe.config"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\CODEC2 GUI\bin\x86\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\CODEC2 GUI\bin\x86\Release\{#MyAppExeName}.config"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\CODEC2 GUI\bin\x86\Release\Flex.UiWpfFramework.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\CODEC2 GUI\bin\x86\Release\FlexLib.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\CODEC2 GUI\bin\x86\Release\Ionic.Zip.dll"; DestDir: "{app}"; Flags: ignoreversion
@@ -49,7 +56,7 @@ Source: "..\..\..\DSP_API\Waveform\ThumbDV.ssdr_waveform"; DestDir: "{userappdat
 
 [Icons]
 Name: "{commonprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{commondesktop}\{#MyAppName} {#MyAppVersionWithV}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

@@ -8,7 +8,7 @@
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CODEC2_GUI</RootNamespace>
-    <AssemblyName>ThumbDV_DSTAR_GUI</AssemblyName>
+    <AssemblyName>SmartSDR_D-STAR_Waveform</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -57,11 +57,16 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Flex.UiWpfFramework">
-      <HintPath>..\..\..\..\..\SmartSDR_1_14_21_References\Flex.UiWpfFramework.dll</HintPath>
+    <Reference Include="Flex.UiWpfFramework, Version=1.0.1.28534, Culture=neutral, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Libs\Flex.UiWpfFramework.dll</HintPath>
     </Reference>
-    <Reference Include="FlexLib">
-      <HintPath>..\..\..\..\..\SmartSDR_1_14_21_References\FlexLib.dll</HintPath>
+    <Reference Include="FlexLib, Version=1.4.25.28534, Culture=neutral, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Libs\FlexLib.dll</HintPath>
+    </Reference>
+    <Reference Include="Ionic.Zip">
+      <HintPath>Libs\Ionic.Zip.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -73,6 +78,14 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="Util, Version=1.0.1.30356, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Libs\Util.dll</HintPath>
+    </Reference>
+    <Reference Include="Vita, Version=1.0.1.30356, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Libs\Vita.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
