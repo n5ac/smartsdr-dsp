@@ -53,6 +53,8 @@ Source: "..\CODEC2 GUI\bin\Release\Ionic.Zip.dll"; DestDir: "{app}"; Flags: igno
 Source: "..\CODEC2 GUI\bin\Release\Util.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\CODEC2 GUI\bin\Release\Vita.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\CODEC2 GUI\Images\FDVLogo.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\CODEC2 GUI\Licenses\gpl-3.0.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\CODEC2 GUI\Licenses\FlexLib License.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\..\DSP_API\Waveform\FreeDV.ssdr_waveform"; DestDir: "{userappdata}\FlexRadio Systems\Waveforms\"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
