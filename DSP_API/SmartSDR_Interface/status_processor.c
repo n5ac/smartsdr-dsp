@@ -84,8 +84,6 @@ static void _handle_status(char* string)
                     char cmd[512] = {0};
                     sprintf(cmd, "slice s %d digu_offset=1500", slc);
                     tc_sendSmartSDRcommand(cmd, FALSE, NULL);
-                    sprintf(cmd, "audio client 0 slice %d gain 90", slc);
-                    tc_sendSmartSDRcommand(cmd, FALSE, NULL);
                 }
                 else
                 {
