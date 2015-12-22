@@ -142,8 +142,8 @@ void sched_waveform_signal()
 
 #define SCALE_RX_IN  	 8000.0 	// Multiplier   // Was 16000 GGH Jan 30, 2015
 #define SCALE_RX_OUT     8000.0		// Divisor
-#define SCALE_TX_IN     32000.0 	// Multiplier   // Was 16000 GGH Jan 30, 2015
-#define SCALE_TX_OUT    32768.0 	// Divisor
+#define SCALE_TX_IN     24000.0 	// Multiplier   // Was 16000 GGH Jan 30, 2015
+#define SCALE_TX_OUT    24000.0 	// Divisor
 
 #define FILTER_TAPS	48
 #define DECIMATION_FACTOR 	3
