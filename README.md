@@ -19,4 +19,4 @@ This interface, by using VITA-49 Ethernet packets for control, status and data t
 
 For information on this and other APIs, see the FlexRadio web page at www.flexradio.com and the FlexRadio Community at community.flexradio.com
 
-If you are totally lost, you may send an email at developer /at/ flex radio 0x2E com
+If you are totally lost, you may send an email at devhelp /at/ flex radio 0x2E com
