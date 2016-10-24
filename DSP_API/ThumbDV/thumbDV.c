@@ -715,33 +715,45 @@ static void * _thumbDV_readThread( void * param )
 
     FT_STATUS status = FT_OK;
     FT_HANDLE handle = *( FT_HANDLE * )param;
+    EVENT_HANDLE event_handle;
 
     prctl(PR_SET_NAME, "DV-Read");
 
+    pthread_mutex_init(&event_handle.eMutex, NULL);
+    pthread_cond_init(&event_handle.eCondVar, NULL);
+
     while ( !_readThreadAbort )
     {
-        status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_dword);
+        // Setup RX or Status change event notification
+        status = FT_SetEventNotification(handle, FT_EVENT_RXCHAR | FT_EVENT_MODEM_STATUS, (PVOID)&event_handle);
 
-        if ( status != FT_OK )
-        {
-            fprintf( stderr, "ThumbDV: error from select, status=%d\n", status );
+        // Will block until
+        pthread_mutex_lock(&event_handle.eMutex);
+        pthread_cond_wait(&event_handle.eCondVar, &event_handle.eMutex);
+        pthread_mutex_unlock(&event_handle.eMutex);
 
-            /* Set invalid FD in sched_waveform so we don't call write functions */
-            handle = NULL;
-            sched_waveform_setHandle(&handle);
-            /* This function hangs until a new connection is made */
-            _connectSerial( &handle );
-            /* Update the sched_waveform to new valid serial */
-            sched_waveform_setHandle( &handle );
-        }
-        else if ( rx_bytes > 0 )
+        do
         {
-            ret = thumbDV_processSerial( handle );
-        }
-        else
-        {
-            usleep(50000);
-        }
+            rx_bytes = 0;
+            status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_dword);
+
+            if ( status != FT_OK )
+            {
+                fprintf( stderr, "ThumbDV: error from select, status=%d\n", status );
+
+                /* Set invalid FD in sched_waveform so we don't call write functions */
+                handle = NULL;
+                sched_waveform_setHandle(&handle);
+                /* This function hangs until a new connection is made */
+                _connectSerial( &handle );
+                /* Update the sched_waveform to new valid serial */
+                sched_waveform_setHandle( &handle );
+            }
+            else if ( rx_bytes > 0 )
+            {
+                ret = thumbDV_processSerial( handle );
+            }
+        } while ( rx_bytes > 0 );
     }
 
     output( ANSI_YELLOW "thumbDV_readThread has exited\n" ANSI_WHITE );
