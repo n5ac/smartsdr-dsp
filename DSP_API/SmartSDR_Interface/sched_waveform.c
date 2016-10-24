@@ -40,6 +40,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <sys/prctl.h>
 
 #include "common.h"
 #include "datatypes.h"
@@ -51,6 +52,7 @@
 #include "dstar.h"
 #include "DStarDefines.h"
 #include "slow_data.h"
+#include "ftd2xx.h"
 
 //static Queue sched_fft_queue;
 static pthread_rwlock_t _list_lock;
@@ -185,7 +187,7 @@ Circular_Short_Buffer TX3_cb = &tx3_cb;
 circular_float_buffer tx4_cb;
 Circular_Float_Buffer TX4_cb = &tx4_cb;
 
-static int _dv_serial_fd = 0;
+static FT_HANDLE _dv_serial_handle = 0;
 
 static GMSK_DEMOD _gmsk_demod = NULL;
 static GMSK_MOD   _gmsk_mod = NULL;
@@ -353,8 +355,8 @@ void sched_waveform_setMessage( uint32 slice, const char * message)
     output( "TX Message: '%s' : strlen() = %d \n", _dstar->slow_encoder->message , strlen(_dstar->slow_encoder->message));
 }
 
-void sched_waveform_setFD( int fd ) {
-    _dv_serial_fd = fd;
+void sched_waveform_setHandle( FT_HANDLE * handle ) {
+    _dv_serial_handle = *handle;
 }
 
 void sched_waveform_setEndOfTX( BOOL end_of_transmission ) {
@@ -369,6 +371,8 @@ void sched_waveform_setDSTARSlice( uint32 slice )
 }
 
 static void * _sched_waveform_thread( void * param ) {
+
+    prctl(PR_SET_NAME, "DV-SchedWav");
     int 	nout;
 
     int		i;			// for loop counter
@@ -405,7 +409,7 @@ static void * _sched_waveform_thread( void * param ) {
 
     // =======================  Initialization Section =========================
 
-    thumbDV_init( &_dv_serial_fd );
+    thumbDV_init( &_dv_serial_handle );
 
     // Initialize the Circular Buffers
 
@@ -516,7 +520,7 @@ static void * _sched_waveform_thread( void * param ) {
 
                             if ( ambe_packet_out == TRUE ) {
                                 nout = 0;
-                                nout = thumbDV_decode( _dv_serial_fd, ambe_out, speech_out, DV_PACKET_SAMPLES );
+                                nout = thumbDV_decode( _dv_serial_handle, ambe_out, speech_out, DV_PACKET_SAMPLES );
                                 uint32 j = 0;
 
                                 for ( j = 0 ; j < nout ; j++ )
@@ -632,7 +636,7 @@ static void * _sched_waveform_thread( void * param ) {
                                 }
 
                                 /* DECODE */
-                                decode_out = thumbDV_encode( _dv_serial_fd, speech_in, mod_out, DV_PACKET_SAMPLES );
+                                decode_out = thumbDV_encode( _dv_serial_handle, speech_in, mod_out, DV_PACKET_SAMPLES );
                             }
 
                             if ( initial_tx ) {

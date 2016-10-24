@@ -41,11 +41,13 @@
 #include <termios.h>
 #include <string.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <sys/prctl.h>
 
 #include <netinet/in.h>
 
@@ -56,10 +58,7 @@
 #include "vita_output.h"
 #include "thumbDV.h"
 #include "sched_waveform.h"
-
-
-#define DV3000_TTY              "/dev/ttyAMA0"
-#define DV3000_VERSION          "2014-04-23"
+#include "ftd2xx.h"
 
 #define AMBE3000_HEADER_LEN     4U
 #define AMBE3000_START_BYTE     0x61U
@@ -278,104 +277,82 @@ void thumbDV_dump( char * text, unsigned char * data, unsigned int length ) {
     }
 }
 
-static void thumbDV_writeSerial( int serial_fd, const unsigned char * buffer, uint32 bytes ) {
-    fd_set fds;
+static void thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint32 bytes )
+{
+    FT_STATUS status = FT_OK;
+    DWORD written = 0;
 
-    FD_ZERO( &fds );
-    FD_SET( serial_fd, &fds );
+    if ( handle != NULL )
+    {
+        status = FT_Write(handle, buffer, bytes, &written);
 
-    int32 n = 0;
-    errno = 0;
-    struct timeval timeout;
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
-    select( serial_fd + 1, NULL, &fds, NULL, &timeout );
-
-    if ( FD_ISSET( serial_fd, &fds ) ) {
-        n = write( serial_fd , buffer, bytes );
-
-        if ( n != bytes ) {
+        if ( status != FT_OK || written != bytes ) {
             output( ANSI_RED "Could not write to serial port. errno = %d\n", errno );
             return;
         }
-    } else {
+    }
+    else
+    {
         output( ANSI_RED "Could not write to serial port. Timeout\n" ANSI_WHITE );
     }
 
 }
 
-static int _check_serial( int fd ) {
+static int _check_serial( FT_HANDLE handle )
+{
+
     unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
-    thumbDV_writeSerial( fd, reset, 5 );
+    thumbDV_writeSerial( handle, reset, 5 );
 
-    fd_set fds;
-    struct timeval timeout;
+    int ret = thumbDV_processSerial(handle);
 
-    FD_ZERO( &fds );
-    FD_SET( fd, &fds );
-    errno = 0;
-    timeout.tv_sec = 2;
-    timeout.tv_usec = 0;
-    select( fd + 1, &fds, NULL, NULL, &timeout );
-
-    if ( FD_ISSET( fd, &fds ) ) {
-        int ret = thumbDV_processSerial( fd );
-
-        if ( ret != 0 ) {
-            output( "Could not reset serial port FD = %d \n", fd );
-            return -1;
-        }
-    } else {
-        output( "Could not reset serial port FD = %d \n", fd );
+    if ( ret != 0 )
+    {
+        output( "Could not reset serial port FD = %d \n", handle );
         return -1;
     }
 
     unsigned char get_prodID[5] = {0x61, 0x00, 0x01, 0x00, 0x30 };
-    thumbDV_writeSerial( fd, get_prodID, 5 );
+    thumbDV_writeSerial( handle, get_prodID, 5 );
 
-    FD_ZERO( &fds );
-    FD_SET( fd, &fds );
-    errno = 0;
-    timeout.tv_sec = 2;
-    timeout.tv_usec = 0;
-    select( fd + 1, &fds, NULL, NULL, &timeout );
+    ret = thumbDV_processSerial(handle);
 
-    if ( FD_ISSET( fd, &fds ) ) {
-        int ret = thumbDV_processSerial( fd );
-
-        if ( ret != 0 ) {
-            output( "Could not get prodID serial port FD = %d \n", fd );
-            return -1;
-        }
-    }  else {
-        output( "Could not prodID serial port FD = %d \n", fd );
+    if ( ret != 0 )
+    {
+        output( "Could not reset serial port FD = %d \n", handle );
         return -1;
     }
+
 
     return 0 ;
 }
 
-int thumbDV_openSerial( const char * tty_name ) {
-    struct termios tty;
-    int fd;
+FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
+{
+    //struct termios tty;
+    FT_HANDLE handle = NULL;
+    FT_STATUS status = FT_OK;
 
-    /* TODO: Sanitize tty_name */
+    output("Trying to open serial port %s", device.SerialNumber);
 
-    fd = open( tty_name, O_RDWR | O_NOCTTY | O_SYNC );
+    status = FT_OpenEx(device.SerialNumber, FT_OPEN_BY_SERIAL_NUMBER, &handle);
 
-    if ( fd < 0 ) {
-        output( "ThumbDV: error when opening %s, errno=%d\n", tty_name, errno );
-        return fd;
+    if ( status != FT_OK || handle == NULL )
+    {
+        if ( device.SerialNumber )
+            output("Error opening device %s - error 0x%X\n", device.SerialNumber, status);
+        else
+            output("Error opening device - error 0x%X\n", status);
+
+        return NULL;
     }
 
-    if ( tcgetattr( fd, &tty ) != 0 ) {
-        output( "ThumbDV: error %d from tcgetattr\n", errno );
-        return -1;
-    }
+    FT_SetBaudRate(handle, FT_BAUD_460800);
 
-    cfsetospeed( &tty, B460800 );
-    cfsetispeed( &tty, B460800 );
+    // Set read and write timeout to 2seconds */
+    FT_SetTimeouts(handle, 2000, 2000);
 
+/*
     tty.c_cflag = ( tty.c_cflag & ~CSIZE ) | CS8;
     tty.c_iflag &= ~IGNBRK;
     tty.c_lflag = 0;
@@ -397,72 +374,55 @@ int thumbDV_openSerial( const char * tty_name ) {
         close( fd );
         return -1;
     }
-
-    if ( _check_serial( fd ) != 0 ) {
+*/
+    if ( _check_serial(handle) != 0 ) {
         output( "Could not detect ThumbDV at 460800 Baud. Trying 230400\n" );
-        close( fd );
+        FT_Close(handle);
+        handle = (FT_HANDLE)NULL;
     } else {
-        return fd;
+        return handle;
     }
 
-    fd = open( tty_name, O_RDWR | O_NOCTTY | O_SYNC );
+    status = FT_OpenEx(device.SerialNumber, FT_OPEN_BY_SERIAL_NUMBER, &handle);
 
-    if ( fd < 0 ) {
-        output( "ThumbDV: error when opening %s, errno=%d\n", tty_name, errno );
-        return fd;
+    if ( status != FT_OK || handle == NULL )
+    {
+        if ( device.SerialNumber )
+            output("Error opening device %s - error 0x%X\n", device.SerialNumber, status);
+        else
+            output("Error opening device - error 0x%X\n", status);
+
+        return NULL;
     }
 
-    if ( tcgetattr( fd, &tty ) != 0 ) {
-        output( "ThumbDV: error %d from tcgetattr\n", errno );
-        return -1;
-    }
+    FT_SetBaudRate(handle, FT_BAUD_230400 );
 
-    cfsetospeed( &tty, B230400 );
-    cfsetispeed( &tty, B230400 );
+    FT_SetTimeouts(handle, 2000, 2000);
 
-    tty.c_cflag = ( tty.c_cflag & ~CSIZE ) | CS8;
-    tty.c_iflag &= ~IGNBRK;
-    tty.c_lflag = 0;
-
-    tty.c_oflag = 0;
-    tty.c_cc[VMIN]  = 1;
-    tty.c_cc[VTIME] = 5;
-
-    tty.c_iflag &= ~( IXON | IXOFF | IXANY );
-
-    tty.c_cflag |= ( CLOCAL | CREAD );
-
-    tty.c_cflag &= ~( PARENB | PARODD );
-    tty.c_cflag &= ~CSTOPB;
-    tty.c_cflag &= ~CRTSCTS;
-
-    if ( tcsetattr( fd, TCSANOW, &tty ) != 0 ) {
-        output( "ThumbDV: error %d from tcsetattr\n", errno );
-        close( fd );
-        return -1;
-    }
-
-    if ( _check_serial( fd ) != 0 ) {
+    if ( _check_serial( handle ) != 0 ) {
         output( "Could not detect THumbDV at 230400 Baud\n" );
-        close( fd );
-        return -1;
+        FT_Close(handle);
+        handle = NULL;
+        return NULL;
     }
 
-    return fd;
+    return handle;
 }
 
-int thumbDV_processSerial( int serial_fd ) {
+int thumbDV_processSerial( FT_HANDLE handle )
+{
     unsigned char buffer[BUFFER_LENGTH];
     unsigned int respLen;
-    unsigned int offset;
-    ssize_t len;
+
     unsigned char packet_type;
+    FT_STATUS status = FT_OK;
+    DWORD rx_bytes = 0;
 
-    errno = 0;
-    len = read( serial_fd, buffer, 1 );
+    status = FT_Read(handle, buffer, AMBE3000_HEADER_LEN, &rx_bytes);
 
-    if ( len != 1 ) {
-        output( ANSI_RED "ThumbDV: Process serial. error when reading from the serial port, len = %d, errno=%d\n" ANSI_WHITE, len, errno );
+    if ( status != FT_OK || rx_bytes != AMBE3000_HEADER_LEN)
+    {
+        output( ANSI_RED "ThumbDV: Process serial. error when reading from the serial port, len = %d, status=%d\n" ANSI_WHITE, rx_bytes, status );
         return 1;
     }
 
@@ -471,28 +431,36 @@ int thumbDV_processSerial( int serial_fd ) {
         return 1;
     }
 
-    offset = 0U;
-
-    while ( offset < ( AMBE3000_HEADER_LEN - 1U ) ) {
-        len = read( serial_fd, buffer + 1U + offset, AMBE3000_HEADER_LEN - 1 - offset );
-
-        if ( len == 0 )
-            delay( 5UL );
-
-        offset += len;
-    }
+//    offset = 0U;
+//
+//    while ( offset < ( AMBE3000_HEADER_LEN - 1U ) )
+//    {
+//        len = read( serial_fd, buffer + 1U + offset, AMBE3000_HEADER_LEN - 1 - offset );
+//
+//        if ( len == 0 )
+//            delay( 5UL );
+//
+//        offset += len;
+//    }
 
     respLen = buffer[1U] * 256U + buffer[2U];
 
-    offset = 0U;
+//    offset = 0U;
+//
+//    while ( offset < respLen ) {
+//        len = read( serial_fd, buffer + AMBE3000_HEADER_LEN + offset, respLen - offset );
+//
+//        if ( len == 0 )
+//            delay( 5UL );
+//
+//        offset += len;
+//    }
 
-    while ( offset < respLen ) {
-        len = read( serial_fd, buffer + AMBE3000_HEADER_LEN + offset, respLen - offset );
+    status = FT_Read(handle, buffer + AMBE3000_HEADER_LEN, respLen, &rx_bytes);
 
-        if ( len == 0 )
-            delay( 5UL );
-
-        offset += len;
+    if ( status != FT_OK || rx_bytes != respLen )
+    {
+        output( ANSI_RED "ThumbDV: Process serial. error when reading from the serial port, len = %d, status=%d\n" ANSI_WHITE, rx_bytes, status );
     }
 
     respLen += AMBE3000_HEADER_LEN;
@@ -526,12 +494,12 @@ int thumbDV_processSerial( int serial_fd ) {
     return 0;
 }
 
-int thumbDV_decode( int serial_fd, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet ) {
+int thumbDV_decode( FT_HANDLE handle, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet ) {
     uint32 i = 0;
 
     unsigned char full_packet[15] = {0};
 
-    if ( packet_in != NULL && serial_fd > 0 ) {
+    if ( packet_in != NULL && handle != NULL ) {
         full_packet[0] = 0x61;
         full_packet[1] = 0x00;
         full_packet[2] = 0x0B;
@@ -546,7 +514,7 @@ int thumbDV_decode( int serial_fd, unsigned char * packet_in, short * speech_out
 
 //        thumbDV_dump("Just AMBE", packet_in, 9);
 //        thumbDV_dump("Encoded packet:", full_packet, 15);
-        thumbDV_writeSerial( serial_fd, full_packet, 15 );
+        thumbDV_writeSerial( handle, full_packet, 15 );
     }
 
     int32 samples_returned = 0;
@@ -584,7 +552,8 @@ int thumbDV_decode( int serial_fd, unsigned char * packet_in, short * speech_out
     return samples_returned;
 }
 
-int thumbDV_encode( int serial_fd, short * speech_in, unsigned char * packet_out, uint8 num_of_samples ) {
+int thumbDV_encode( FT_HANDLE handle, short * speech_in, unsigned char * packet_out, uint8 num_of_samples )
+{
     unsigned char packet[THUMBDV_MAX_PACKET_LEN];
     uint16 speech_d_bytes = num_of_samples * sizeof( uint16 ); /* Should be 2 times the number of samples */
 
@@ -634,8 +603,8 @@ int thumbDV_encode( int serial_fd, short * speech_in, unsigned char * packet_out
         idx[1] = ( speech_in[i] & 0x00FF ) ;
     }
 
-    if ( serial_fd > 0 )
-        thumbDV_writeSerial( serial_fd, packet, length + AMBE3000_HEADER_LEN );
+    if ( handle != NULL )
+        thumbDV_writeSerial( handle, packet, length + AMBE3000_HEADER_LEN );
 
     int32 samples_returned = 0;
     BufferDescriptor desc = _thumbDVEncodedList_UnlinkHead();
@@ -655,112 +624,123 @@ int thumbDV_encode( int serial_fd, short * speech_in, unsigned char * packet_out
 
 }
 
-
-static void _connectSerial( int * serial_fd ) {
+static void _connectSerial( FT_HANDLE * ftHandle )
+{
     int i = 0 ;
-    char device[256] = {0} ;
+
+    output("ConnectSerial\n");
+
+    DWORD numDevs = 0;
+    FT_DEVICE_LIST_INFO_NODE *devInfo = NULL;
+    FT_STATUS status = FT_OK;
 
     do {
-        for ( i = 0 ; i < 25 ; i++ ) {
-            sprintf( device, "/dev/ttyUSB%d", i );
-            *serial_fd = thumbDV_openSerial( device );
 
-            if ( *serial_fd > 0 ) {
-                /* We opened a valid port */
+        status = FT_CreateDeviceInfoList(&numDevs);
+
+        devInfo = (FT_DEVICE_LIST_INFO_NODE *) safe_malloc(sizeof(FT_DEVICE_LIST_INFO_NODE) * numDevs);
+
+        status = FT_GetDeviceInfoList(devInfo, &numDevs);
+
+        for ( i = 0 ; i < numDevs ; i++ )
+        {
+
+            *ftHandle = thumbDV_openSerial(devInfo[i]);
+
+            if ( *ftHandle != NULL )
+            {
+                /* We opened a valid port and detected the ThumbDV */
                 break;
             }
         }
+        safe_free(devInfo);
 
-        if ( * serial_fd < 0 ) {
+        if ( *ftHandle == NULL ) {
             output( "Could not open serial. Waiting 1 second before trying again.\n" );
             usleep( 1000 * 1000 );
         }
-    } while ( *serial_fd < 0 ) ;
+    } while ( *ftHandle == NULL ) ;
 
     unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
-    thumbDV_writeSerial( *serial_fd, reset, 5 );
+    thumbDV_writeSerial( *ftHandle, reset, 5 );
     /* Block until we get data from serial port after reset */
-    thumbDV_processSerial( *serial_fd );
+    thumbDV_processSerial( *ftHandle );
 //
 //    unsigned char reset_softcfg[11] = {0x61, 0x00, 0x07, 0x00, 0x34, 0x05, 0x03, 0xEB, 0xFF, 0xFF, 0xFF};
-//    thumbDV_writeSerial(*serial_fd, reset_softcfg, 11);
-//    thumbDV_processSerial(*serial_fd);
+//    thumbDV_writeSerial(*ftHandle, reset_softcfg, 11);
+//    thumbDV_processSerial(*ftHandle);
 
     unsigned char disable_parity[6] = {0x61, 0x00, 0x02, 0x00, 0x3F, 0x00};
-    thumbDV_writeSerial( *serial_fd, disable_parity, 6 );
-    thumbDV_processSerial( *serial_fd );
+    thumbDV_writeSerial( *ftHandle, disable_parity, 6 );
+    thumbDV_processSerial( *ftHandle );
 
     unsigned char get_prodID[5] = {0x61, 0x00, 0x01, 0x00, 0x30 };
     unsigned char get_version[5] = {0x61, 0x00, 0x01, 0x00, 0x31};
     unsigned char read_cfg[5] = {0x61, 0x00, 0x01, 0x00, 0x37};
     unsigned char dstar_mode[17] = {0x61, 0x00, 0x0D, 0x00, 0x0A, 0x01, 0x30, 0x07, 0x63, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48};
 
-    thumbDV_writeSerial( *serial_fd, get_prodID, 5 );
-    thumbDV_writeSerial( *serial_fd, get_version, 5 );
-    thumbDV_writeSerial( *serial_fd, read_cfg, 5 );
-    thumbDV_writeSerial( *serial_fd, dstar_mode, 17 );
+    thumbDV_writeSerial( *ftHandle, get_prodID, 5 );
+    thumbDV_writeSerial( *ftHandle, get_version, 5 );
+    thumbDV_writeSerial( *ftHandle, read_cfg, 5 );
+    thumbDV_writeSerial( *ftHandle, dstar_mode, 17 );
 
 ////    /* Init */
     unsigned char pkt_init[6] = { 0x61, 0x00, 0x02, 0x00, 0x0B, 0x07 };
-    thumbDV_writeSerial( *serial_fd, pkt_init, 6 );
+    thumbDV_writeSerial( *ftHandle, pkt_init, 6 );
 
     /* PKT GAIN - set to 0dB */
     unsigned char pkt_gain[7] = { 0x61, 0x00, 0x03, 0x00, 0x4B, 0x00, 0x00 };
-    thumbDV_writeSerial( *serial_fd, pkt_gain, 7 );
+    thumbDV_writeSerial( *ftHandle, pkt_gain, 7 );
 
     /* Companding off so it uses 16bit linear */
     unsigned char pkt_compand[6] = { 0x61, 0x00, 0x02, 0x00, 0x32, 0x00 };
-    thumbDV_writeSerial( *serial_fd, pkt_compand, 6 );
+    thumbDV_writeSerial( *ftHandle, pkt_compand, 6 );
 
     unsigned char test_coded[15] =  {0x61, 0x00 , 0x0B , 0x01 , 0x01 , 0x48 , 0x5E , 0x83 , 0x12 , 0x3B , 0x98 , 0x79 , 0xDE , 0x13 , 0x90};
 
-    thumbDV_writeSerial( *serial_fd, test_coded, 15 );
+    thumbDV_writeSerial( *ftHandle, test_coded, 15 );
 
     unsigned char pkt_fmt[7] = {0x61, 0x00, 0x3, 0x00, 0x15, 0x00, 0x00};
-    thumbDV_writeSerial( *serial_fd, pkt_fmt, 7 );
+    thumbDV_writeSerial( *ftHandle, pkt_fmt, 7 );
 
 }
 
 
-static void * _thumbDV_readThread( void * param ) {
-    int topFd;
-    fd_set fds;
+static void * _thumbDV_readThread( void * param )
+{
     int ret;
+    DWORD rx_bytes;
+    DWORD tx_bytes;
+    DWORD event_dword;
 
-    int serial_fd = *( int * )param;
-    topFd = serial_fd + 1;
+    FT_STATUS status = FT_OK;
+    FT_HANDLE handle = *( FT_HANDLE * )param;
 
-    output( "Serial FD = %d in thumbDV_readThread(). TopFD = %d\n", serial_fd, topFd );
+    prctl(PR_SET_NAME, "DV-Read");
 
-    struct timeval timeout;
+    while ( !_readThreadAbort )
+    {
+        status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_dword);
 
-    while ( !_readThreadAbort ) {
-        timeout.tv_sec = 1;
-        timeout.tv_usec = 0;
+        if ( status != FT_OK )
+        {
+            fprintf( stderr, "ThumbDV: error from select, status=%d\n", status );
 
-        FD_ZERO( &fds );
-        FD_SET( serial_fd, &fds );
-
-        errno = 0;
-        ret = select( topFd, &fds, NULL, NULL, &timeout );
-
-        if ( ret < 0 ) {
-            fprintf( stderr, "ThumbDV: error from select, errno=%d\n", errno );
-
+            /* Set invalid FD in sched_waveform so we don't call write functions */
+            handle = NULL;
+            sched_waveform_setHandle(&handle);
+            /* This function hangs until a new connection is made */
+            _connectSerial( &handle );
+            /* Update the sched_waveform to new valid serial */
+            sched_waveform_setHandle( &handle );
         }
-
-        if ( FD_ISSET( serial_fd, &fds ) ) {
-            ret = thumbDV_processSerial( serial_fd );
-
-            if ( ret != 0 ) {
-                /* Set invalid FD in sched_waveform so we don't call write functions */
-                sched_waveform_setFD( -1 );
-                /* This function hangs until a new connection is made */
-                _connectSerial( &serial_fd );
-                /* Update the sched_waveform to new valid serial */
-                sched_waveform_setFD( serial_fd );
-                topFd = serial_fd + 1;
-            }
+        else if ( rx_bytes > 0 )
+        {
+            ret = thumbDV_processSerial( handle );
+        }
+        else
+        {
+            usleep(50000);
         }
     }
 
@@ -768,7 +748,7 @@ static void * _thumbDV_readThread( void * param ) {
     return 0;
 }
 
-void thumbDV_init( int * serial_fd ) {
+void thumbDV_init( FT_HANDLE * handle ) {
     pthread_rwlock_init( &_encoded_list_lock, NULL );
     pthread_rwlock_init( &_decoded_list_lock, NULL );
 
@@ -786,9 +766,9 @@ void thumbDV_init( int * serial_fd ) {
     _decoded_root->prev = _decoded_root;
     pthread_rwlock_unlock( &_decoded_list_lock );
 
-    _connectSerial( serial_fd );
+    _connectSerial( handle );
 
-    pthread_create( &_read_thread, NULL, &_thumbDV_readThread, serial_fd );
+    pthread_create( &_read_thread, NULL, &_thumbDV_readThread, handle );
 
     struct sched_param fifo_param;
     fifo_param.sched_priority = 30;
