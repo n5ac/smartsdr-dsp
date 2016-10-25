@@ -38,6 +38,8 @@
 #include <errno.h> // for errno
 #include <unistd.h>
 
+#include <sys/prctl.h>
+
 #include "common.h"
 #include "discovery_client.h"
 #include "cmd.h" // for tokenize
@@ -253,6 +255,7 @@ static BOOL _dc_ListenerRecv(uint8* buffer, int32* len, struct sockaddr_in* send
 static void* _dc_ListenerLoop(void* param)
 {
 	//printf("_dc_ListenerLoop\n");
+    prctl(PR_SET_NAME, "DV-ListenerLoop");
 
 	struct sockaddr_in sender;
 	uint8 buf[ETH_FRAME_LEN];

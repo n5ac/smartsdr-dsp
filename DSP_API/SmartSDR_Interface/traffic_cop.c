@@ -45,6 +45,7 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <ifaddrs.h>
+#include <sys/prctl.h>
 
 #include "common.h"
 #include "traffic_cop.h"
@@ -343,6 +344,8 @@ static void* _tc_thread(void* arg)
 {
     uint32 result;
 
+    prctl(PR_SET_NAME, "DV-TrafficCop");
+
     memset(&__local, 0, sizeof(receive_data));
     __local.last_ping.tv_sec = 0;
     __local.recv_buf = safe_malloc(RECV_BUF_SIZE);
@@ -574,6 +577,8 @@ uint32 tc_sendSmartSDRcommand(char* command, BOOL block, char** response)
 static void* _keepalive_thread(void* param)
 {
     char* response;
+
+    prctl(PR_SET_NAME, "DV-KeepAlive");
 
     /* Sleep 2 seconds */
     usleep(2000000);
