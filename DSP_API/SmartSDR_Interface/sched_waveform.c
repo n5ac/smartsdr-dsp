@@ -147,11 +147,11 @@ void sched_waveform_signal() {
 //#define SCALE_TX_IN     32767.0f    // Multiplier   // Was 16000 GGH Jan 30, 2015
 //#define SCALE_TX_OUT    32767.0f    // Divisor
 
-#define SCALE_RX_IN     SCALE_AMBE
+#define SCALE_RX_IN     SCALE_AMBE*2.0
 #define SCALE_TX_OUT    SCALE_AMBE
 
 
-#define SCALE_RX_OUT    SCALE_AMBE
+#define SCALE_RX_OUT    SCALE_AMBE*2.0
 #define SCALE_TX_IN     SCALE_AMBE
 
 
