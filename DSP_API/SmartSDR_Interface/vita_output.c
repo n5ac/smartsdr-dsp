@@ -135,9 +135,9 @@ static void _vita_formatWaveformPacket(Complex* buffer, uint32 samples, uint32 s
 }
 
 static uint32 _waveform_packet_count = 0;
+
 void emit_waveform_output(BufferDescriptor buf_desc_out)
 {
-
 	int samples_sent, samples_to_send;
 	Complex * buf_pointer;
 

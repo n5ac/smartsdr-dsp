@@ -287,7 +287,7 @@ static void thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint
         status = FT_Write(handle, buffer, bytes, &written);
 
         if ( status != FT_OK || written != bytes ) {
-            output( ANSI_RED "Could not write to serial port. errno = %d\n", errno );
+            output( ANSI_RED "Could not write to serial port. status = %d\n", status );
             return;
         }
     }
@@ -352,6 +352,10 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
     // Set read and write timeout to 2seconds */
     FT_SetTimeouts(handle, 2000, 2000);
 
+
+    FT_SetDataCharacteristics(handle, FT_BITS_8, FT_STOP_BITS_1, FT_PARITY_NONE);
+    FT_SetFlowControl(handle, FT_FLOW_NONE, 0, 0);
+
 /*
     tty.c_cflag = ( tty.c_cflag & ~CSIZE ) | CS8;
     tty.c_iflag &= ~IGNBRK;
@@ -399,6 +403,11 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
 
     FT_SetTimeouts(handle, 2000, 2000);
 
+
+    FT_SetDataCharacteristics(handle, FT_BITS_8, FT_STOP_BITS_1, FT_PARITY_NONE);
+    FT_SetFlowControl(handle, FT_FLOW_NONE, 0, 0);
+
+
     if ( _check_serial( handle ) != 0 ) {
         output( "Could not detect THumbDV at 230400 Baud\n" );
         FT_Close(handle);
@@ -417,6 +426,7 @@ int thumbDV_processSerial( FT_HANDLE handle )
     unsigned char packet_type;
     FT_STATUS status = FT_OK;
     DWORD rx_bytes = 0;
+    fprintf(stderr, ".");
 
     status = FT_Read(handle, buffer, AMBE3000_HEADER_LEN, &rx_bytes);
 
@@ -725,7 +735,7 @@ static void * _thumbDV_readThread( void * param )
     while ( !_readThreadAbort )
     {
         // Setup RX or Status change event notification
-        status = FT_SetEventNotification(handle, FT_EVENT_RXCHAR | FT_EVENT_MODEM_STATUS, (PVOID)&event_handle);
+        status = FT_SetEventNotification(handle, FT_EVENT_RXCHAR , (PVOID)&event_handle);
 
         // Will block until
         pthread_mutex_lock(&event_handle.eMutex);
