@@ -350,7 +350,7 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
     FT_SetBaudRate(handle, FT_BAUD_460800);
 
     // Set read and write timeout to 2seconds */
-    FT_SetTimeouts(handle, 2000, 2000);
+    FT_SetTimeouts(handle, 0, 0);
 
 
     FT_SetDataCharacteristics(handle, FT_BITS_8, FT_STOP_BITS_1, FT_PARITY_NONE);
@@ -401,7 +401,7 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
 
     FT_SetBaudRate(handle, FT_BAUD_230400 );
 
-    FT_SetTimeouts(handle, 2000, 2000);
+    FT_SetTimeouts(handle, 0, 0);
 
 
     FT_SetDataCharacteristics(handle, FT_BITS_8, FT_STOP_BITS_1, FT_PARITY_NONE);
@@ -422,11 +422,33 @@ int thumbDV_processSerial( FT_HANDLE handle )
 {
     unsigned char buffer[BUFFER_LENGTH];
     unsigned int respLen;
+    uint32 offset = 0;
 
     unsigned char packet_type;
     FT_STATUS status = FT_OK;
     DWORD rx_bytes = 0;
-    fprintf(stderr, ".");
+    DWORD tx_bytes = 0 ;
+    DWORD event_word = 0;
+    float max_ms_sleep = 100.0f;
+    float ms_slept = 0;
+    do
+    {
+        status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_word);
+
+        if ( rx_bytes >= AMBE3000_HEADER_LEN )
+            break;
+
+        usleep(100);
+
+        ms_slept += 0.1;
+
+        if ( ms_slept > max_ms_sleep )
+        {
+            output("TimeOut\n");
+            return 1;
+        }
+
+    } while (rx_bytes < AMBE3000_HEADER_LEN && status == FT_OK );
 
     status = FT_Read(handle, buffer, AMBE3000_HEADER_LEN, &rx_bytes);
 
@@ -441,7 +463,7 @@ int thumbDV_processSerial( FT_HANDLE handle )
         return 1;
     }
 
-//    offset = 0U;
+    offset = 0U;
 //
 //    while ( offset < ( AMBE3000_HEADER_LEN - 1U ) )
 //    {
@@ -465,8 +487,27 @@ int thumbDV_processSerial( FT_HANDLE handle )
 //
 //        offset += len;
 //    }
+    ms_slept = 0;
+    do
+    {
+        status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_word);
 
-    status = FT_Read(handle, buffer + AMBE3000_HEADER_LEN, respLen, &rx_bytes);
+        if ( rx_bytes >= respLen )
+            break;
+
+        usleep(1000);
+
+        ms_slept += 1;
+
+        if ( ms_slept > max_ms_sleep )
+        {
+            output("TimeOut\n");
+            return 1;
+        }
+
+    } while (rx_bytes < respLen && status == FT_OK);
+
+    status = FT_Read(handle, buffer + AMBE3000_HEADER_LEN , respLen, &rx_bytes);
 
     if ( status != FT_OK || rx_bytes != respLen )
     {
@@ -742,28 +783,27 @@ static void * _thumbDV_readThread( void * param )
         pthread_cond_wait(&event_handle.eCondVar, &event_handle.eMutex);
         pthread_mutex_unlock(&event_handle.eMutex);
 
-        do
+        rx_bytes = 0;
+        status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_dword);
+
+        if ( status != FT_OK )
         {
-            rx_bytes = 0;
-            status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_dword);
+            fprintf( stderr, "ThumbDV: error from select, status=%d\n", status );
 
-            if ( status != FT_OK )
-            {
-                fprintf( stderr, "ThumbDV: error from select, status=%d\n", status );
+            /* Set invalid FD in sched_waveform so we don't call write functions */
+            handle = NULL;
+            sched_waveform_setHandle(&handle);
+            /* This function hangs until a new connection is made */
+            _connectSerial( &handle );
+            /* Update the sched_waveform to new valid serial */
+            sched_waveform_setHandle( &handle );
+        }
+        else if ( rx_bytes >= AMBE3000_HEADER_LEN )
+        {
+            ret = thumbDV_processSerial( handle );
+        }
 
-                /* Set invalid FD in sched_waveform so we don't call write functions */
-                handle = NULL;
-                sched_waveform_setHandle(&handle);
-                /* This function hangs until a new connection is made */
-                _connectSerial( &handle );
-                /* Update the sched_waveform to new valid serial */
-                sched_waveform_setHandle( &handle );
-            }
-            else if ( rx_bytes > 0 )
-            {
-                ret = thumbDV_processSerial( handle );
-            }
-        } while ( rx_bytes > 0 );
+
     }
 
     output( ANSI_YELLOW "thumbDV_readThread has exited\n" ANSI_WHITE );
@@ -795,6 +835,5 @@ void thumbDV_init( FT_HANDLE * handle ) {
     struct sched_param fifo_param;
     fifo_param.sched_priority = 30;
     pthread_setschedparam( _read_thread, SCHED_FIFO, &fifo_param );
-
 
 }
