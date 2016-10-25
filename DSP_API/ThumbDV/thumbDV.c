@@ -429,8 +429,8 @@ int thumbDV_processSerial( FT_HANDLE handle )
     DWORD rx_bytes = 0;
     DWORD tx_bytes = 0 ;
     DWORD event_word = 0;
-    float max_ms_sleep = 100.0f;
-    float ms_slept = 0;
+    uint32 max_us_sleep = 100000; // 100 ms
+    uint32 us_slept = 0;
     do
     {
         status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_word);
@@ -440,9 +440,9 @@ int thumbDV_processSerial( FT_HANDLE handle )
 
         usleep(100);
 
-        ms_slept += 0.1;
+        us_slept += 100;
 
-        if ( ms_slept > max_ms_sleep )
+        if ( us_slept > max_us_sleep )
         {
             output("TimeOut\n");
             return 1;
@@ -464,30 +464,10 @@ int thumbDV_processSerial( FT_HANDLE handle )
     }
 
     offset = 0U;
-//
-//    while ( offset < ( AMBE3000_HEADER_LEN - 1U ) )
-//    {
-//        len = read( serial_fd, buffer + 1U + offset, AMBE3000_HEADER_LEN - 1 - offset );
-//
-//        if ( len == 0 )
-//            delay( 5UL );
-//
-//        offset += len;
-//    }
 
     respLen = buffer[1U] * 256U + buffer[2U];
 
-//    offset = 0U;
-//
-//    while ( offset < respLen ) {
-//        len = read( serial_fd, buffer + AMBE3000_HEADER_LEN + offset, respLen - offset );
-//
-//        if ( len == 0 )
-//            delay( 5UL );
-//
-//        offset += len;
-//    }
-    ms_slept = 0;
+    us_slept = 0;
     do
     {
         status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_word);
@@ -497,9 +477,9 @@ int thumbDV_processSerial( FT_HANDLE handle )
 
         usleep(1000);
 
-        ms_slept += 1;
+        us_slept += 1000 ;
 
-        if ( ms_slept > max_ms_sleep )
+        if ( us_slept > max_us_sleep )
         {
             output("TimeOut\n");
             return 1;
