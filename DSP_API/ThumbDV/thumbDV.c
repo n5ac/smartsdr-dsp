@@ -758,9 +758,14 @@ static void * _thumbDV_readThread( void * param )
         // Setup RX or Status change event notification
         status = FT_SetEventNotification(handle, FT_EVENT_RXCHAR , (PVOID)&event_handle);
 
+        struct timespec timeout;
+        clock_gettime(CLOCK_REALTIME, &timeout);
+
+        timeout.tv_sec += 2; // 2 second timeout
+
         // Will block until
         pthread_mutex_lock(&event_handle.eMutex);
-        pthread_cond_wait(&event_handle.eCondVar, &event_handle.eMutex);
+        pthread_cond_timedwait(&event_handle.eCondVar, &event_handle.eMutex, &timeout);
         pthread_mutex_unlock(&event_handle.eMutex);
 
         rx_bytes = 0;
@@ -768,7 +773,7 @@ static void * _thumbDV_readThread( void * param )
 
         if ( status != FT_OK )
         {
-            fprintf( stderr, "ThumbDV: error from select, status=%d\n", status );
+            fprintf( stderr, "ThumbDV: error from status, status=%d\n", status );
 
             /* Set invalid FD in sched_waveform so we don't call write functions */
             handle = NULL;
