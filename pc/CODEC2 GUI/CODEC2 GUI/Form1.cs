@@ -63,6 +63,7 @@ namespace CODEC2_GUI
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            API.ProgramName = "FreeDV";
             API.RadioAdded += new API.RadioAddedEventHandler(API_RadioAdded);
             API.RadioRemoved += new API.RadioRemovedEventHandler(API_RadioRemoved);
             API.Init();
