@@ -155,7 +155,7 @@ enum {
 // Stop Bits
 //
 
-#define FT_STOP_BITS_1		(UCHAR) 0
+#define FT_STOP_BITS_1		(UCHAR) 1
 #define FT_STOP_BITS_2		(UCHAR) 2
 
 //
