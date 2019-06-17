@@ -529,14 +529,16 @@ int thumbDV_processSerial( FT_HANDLE handle )
         _thumbDVEncodedList_LinkTail( desc );
     } else if ( packet_type == AMBE3000_SPEECH_PKT_TYPE ) {
     	//output("Response Length %d \n", respLen);
-        desc = hal_BufferRequest( respLen, sizeof( unsigned char ) );
-        memcpy( desc->buf_ptr, buffer, respLen );
-        //thumbDV_dump("SPEECH Packet", buffer, respLen);
-        /* Speech data */
-        _thumbDVDecodedList_LinkTail( desc );
-        //memcpy(buffer,0,AMBE3000_HEADER_LEN);
+    	desc = hal_BufferRequest( respLen, sizeof( unsigned char ) );
+    	memcpy( desc->buf_ptr, buffer, respLen );
+    	//thumbDV_dump("SPEECH Packet", buffer, respLen);
 
-    } else {
+   		/* Speech data */
+   		_thumbDVDecodedList_LinkTail( desc );
+    	}
+
+        //memcpy(buffer,0,AMBE3000_HEADER_LEN);
+    else {
         output( ANSI_RED "Unrecognized packet type 0x%02X ", packet_type );
         return 1;
 
@@ -545,6 +547,8 @@ int thumbDV_processSerial( FT_HANDLE handle )
 
     return 0;
 }
+
+
 
 int thumbDV_decode( FT_HANDLE handle, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet) {
 
@@ -619,7 +623,6 @@ int thumbDV_decode( FT_HANDLE handle, unsigned char * packet_in, short * speech_
         /* Do nothing for now */
     	//if ( samples_returned != 160 ) output( "Rate Mismatch expected %d got %d\n", 160, samples_returned );
     }
-    //output(" in %d, out: %d \n", in, out);
     return samples_returned;
 }
 
@@ -676,6 +679,8 @@ int thumbDV_encode( FT_HANDLE handle, short * speech_in, unsigned char * packet_
 
     if ( handle != NULL )
         thumbDV_writeSerial( handle, packet, length + AMBE3000_HEADER_LEN );
+
+    thumbDV_processSerial(handle);
 
     int32 samples_returned = 0;
     BufferDescriptor desc = _thumbDVEncodedList_UnlinkHead();
@@ -750,30 +755,43 @@ static void _connectSerial( FT_HANDLE * ftHandle )
     unsigned char read_cfg[5] = {0x61, 0x00, 0x01, 0x00, 0x37};
     unsigned char dstar_mode[17] = {0x61, 0x00, 0x0D, 0x00, 0x0A, 0x01, 0x30, 0x07, 0x63, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48};
 
-    thumbDV_writeSerial( *ftHandle, get_prodID, 5 );
+//    thumbDV_writeSerial( *ftHandle, get_prodID, 5 );
+//    //thumbDV_processSerial(*ftHandle);
+
     thumbDV_writeSerial( *ftHandle, get_version, 5 );
+    //thumbDV_processSerial(*ftHandle);
+
     thumbDV_writeSerial( *ftHandle, read_cfg, 5 );
+    //thumbDV_processSerial(*ftHandle);
+
     thumbDV_writeSerial( *ftHandle, dstar_mode, 17 );
+    thumbDV_processSerial(*ftHandle);
+    //thumbDV_processSerial(*ftHandle);
+
+    //delay(100);
 
 ////    /* Init */
     unsigned char pkt_init[6] = { 0x61, 0x00, 0x02, 0x00, 0x0B, 0x07 };
     thumbDV_writeSerial( *ftHandle, pkt_init, 6 );
+    //thumbDV_processSerial(*ftHandle);
 
     /* PKT GAIN - set to 0dB */
     unsigned char pkt_gain[7] = { 0x61, 0x00, 0x03, 0x00, 0x4B, 0x00, 0x00 };
     thumbDV_writeSerial( *ftHandle, pkt_gain, 7 );
+    //thumbDV_processSerial(*ftHandle);
 
     /* Companding off so it uses 16bit linear */
     unsigned char pkt_compand[6] = { 0x61, 0x00, 0x02, 0x00, 0x32, 0x00 };
     thumbDV_writeSerial( *ftHandle, pkt_compand, 6 );
+    //thumbDV_processSerial(*ftHandle);
 
     unsigned char test_coded[15] =  {0x61, 0x00 , 0x0B , 0x01 , 0x01 , 0x48 , 0x5E , 0x83 , 0x12 , 0x3B , 0x98 , 0x79 , 0xDE , 0x13 , 0x90};
-
     thumbDV_writeSerial( *ftHandle, test_coded, 15 );
+    //thumbDV_processSerial(*ftHandle);
+
 
     unsigned char pkt_fmt[7] = {0x61, 0x00, 0x3, 0x00, 0x15, 0x00, 0x00};
     thumbDV_writeSerial( *ftHandle, pkt_fmt, 7 );
-
     thumbDV_processSerial(*ftHandle);
 
 }
@@ -831,7 +849,7 @@ static void * _thumbDV_readThread( void * param )
         else if ( rx_bytes >= AMBE3000_HEADER_LEN )
         {
         	//output("RX Bytes: %d \n",rx_bytes);
-//            ret = thumbDV_processSerial( handle );
+            //ret = thumbDV_processSerial( handle );
 //            output("Decoded count in init: %d \n",_decoded_count);
 
         }
