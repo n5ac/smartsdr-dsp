@@ -138,6 +138,7 @@ static void _thumbDVEncodedList_LinkTail( BufferDescriptor buf_desc ) {
     _encoded_root->prev->next = buf_desc;
     _encoded_root->prev = buf_desc;
     _encoded_count++;
+    output("Encoded: %d \n",_encoded_count);
 
     if ( _encoded_count > _buffering_target ) {
         if ( _encoded_buffering ) output( "Encoded Buffering is now FALSE\n" );
@@ -179,7 +180,10 @@ static BufferDescriptor _thumbDVDecodedList_UnlinkHead( void ) {
             buf_desc->next = NULL;
             buf_desc->prev = NULL;
 
-            if ( _decoded_count > 0 ) _decoded_count--;
+            if ( _decoded_count > 0 ) {
+            	_decoded_count--;
+            	//output("Decoded Subtract : %d \n", _decoded_count);
+            }
         }
     } else {
         if ( !_decoded_buffering )
@@ -200,9 +204,16 @@ static void _thumbDVDecodedList_LinkTail( BufferDescriptor buf_desc ) {
     _decoded_root->prev = buf_desc;
 
     _decoded_count++;
+    if (_decoded_count > 10)
+    {
+    	//output("Decoded Count Added: %d \n", _decoded_count);
+    }
 
     if ( _decoded_count > _buffering_target ) {
-        if ( _decoded_buffering ) output( "Decoded Buffering is now FALSE\n" );
+        if ( _decoded_buffering )
+        {
+        	output( "Decoded Buffering is now FALSE\n" );
+        }
 
         _decoded_buffering = FALSE;
     }
@@ -234,6 +245,7 @@ void thumbDV_flushLists(void)
         buf_desc = _thumbDVDecodedList_UnlinkHead();
         if ( buf_desc != NULL )
             hal_BufferRelease(&buf_desc);
+        	output("Delete Speech Data \n");
     } while (buf_desc != NULL );
 }
 
@@ -333,7 +345,7 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
     FT_HANDLE handle = NULL;
     FT_STATUS status = FT_OK;
 
-    output("Trying to open serial port %s", device.SerialNumber);
+    output("Trying to open serial port %s \n", device.SerialNumber);
 
     status = FT_OpenEx(device.SerialNumber, FT_OPEN_BY_SERIAL_NUMBER, &handle);
 
@@ -425,6 +437,9 @@ int thumbDV_processSerial( FT_HANDLE handle )
     uint32 offset = 0;
 
     unsigned char packet_type;
+
+    unsigned char packet_length;
+
     FT_STATUS status = FT_OK;
     DWORD rx_bytes = 0;
     DWORD tx_bytes = 0 ;
@@ -459,13 +474,14 @@ int thumbDV_processSerial( FT_HANDLE handle )
     }
 
     if ( buffer[0U] != AMBE3000_START_BYTE ) {
-        output( ANSI_RED "ThumbDV: unknown byte from the DV3000, 0x%02X\n" ANSI_WHITE, buffer[0U] );
+        output( ANSI_RED "ThumbDV: unknown byte from the DV3000, 0x%02X,  0x%02X,  0x%02X\n" ANSI_WHITE, buffer[0U], buffer[1U], buffer[2U] );
         return 1;
     }
 
     offset = 0U;
 
     respLen = buffer[1U] * 256U + buffer[2U];
+    //output("Length: %d \n", respLen);
 
     us_slept = 0;
     do
@@ -497,7 +513,10 @@ int thumbDV_processSerial( FT_HANDLE handle )
     respLen += AMBE3000_HEADER_LEN;
 
     BufferDescriptor desc = NULL;
-    packet_type = buffer[3];
+    packet_type = buffer[3U];
+    packet_length = buffer[1] * 256U + buffer[2]; // packet length
+
+    //output("buffer [3] = %d \n", packet_type);
 
     //thumbDV_dump("Serial data", buffer, respLen);
     if ( packet_type == AMBE3000_CTRL_PKT_TYPE ) {
@@ -509,11 +528,13 @@ int thumbDV_processSerial( FT_HANDLE handle )
         /* Encoded data */
         _thumbDVEncodedList_LinkTail( desc );
     } else if ( packet_type == AMBE3000_SPEECH_PKT_TYPE ) {
+    	//output("Response Length %d \n", respLen);
         desc = hal_BufferRequest( respLen, sizeof( unsigned char ) );
         memcpy( desc->buf_ptr, buffer, respLen );
         //thumbDV_dump("SPEECH Packet", buffer, respLen);
         /* Speech data */
         _thumbDVDecodedList_LinkTail( desc );
+        //memcpy(buffer,0,AMBE3000_HEADER_LEN);
 
     } else {
         output( ANSI_RED "Unrecognized packet type 0x%02X ", packet_type );
@@ -525,10 +546,14 @@ int thumbDV_processSerial( FT_HANDLE handle )
     return 0;
 }
 
-int thumbDV_decode( FT_HANDLE handle, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet ) {
+int thumbDV_decode( FT_HANDLE handle, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet) {
+
+	//output("Decoded count @ decode: %d \n", _decoded_count);
+
     uint32 i = 0;
 
     unsigned char full_packet[15] = {0};
+
 
     if ( packet_in != NULL && handle != NULL ) {
         full_packet[0] = 0x61;
@@ -539,21 +564,31 @@ int thumbDV_decode( FT_HANDLE handle, unsigned char * packet_in, short * speech_
         full_packet[5] = 0x48;
         uint32 j = 0;
 
+        //char p_in_size = sizeof(packet_in)/sizeof(packet_in[0]);
+
+        //output("Packet in size: %d \n",p_in_size);
+
         for ( i = 0, j = 8  ; i < 9 ; i++ , j-- ) {
             full_packet[i + 6] = packet_in[i];
+            //output("Packet in %d , %d \n",i,packet_in[i]);
         }
 
 //        thumbDV_dump("Just AMBE", packet_in, 9);
 //        thumbDV_dump("Encoded packet:", full_packet, 15);
         thumbDV_writeSerial( handle, full_packet, 15 );
+        output("Decoded count after channel write: %d \n", _decoded_count);
     }
+
+    //delay(100);
+    thumbDV_processSerial(handle);
 
     int32 samples_returned = 0;
     BufferDescriptor desc = _thumbDVDecodedList_UnlinkHead();
     uint32 samples_in_speech_packet = 0;
     uint32 length = 0;
 
-    if ( desc != NULL ) {
+    if ( desc != NULL) {
+
         length = ( ( ( unsigned char * )desc->buf_ptr )[1] << 8 ) + ( ( unsigned char * )desc->buf_ptr )[2];;
 
         if ( length != 0x142 ) {
@@ -571,15 +606,20 @@ int thumbDV_decode( FT_HANDLE handle, unsigned char * packet_in, short * speech_
         }
 
         samples_returned = samples_in_speech_packet;
+        output("Decoded count after unlink: %d \n", _decoded_count);
 
         if ( samples_returned != 160 ) output( "Rate Mismatch expected %d got %d\n", 160, samples_returned );
 
 //        safe_free( desc );
-        hal_BufferRelease(&desc);
+        if ( desc != NULL ) {
+        	output("Deleting the decode list\n");
+        	hal_BufferRelease(&desc);
+        }
     } else {
         /* Do nothing for now */
+    	//if ( samples_returned != 160 ) output( "Rate Mismatch expected %d got %d\n", 160, samples_returned );
     }
-
+    //output(" in %d, out: %d \n", in, out);
     return samples_returned;
 }
 
@@ -692,10 +732,10 @@ static void _connectSerial( FT_HANDLE * ftHandle )
         }
     } while ( *ftHandle == NULL ) ;
 
-    unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
-    thumbDV_writeSerial( *ftHandle, reset, 5 );
-    /* Block until we get data from serial port after reset */
-    thumbDV_processSerial( *ftHandle );
+//    unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
+//    thumbDV_writeSerial( *ftHandle, reset, 5 );
+//    /* Block until we get data from serial port after reset */
+//    thumbDV_processSerial( *ftHandle );
 //
 //    unsigned char reset_softcfg[11] = {0x61, 0x00, 0x07, 0x00, 0x34, 0x05, 0x03, 0xEB, 0xFF, 0xFF, 0xFF};
 //    thumbDV_writeSerial(*ftHandle, reset_softcfg, 11);
@@ -734,6 +774,8 @@ static void _connectSerial( FT_HANDLE * ftHandle )
     unsigned char pkt_fmt[7] = {0x61, 0x00, 0x3, 0x00, 0x15, 0x00, 0x00};
     thumbDV_writeSerial( *ftHandle, pkt_fmt, 7 );
 
+    thumbDV_processSerial(*ftHandle);
+
 }
 
 
@@ -755,8 +797,10 @@ static void * _thumbDV_readThread( void * param )
 
     while ( !_readThreadAbort )
     {
+    	//output("Reading... \n");
         // Setup RX or Status change event notification
         status = FT_SetEventNotification(handle, FT_EVENT_RXCHAR , (PVOID)&event_handle);
+        //output("FT Status 1 %d \n",status);
 
         struct timespec timeout;
         clock_gettime(CLOCK_REALTIME, &timeout);
@@ -770,6 +814,7 @@ static void * _thumbDV_readThread( void * param )
 
         rx_bytes = 0;
         status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_dword);
+        //output("FT Status 2 %d\n",status);
 
         if ( status != FT_OK )
         {
@@ -785,10 +830,11 @@ static void * _thumbDV_readThread( void * param )
         }
         else if ( rx_bytes >= AMBE3000_HEADER_LEN )
         {
-            ret = thumbDV_processSerial( handle );
+        	//output("RX Bytes: %d \n",rx_bytes);
+//            ret = thumbDV_processSerial( handle );
+//            output("Decoded count in init: %d \n",_decoded_count);
+
         }
-
-
     }
 
     output( ANSI_YELLOW "thumbDV_readThread has exited\n" ANSI_WHITE );
