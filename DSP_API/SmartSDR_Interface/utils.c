@@ -86,6 +86,7 @@ float tsfSubtract(struct timespec time1, struct timespec time2)
     return result;
 }
 
+
 //! get time since a certain time in microseconds
 uint32 usSince(struct timespec time)
 {
@@ -93,6 +94,14 @@ uint32 usSince(struct timespec time)
     clock_gettime(CLOCK_MONOTONIC, &delay);
     uint32 diff_us = (uint32)(tsfSubtract(delay, time) * 1000.0);
     return diff_us;
+}
+
+uint32 msSince(struct timespec time)
+{
+    struct timespec delay;
+    clock_gettime(CLOCK_MONOTONIC, &delay);
+    uint32 diff_ms = (uint32)(tsSubtract(delay, time));
+    return diff_ms;
 }
 
 uint32 getIP(char* text)
