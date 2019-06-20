@@ -694,25 +694,16 @@ static void _connectSerial( FT_HANDLE * ftHandle )
         }
     } while ( *ftHandle == NULL ) ;
 
-    unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
-    thumbDV_writeSerial( *ftHandle, reset, 5 );
-    /* Block until we get data from serial port after reset */
-    thumbDV_processSerial( *ftHandle );
-//
-//    unsigned char reset_softcfg[11] = {0x61, 0x00, 0x07, 0x00, 0x34, 0x05, 0x03, 0xEB, 0xFF, 0xFF, 0xFF};
-//    thumbDV_writeSerial(*ftHandle, reset_softcfg, 11);
-//    thumbDV_processSerial(*ftHandle);
+    // Reset and Product ID printout are done in thumbDV_openSerial() which calls _check_serial()
 
     unsigned char disable_parity[6] = {0x61, 0x00, 0x02, 0x00, 0x3F, 0x00};
     thumbDV_writeSerial( *ftHandle, disable_parity, 6 );
     thumbDV_processSerial( *ftHandle );
 
-    unsigned char get_prodID[5] = {0x61, 0x00, 0x01, 0x00, 0x30 };
     unsigned char get_version[5] = {0x61, 0x00, 0x01, 0x00, 0x31};
     unsigned char read_cfg[5] = {0x61, 0x00, 0x01, 0x00, 0x37};
     unsigned char dstar_mode[17] = {0x61, 0x00, 0x0D, 0x00, 0x0A, 0x01, 0x30, 0x07, 0x63, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48};
 
-    thumbDV_writeSerial( *ftHandle, get_prodID, 5 );
     thumbDV_writeSerial( *ftHandle, get_version, 5 );
     thumbDV_writeSerial( *ftHandle, read_cfg, 5 );
     thumbDV_writeSerial( *ftHandle, dstar_mode, 17 );
