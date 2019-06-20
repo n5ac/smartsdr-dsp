@@ -299,9 +299,6 @@ static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint3
             output( ANSI_RED "Could not write to serial port. status = %d\n", status );
             return status;
         }
-
-        sem_post(&_read_sem);
-
         float ms_elapsed = msSince(time);
         if ( ms_elapsed > max )
             max = ms_elapsed;
@@ -333,6 +330,7 @@ static int _check_serial( FT_HANDLE handle )
     unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
 
     int ret = thumbDV_writeSerial( handle, reset, 5 );
+    thumbDV_processSerial(handle);
 
     if ( ret != 0 )
     {
@@ -342,6 +340,7 @@ static int _check_serial( FT_HANDLE handle )
 
     unsigned char get_prodID[5] = {0x61, 0x00, 0x01, 0x00, 0x30 };
     ret = thumbDV_writeSerial( handle, get_prodID, 5 );
+    thumbDV_processSerial(handle);
 
     if ( ret != 0 )
     {
@@ -570,6 +569,7 @@ int thumbDV_decode( FT_HANDLE handle, unsigned char * packet_in, short * speech_
 //        thumbDV_dump("Just AMBE", packet_in, 9);
 //        thumbDV_dump("Encoded packet:", full_packet, 15);
         thumbDV_writeSerial( handle, full_packet, 15 );
+        sem_post(&_read_sem);
     }
 
     int32 samples_returned = 0;
@@ -720,33 +720,42 @@ static void _connectSerial( FT_HANDLE * ftHandle )
 
     unsigned char disable_parity[6] = {0x61, 0x00, 0x02, 0x00, 0x3F, 0x00};
     thumbDV_writeSerial( *ftHandle, disable_parity, 6 );
+    thumbDV_processSerial(*ftHandle);
 
     unsigned char get_version[5] = {0x61, 0x00, 0x01, 0x00, 0x31};
     unsigned char read_cfg[5] = {0x61, 0x00, 0x01, 0x00, 0x37};
     unsigned char dstar_mode[17] = {0x61, 0x00, 0x0D, 0x00, 0x0A, 0x01, 0x30, 0x07, 0x63, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48};
 
     thumbDV_writeSerial( *ftHandle, get_version, 5 );
+    thumbDV_processSerial(*ftHandle);
     thumbDV_writeSerial( *ftHandle, read_cfg, 5 );
+    thumbDV_processSerial(*ftHandle);
     thumbDV_writeSerial( *ftHandle, dstar_mode, 17 );
+    thumbDV_processSerial(*ftHandle);
 
 ////    /* Init */
     unsigned char pkt_init[6] = { 0x61, 0x00, 0x02, 0x00, 0x0B, 0x07 };
     thumbDV_writeSerial( *ftHandle, pkt_init, 6 );
+    thumbDV_processSerial(*ftHandle);
 
     /* PKT GAIN - set to 0dB */
     unsigned char pkt_gain[7] = { 0x61, 0x00, 0x03, 0x00, 0x4B, 0x00, 0x00 };
     thumbDV_writeSerial( *ftHandle, pkt_gain, 7 );
+    thumbDV_processSerial(*ftHandle);
 
     /* Companding off so it uses 16bit linear */
     unsigned char pkt_compand[6] = { 0x61, 0x00, 0x02, 0x00, 0x32, 0x00 };
     thumbDV_writeSerial( *ftHandle, pkt_compand, 6 );
+    thumbDV_processSerial(*ftHandle);
 
     unsigned char test_coded[15] =  {0x61, 0x00 , 0x0B , 0x01 , 0x01 , 0x48 , 0x5E , 0x83 , 0x12 , 0x3B , 0x98 , 0x79 , 0xDE , 0x13 , 0x90};
 
     thumbDV_writeSerial( *ftHandle, test_coded, 15 );
+    thumbDV_processSerial(*ftHandle);
 
     unsigned char pkt_fmt[7] = {0x61, 0x00, 0x3, 0x00, 0x15, 0x00, 0x00};
     thumbDV_writeSerial( *ftHandle, pkt_fmt, 7 );
+    thumbDV_processSerial(*ftHandle);
 
 }
 
@@ -758,30 +767,27 @@ static void * _thumbDV_readThread( void * param )
     DWORD event_dword;
 
     FT_STATUS status = FT_OK;
-    FT_HANDLE handle;
+    FT_HANDLE handle = *(FT_HANDLE *) param;
 
     prctl(PR_SET_NAME, "DV-Read");
-
-    _connectSerial(&handle);
-    sched_waveform_setHandle(&handle);
 
     while ( !_readThreadAbort )
     {
         sem_wait(&_read_sem);
 
         ret = thumbDV_processSerial(handle);
-        if ( ret != FT_OK )
-        {
-            fprintf( stderr, "ThumbDV: error from status, status=%d\n", ret );
-
-            /* Set invalid FD in sched_waveform so we don't call write functions */
-            handle = NULL;
-            sched_waveform_setHandle(&handle);
-            /* This function hangs until a new connection is made */
-            _connectSerial( &handle );
-            /* Update the sched_waveform to new valid serial */
-            sched_waveform_setHandle( &handle );
-        }
+//        if ( ret != FT_OK )
+//        {
+//            fprintf( stderr, "ThumbDV: error from status, status=%d\n", ret );
+//
+//            /* Set invalid FD in sched_waveform so we don't call write functions */
+//            handle = NULL;
+//            sched_waveform_setHandle(&handle);
+//            /* This function hangs until a new connection is made */
+//            _connectSerial( &handle );
+//            /* Update the sched_waveform to new valid serial */
+//            sched_waveform_setHandle( &handle );
+//        }
     }
 
     output( ANSI_YELLOW "thumbDV_readThread has exited\n" ANSI_WHITE );
@@ -808,7 +814,9 @@ void thumbDV_init( FT_HANDLE * handle ) {
     _decoded_root->prev = _decoded_root;
     pthread_rwlock_unlock( &_decoded_list_lock );
 
-    pthread_create( &_read_thread, NULL, &_thumbDV_readThread, NULL );
+    _connectSerial(handle);
+
+    pthread_create( &_read_thread, NULL, &_thumbDV_readThread, handle );
 
     struct sched_param fifo_param;
     fifo_param.sched_priority = 30;
