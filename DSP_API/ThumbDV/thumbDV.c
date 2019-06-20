@@ -332,6 +332,7 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
     //struct termios tty;
     FT_HANDLE handle = NULL;
     FT_STATUS status = FT_OK;
+    UCHAR latency = 5;
 
     output("Trying to open serial port %s", device.SerialNumber);
 
@@ -406,6 +407,7 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
 
     FT_SetDataCharacteristics(handle, FT_BITS_8, FT_STOP_BITS_1, FT_PARITY_NONE);
     FT_SetFlowControl(handle, FT_FLOW_NONE, 0, 0);
+    FT_SetLatencyTimer(handle, latency);
 
 
     if ( _check_serial( handle ) != 0 ) {
