@@ -72,7 +72,7 @@
 #define BUFFER_LENGTH           400U
 #define THUMBDV_MAX_PACKET_LEN  2048U
 
-static pthread_t _read_thread;
+//static pthread_t _read_thread;
 BOOL _readThreadAbort = FALSE;
 
 static uint32 _buffering_target = 1;
@@ -87,7 +87,7 @@ static BufferDescriptor _decoded_root;
 static BOOL _decoded_buffering = TRUE;
 static uint32 _decoded_count = 0;
 
-static void * _thumbDV_readThread( void * param );
+//static void * _thumbDV_readThread( void * param );
 
 static BufferDescriptor _thumbDVEncodedList_UnlinkHead( void ) {
     BufferDescriptor buf_desc = NULL;
@@ -739,63 +739,63 @@ static void _connectSerial( FT_HANDLE * ftHandle )
 }
 
 
-static void * _thumbDV_readThread( void * param )
-{
-    int ret;
-    DWORD rx_bytes;
-    DWORD tx_bytes;
-    DWORD event_dword;
-
-    FT_STATUS status = FT_OK;
-    FT_HANDLE handle = *( FT_HANDLE * )param;
-    EVENT_HANDLE event_handle;
-
-    prctl(PR_SET_NAME, "DV-Read");
-
-    pthread_mutex_init(&event_handle.eMutex, NULL);
-    pthread_cond_init(&event_handle.eCondVar, NULL);
-
-    while ( !_readThreadAbort )
-    {
-        // Setup RX or Status change event notification
-        status = FT_SetEventNotification(handle, FT_EVENT_RXCHAR , (PVOID)&event_handle);
-
-        struct timespec timeout;
-        clock_gettime(CLOCK_REALTIME, &timeout);
-
-        timeout.tv_sec += 2; // 2 second timeout
-
-        // Will block until
-        pthread_mutex_lock(&event_handle.eMutex);
-        pthread_cond_timedwait(&event_handle.eCondVar, &event_handle.eMutex, &timeout);
-        pthread_mutex_unlock(&event_handle.eMutex);
-
-        rx_bytes = 0;
-        status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_dword);
-
-        if ( status != FT_OK )
-        {
-            fprintf( stderr, "ThumbDV: error from status, status=%d\n", status );
-
-            /* Set invalid FD in sched_waveform so we don't call write functions */
-            handle = NULL;
-            sched_waveform_setHandle(&handle);
-            /* This function hangs until a new connection is made */
-            _connectSerial( &handle );
-            /* Update the sched_waveform to new valid serial */
-            sched_waveform_setHandle( &handle );
-        }
-        else if ( rx_bytes >= AMBE3000_HEADER_LEN )
-        {
-            ret = thumbDV_processSerial( handle );
-        }
-
-
-    }
-
-    output( ANSI_YELLOW "thumbDV_readThread has exited\n" ANSI_WHITE );
-    return 0;
-}
+//static void * _thumbDV_readThread( void * param )
+//{
+//    int ret;
+//    DWORD rx_bytes;
+//    DWORD tx_bytes;
+//    DWORD event_dword;
+//
+//    FT_STATUS status = FT_OK;
+//    FT_HANDLE handle = *( FT_HANDLE * )param;
+//    EVENT_HANDLE event_handle;
+//
+//    prctl(PR_SET_NAME, "DV-Read");
+//
+//    pthread_mutex_init(&event_handle.eMutex, NULL);
+//    pthread_cond_init(&event_handle.eCondVar, NULL);
+//
+//    while ( !_readThreadAbort )
+//    {
+//        // Setup RX or Status change event notification
+//        status = FT_SetEventNotification(handle, FT_EVENT_RXCHAR , (PVOID)&event_handle);
+//
+//        struct timespec timeout;
+//        clock_gettime(CLOCK_REALTIME, &timeout);
+//
+//        timeout.tv_sec += 2; // 2 second timeout
+//
+//        // Will block until
+//        pthread_mutex_lock(&event_handle.eMutex);
+//        pthread_cond_timedwait(&event_handle.eCondVar, &event_handle.eMutex, &timeout);
+//        pthread_mutex_unlock(&event_handle.eMutex);
+//
+//        rx_bytes = 0;
+//        status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_dword);
+//
+//        if ( status != FT_OK )
+//        {
+//            fprintf( stderr, "ThumbDV: error from status, status=%d\n", status );
+//
+//            /* Set invalid FD in sched_waveform so we don't call write functions */
+//            handle = NULL;
+//            sched_waveform_setHandle(&handle);
+//            /* This function hangs until a new connection is made */
+//            _connectSerial( &handle );
+//            /* Update the sched_waveform to new valid serial */
+//            sched_waveform_setHandle( &handle );
+//        }
+//        else if ( rx_bytes >= AMBE3000_HEADER_LEN )
+//        {
+//            ret = thumbDV_processSerial( handle );
+//        }
+//
+//
+//    }
+//
+//    output( ANSI_YELLOW "thumbDV_readThread has exited\n" ANSI_WHITE );
+//    return 0;
+//}
 
 void thumbDV_init( FT_HANDLE * handle ) {
     pthread_rwlock_init( &_encoded_list_lock, NULL );
@@ -817,10 +817,10 @@ void thumbDV_init( FT_HANDLE * handle ) {
 
     _connectSerial( handle );
 
-    pthread_create( &_read_thread, NULL, &_thumbDV_readThread, handle );
+    //pthread_create( &_read_thread, NULL, &_thumbDV_readThread, handle );
 
-    struct sched_param fifo_param;
-    fifo_param.sched_priority = 30;
-    pthread_setschedparam( _read_thread, SCHED_FIFO, &fifo_param );
+    //struct sched_param fifo_param;
+    //fifo_param.sched_priority = 30;
+    //pthread_setschedparam( _read_thread, SCHED_FIFO, &fifo_param );
 
 }
