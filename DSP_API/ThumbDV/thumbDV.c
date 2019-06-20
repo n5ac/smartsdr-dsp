@@ -291,7 +291,6 @@ static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint3
 
     struct timespec time;
 
-
     if ( handle != NULL )
     {
         clock_gettime(CLOCK_MONOTONIC, &time);
@@ -319,7 +318,7 @@ static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint3
     }
 
     if ( count++ % 100 == 0)
-        output("Min: %d Max: %d Avg: %.1f", min, max, avg);
+        output("------------------------------------------- Min: %d Max: %d Avg: %.1f\n", min, max, avg);
 
     return status;
 }
