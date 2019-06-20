@@ -436,11 +436,9 @@ int thumbDV_processSerial( FT_HANDLE handle )
 {
     unsigned char buffer[BUFFER_LENGTH];
     unsigned int respLen;
-    uint32 offset = 0;
+    //uint32 offset = 0;
 
     unsigned char packet_type;
-
-    unsigned char packet_length;
 
     FT_STATUS status = FT_OK;
     DWORD rx_bytes = 0;
@@ -480,30 +478,30 @@ int thumbDV_processSerial( FT_HANDLE handle )
         return 1;
     }
 
-    offset = 0U;
+    //offset = 0U;
 
     respLen = buffer[1U] * 256U + buffer[2U];
     //output("Length: %d \n", respLen);
 
-    us_slept = 0;
-    do
-    {
-        status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_word);
-
-        if ( rx_bytes >= respLen )
-            break;
-
-        usleep(1000);
-
-        us_slept += 1000 ;
-
-        if ( us_slept > max_us_sleep )
-        {
-            output("TimeOut\n");
-            return 1;
-        }
-
-    } while (rx_bytes < respLen && status == FT_OK);
+//    us_slept = 0;
+//    do
+//    {
+//        status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_word);
+//
+//        if ( rx_bytes >= respLen )
+//            break;
+//
+//        usleep(1000);
+//
+//        us_slept += 1000 ;
+//
+//        if ( us_slept > max_us_sleep )
+//        {
+//            output("TimeOut\n");
+//            return 1;
+//        }
+//
+//    } while (rx_bytes < respLen && status == FT_OK);
 
     status = FT_Read(handle, buffer + AMBE3000_HEADER_LEN , respLen, &rx_bytes);
 
@@ -516,7 +514,6 @@ int thumbDV_processSerial( FT_HANDLE handle )
 
     BufferDescriptor desc = NULL;
     packet_type = buffer[3U];
-    packet_length = buffer[1] * 256U + buffer[2]; // packet length
 
     //output("buffer [3] = %d \n", packet_type);
 
