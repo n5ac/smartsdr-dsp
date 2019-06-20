@@ -288,7 +288,6 @@ static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint3
     static float avg = 0;
     static uint32 count = 0;
 
-
     struct timespec time;
 
     if ( handle != NULL )
@@ -759,49 +758,15 @@ static void * _thumbDV_readThread( void * param )
     DWORD event_dword;
 
     FT_STATUS status = FT_OK;
-    FT_HANDLE handle = *( FT_HANDLE * )param;
-    EVENT_HANDLE event_handle;
+    FT_HANDLE handle;
 
     prctl(PR_SET_NAME, "DV-Read");
 
-    pthread_mutex_init(&event_handle.eMutex, NULL);
-    pthread_cond_init(&event_handle.eCondVar, NULL);
+    _connectSerial(&handle);
+    sched_waveform_setHandle(&handle);
 
     while ( !_readThreadAbort )
     {
-//        // Setup RX or Status change event notification
-//        status = FT_SetEventNotification(handle, FT_EVENT_RXCHAR , (PVOID)&event_handle);
-//
-//        struct timespec timeout;
-//        clock_gettime(CLOCK_REALTIME, &timeout);
-//
-//        timeout.tv_sec += 2; // 2 second timeout
-//
-//        // Will block until
-//        pthread_mutex_lock(&event_handle.eMutex);
-//        pthread_cond_timedwait(&event_handle.eCondVar, &event_handle.eMutex, &timeout);
-//        pthread_mutex_unlock(&event_handle.eMutex);
-
-//        rx_bytes = 0;
-//        status = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_dword);
-//
-//        if ( status != FT_OK )
-//        {
-//            fprintf( stderr, "ThumbDV: error from status, status=%d\n", status );
-//
-//            /* Set invalid FD in sched_waveform so we don't call write functions */
-//            handle = NULL;
-//            sched_waveform_setHandle(&handle);
-//            /* This function hangs until a new connection is made */
-//            _connectSerial( &handle );
-//            /* Update the sched_waveform to new valid serial */
-//            sched_waveform_setHandle( &handle );
-//        }
-//        else if ( rx_bytes >= AMBE3000_HEADER_LEN )
-//        {
-//            ret = thumbDV_processSerial( handle );
-//        }
-
         sem_wait(&_read_sem);
 
         ret = thumbDV_processSerial(handle);
@@ -843,9 +808,7 @@ void thumbDV_init( FT_HANDLE * handle ) {
     _decoded_root->prev = _decoded_root;
     pthread_rwlock_unlock( &_decoded_list_lock );
 
-    _connectSerial( handle );
-
-    pthread_create( &_read_thread, NULL, &_thumbDV_readThread, handle );
+    pthread_create( &_read_thread, NULL, &_thumbDV_readThread, NULL );
 
     struct sched_param fifo_param;
     fifo_param.sched_priority = 30;
