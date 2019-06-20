@@ -282,18 +282,16 @@ static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint3
     FT_STATUS status = FT_OK;
     DWORD written = 0;
 
-    static uint32 min, max;
-    static float avg;
+    static float min = 50000, max = 0;
+    static float avg = 0;
     static uint32 count = 0;
-    min = 0xFFFFFFFF;
-    max = 0;
-    avg = 0;
+
 
     struct timespec time;
 
     if ( handle != NULL )
     {
-        clock_gettime(CLOCK_MONOTONIC, &time);
+
         status = FT_Write(handle, buffer, bytes, &written);
 
         if ( status != FT_OK || written != bytes ) {
@@ -301,8 +299,10 @@ static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint3
             return status;
         }
 
+        clock_gettime(CLOCK_MONOTONIC, &time);
         status = thumbDV_processSerial(handle);
-        uint32 ms_elapsed = msSince(time);
+        float ms_elapsed = msSince(time);
+
 
         if ( ms_elapsed > max )
             max = ms_elapsed;
@@ -310,7 +310,7 @@ static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint3
         if ( ms_elapsed < min )
             min = ms_elapsed;
 
-        avg = avg * .9 + ms_elapsed * .1;
+        avg = (avg * .9 )+ (ms_elapsed * .1);
     }
     else
     {
@@ -318,7 +318,12 @@ static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint3
     }
 
     if ( count++ % 100 == 0)
-        output("------------------------------------------- Min: %d Max: %d Avg: %.1f\n", min, max, avg);
+    {
+        output("------------------------------------------- Min: %.1f Max: %.1f Avg: %.1f\n", min, max, avg);
+    	min = 50000;
+    	max = 0;
+    	avg = 0;
+    }
 
     return status;
 }
