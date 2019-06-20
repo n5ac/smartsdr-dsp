@@ -277,7 +277,7 @@ void thumbDV_dump( char * text, unsigned char * data, unsigned int length ) {
     }
 }
 
-static void thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint32 bytes )
+static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint32 bytes )
 {
     FT_STATUS status = FT_OK;
     DWORD written = 0;
@@ -288,23 +288,26 @@ static void thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint
 
         if ( status != FT_OK || written != bytes ) {
             output( ANSI_RED "Could not write to serial port. status = %d\n", status );
-            return;
+            return status;
         }
+
+        status = thumbDV_processSerial(handle);
     }
     else
     {
         output( ANSI_RED "Could not write to serial port. Timeout\n" ANSI_WHITE );
     }
 
+
+    return status;
 }
 
 static int _check_serial( FT_HANDLE handle )
 {
 
     unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
-    thumbDV_writeSerial( handle, reset, 5 );
 
-    int ret = thumbDV_processSerial(handle);
+    int ret = thumbDV_writeSerial( handle, reset, 5 );
 
     if ( ret != 0 )
     {
@@ -313,16 +316,13 @@ static int _check_serial( FT_HANDLE handle )
     }
 
     unsigned char get_prodID[5] = {0x61, 0x00, 0x01, 0x00, 0x30 };
-    thumbDV_writeSerial( handle, get_prodID, 5 );
-
-    ret = thumbDV_processSerial(handle);
+    ret = thumbDV_writeSerial( handle, get_prodID, 5 );
 
     if ( ret != 0 )
     {
         output( "Could not reset serial port FD = %d \n", handle );
         return -1;
     }
-
 
     return 0 ;
 }
@@ -698,7 +698,6 @@ static void _connectSerial( FT_HANDLE * ftHandle )
 
     unsigned char disable_parity[6] = {0x61, 0x00, 0x02, 0x00, 0x3F, 0x00};
     thumbDV_writeSerial( *ftHandle, disable_parity, 6 );
-    thumbDV_processSerial( *ftHandle );
 
     unsigned char get_version[5] = {0x61, 0x00, 0x01, 0x00, 0x31};
     unsigned char read_cfg[5] = {0x61, 0x00, 0x01, 0x00, 0x37};
