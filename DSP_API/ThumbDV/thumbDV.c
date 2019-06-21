@@ -290,41 +290,18 @@ static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint3
     FT_STATUS status = FT_OK;
     DWORD written = 0;
 
-    static float min = 50000, max = 0;
-    static float avg = 0;
-    static uint32 count = 0;
-
-    struct timespec time;
-
     if ( handle != NULL )
     {
-        clock_gettime(CLOCK_MONOTONIC, &time);
         status = FT_Write(handle, buffer, bytes, &written);
 
         if ( status != FT_OK || written != bytes ) {
             output( ANSI_RED "Could not write to serial port. status = %d\n", status );
             return status;
         }
-        float ms_elapsed = msSince(time);
-        if ( ms_elapsed > max )
-            max = ms_elapsed;
-
-        if ( ms_elapsed < min )
-            min = ms_elapsed;
-
-        avg = (avg * .9 )+ (ms_elapsed * .1);
     }
     else
     {
         output( ANSI_RED "Could not write to serial port. Timeout\n" ANSI_WHITE );
-    }
-
-    if ( count++ % 100 == 0)
-    {
-        output("------------------------------------------- Min: %.1f Max: %.1f Avg: %.1f\n", min, max, avg);
-    	min = 50000;
-    	max = 0;
-    	avg = 0;
     }
 
     return status;
