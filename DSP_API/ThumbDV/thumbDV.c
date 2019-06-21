@@ -326,11 +326,11 @@ static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint3
 
 static int _check_serial( FT_HANDLE handle )
 {
-
+	int ret  = 0;
     unsigned char reset[5] = { 0x61, 0x00, 0x01, 0x00, 0x33 };
 
-    int ret = thumbDV_writeSerial( handle, reset, 5 );
-    thumbDV_processSerial(handle);
+    thumbDV_writeSerial( handle, reset, 5 );
+    ret = thumbDV_processSerial(handle);
 
     if ( ret != 0 )
     {
@@ -339,8 +339,8 @@ static int _check_serial( FT_HANDLE handle )
     }
 
     unsigned char get_prodID[5] = {0x61, 0x00, 0x01, 0x00, 0x30 };
-    ret = thumbDV_writeSerial( handle, get_prodID, 5 );
-    thumbDV_processSerial(handle);
+    thumbDV_writeSerial( handle, get_prodID, 5 );
+    ret = thumbDV_processSerial(handle);
 
     if ( ret != 0 )
     {
