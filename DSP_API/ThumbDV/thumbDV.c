@@ -737,11 +737,6 @@ static void _connectSerial( FT_HANDLE * ftHandle )
     thumbDV_writeSerial( *ftHandle, pkt_compand, 6 );
     thumbDV_processSerial(*ftHandle);
 
-    unsigned char test_coded[15] =  {0x61, 0x00 , 0x0B , 0x01 , 0x01 , 0x48 , 0x5E , 0x83 , 0x12 , 0x3B , 0x98 , 0x79 , 0xDE , 0x13 , 0x90};
-
-    thumbDV_writeSerial( *ftHandle, test_coded, 15 );
-    thumbDV_processSerial(*ftHandle);
-
     unsigned char pkt_fmt[7] = {0x61, 0x00, 0x3, 0x00, 0x15, 0x00, 0x00};
     thumbDV_writeSerial( *ftHandle, pkt_fmt, 7 );
     thumbDV_processSerial(*ftHandle);
