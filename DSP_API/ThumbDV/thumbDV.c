@@ -75,7 +75,7 @@
 static pthread_t _read_thread;
 BOOL _readThreadAbort = FALSE;
 
-static uint32 _buffering_target = 1;
+static uint32 _buffering_target = 0;
 
 static pthread_rwlock_t _encoded_list_lock;
 static BufferDescriptor _encoded_root;
@@ -185,7 +185,7 @@ static BufferDescriptor _thumbDVDecodedList_UnlinkHead( void ) {
         }
     } else {
         if ( !_decoded_buffering )
-            output( "DecodedList now Buffering \n" );
+            //output( "DecodedList now Buffering \n" );
 
         _decoded_buffering = TRUE;
     }
@@ -204,7 +204,7 @@ static void _thumbDVDecodedList_LinkTail( BufferDescriptor buf_desc ) {
     _decoded_count++;
 
     if ( _decoded_count > _buffering_target ) {
-        if ( _decoded_buffering ) output( "Decoded Buffering is now FALSE\n" );
+       // if ( _decoded_buffering ) output( "Decoded Buffering is now FALSE\n" );
 
         _decoded_buffering = FALSE;
     }
@@ -667,7 +667,10 @@ int thumbDV_encode( FT_HANDLE handle, short * speech_in, unsigned char * packet_
     }
 
     if ( handle != NULL )
+    {
         thumbDV_writeSerial( handle, packet, length + AMBE3000_HEADER_LEN );
+    	sem_post(&_read_sem);
+    }
 
     int32 samples_returned = 0;
     BufferDescriptor desc = _thumbDVEncodedList_UnlinkHead();
