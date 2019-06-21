@@ -76,6 +76,7 @@ static pthread_t _read_thread;
 BOOL _readThreadAbort = FALSE;
 
 static uint32 _buffering_target = 0;
+static uint32 _encode_buffering_target = 4;
 
 static pthread_rwlock_t _encoded_list_lock;
 static BufferDescriptor _encoded_root;
@@ -141,7 +142,7 @@ static void _thumbDVEncodedList_LinkTail( BufferDescriptor buf_desc ) {
     _encoded_root->prev = buf_desc;
     _encoded_count++;
 
-    if ( _encoded_count > _buffering_target ) {
+    if ( _encoded_count > _encode_buffering_target ) {
         if ( _encoded_buffering ) output( "Encoded Buffering is now FALSE\n" );
 
         _encoded_buffering = FALSE;
