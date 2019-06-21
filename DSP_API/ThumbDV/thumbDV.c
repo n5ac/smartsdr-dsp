@@ -212,6 +212,11 @@ static void _thumbDVDecodedList_LinkTail( BufferDescriptor buf_desc ) {
     pthread_rwlock_unlock( &_decoded_list_lock );
 }
 
+BOOL thumbDV_getDecodeListBuffering(void)
+{
+    return _decoded_buffering;
+}
+
 static void delay( unsigned int delay ) {
     struct timespec tim, tim2;
     tim.tv_sec = 0;
@@ -548,30 +553,8 @@ int thumbDV_processSerial( FT_HANDLE handle )
     return FT_OK;
 }
 
-int thumbDV_decode( FT_HANDLE handle, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet ) {
-    uint32 i = 0;
-
-    unsigned char full_packet[15] = {0};
-
-    if ( packet_in != NULL && handle != NULL ) {
-        full_packet[0] = 0x61;
-        full_packet[1] = 0x00;
-        full_packet[2] = 0x0B;
-        full_packet[3] = 0x01;
-        full_packet[4] = 0x01;
-        full_packet[5] = 0x48;
-        uint32 j = 0;
-
-        for ( i = 0, j = 8  ; i < 9 ; i++ , j-- ) {
-            full_packet[i + 6] = packet_in[i];
-        }
-
-//        thumbDV_dump("Just AMBE", packet_in, 9);
-//        thumbDV_dump("Encoded packet:", full_packet, 15);
-        thumbDV_writeSerial( handle, full_packet, 15 );
-        sem_post(&_read_sem);
-    }
-
+int thumbDV_unlinkAudio(short * speech_out)
+{
     int32 samples_returned = 0;
     BufferDescriptor desc = _thumbDVDecodedList_UnlinkHead();
     uint32 samples_in_speech_packet = 0;
@@ -605,6 +588,31 @@ int thumbDV_decode( FT_HANDLE handle, unsigned char * packet_in, short * speech_
     }
 
     return samples_returned;
+}
+
+void thumbDV_decode( FT_HANDLE handle, unsigned char * packet_in, uint8 bytes_in_packet ) {
+    uint32 i = 0;
+
+    unsigned char full_packet[15] = {0};
+
+    if ( packet_in != NULL && handle != NULL ) {
+        full_packet[0] = 0x61;
+        full_packet[1] = 0x00;
+        full_packet[2] = 0x0B;
+        full_packet[3] = 0x01;
+        full_packet[4] = 0x01;
+        full_packet[5] = 0x48;
+        uint32 j = 0;
+
+        for ( i = 0, j = 8  ; i < 9 ; i++ , j-- ) {
+            full_packet[i + 6] = packet_in[i];
+        }
+
+//        thumbDV_dump("Just AMBE", packet_in, 9);
+//        thumbDV_dump("Encoded packet:", full_packet, 15);
+        thumbDV_writeSerial( handle, full_packet, 15 );
+        sem_post(&_read_sem);
+    }
 }
 
 int thumbDV_encode( FT_HANDLE handle, short * speech_in, unsigned char * packet_out, uint8 num_of_samples )
@@ -776,6 +784,7 @@ static void * _thumbDV_readThread( void * param )
         sem_wait(&_read_sem);
 
         ret = thumbDV_processSerial(handle);
+        //TODO Handle reconnection
 //        if ( ret != FT_OK )
 //        {
 //            fprintf( stderr, "ThumbDV: error from status, status=%d\n", ret );

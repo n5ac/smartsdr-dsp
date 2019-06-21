@@ -43,8 +43,11 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device );
 int thumbDV_processSerial( FT_HANDLE handle );
 
 int thumbDV_encode( FT_HANDLE handle, short * speech_in, unsigned char * packet_out, uint8 num_of_samples );
-int thumbDV_decode( FT_HANDLE handle, unsigned char * packet_in, short * speech_out, uint8 bytes_in_packet );
+void thumbDV_decode( FT_HANDLE handle, unsigned char * packet_in, uint8 bytes_in_packet );
 
 void thumbDV_dump( char * text, unsigned char * data, unsigned int length );
 void thumbDV_flushLists(void);
+
+BOOL thumbDV_getDecodeListBuffering(void);
+int thumbDV_unlinkAudio(short * speech_out);
 #endif /* THUMBDV_THUMBDV_ */
