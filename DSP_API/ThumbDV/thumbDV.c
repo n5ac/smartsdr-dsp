@@ -362,7 +362,7 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
 
 
     FT_SetDataCharacteristics(handle, FT_BITS_8, FT_STOP_BITS_1, FT_PARITY_NONE);
-    FT_SetFlowControl(handle, FT_FLOW_NONE, 0, 0);
+    FT_SetFlowControl(handle, FT_FLOW_XON_XOFF, 0x11, 0x13);
 
 /*
     tty.c_cflag = ( tty.c_cflag & ~CSIZE ) | CS8;
