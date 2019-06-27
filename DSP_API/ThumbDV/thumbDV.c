@@ -341,7 +341,7 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
     FT_STATUS status = FT_OK;
     UCHAR latency = 5;
 
-    output("Trying to open serial port %s", device.SerialNumber);
+    output("Trying to open serial port %s /n", device.SerialNumber);
 
     status = FT_OpenEx(device.SerialNumber, FT_OPEN_BY_SERIAL_NUMBER, &handle);
 
@@ -452,7 +452,7 @@ int thumbDV_processSerial( FT_HANDLE handle )
 
         if ( us_slept > max_us_sleep )
         {
-            output("TimeOut\n");
+            output("TimeOut #1\n");
             return FT_OTHER_ERROR;
         }
 
@@ -487,7 +487,7 @@ int thumbDV_processSerial( FT_HANDLE handle )
 
         if ( us_slept > max_us_sleep )
         {
-            output("TimeOut\n");
+            output("TimeOut #2 \n");
             return FT_OTHER_ERROR;
         }
 
