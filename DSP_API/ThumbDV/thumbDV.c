@@ -292,12 +292,14 @@ static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint3
 
     if ( handle != NULL )
     {
+    	FT_SetRts(handle);
         status = FT_Write(handle, buffer, bytes, &written);
 
         if ( status != FT_OK || written != bytes ) {
             output( ANSI_RED "Could not write to serial port. status = %d\n", status );
             return status;
         }
+        FT_ClrRts(handle);
     }
     else
     {
@@ -341,7 +343,7 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
     FT_STATUS status = FT_OK;
     UCHAR latency = 5;
 
-    output("Trying to open serial port %s /n", device.SerialNumber);
+    output("Trying to open serial port %s \n", device.SerialNumber);
 
     status = FT_OpenEx(device.SerialNumber, FT_OPEN_BY_SERIAL_NUMBER, &handle);
 
@@ -360,9 +362,8 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
     // Set read and write timeout to 2seconds */
     FT_SetTimeouts(handle, 0, 0);
 
-
     FT_SetDataCharacteristics(handle, FT_BITS_8, FT_STOP_BITS_1, FT_PARITY_NONE);
-    FT_SetFlowControl(handle, FT_FLOW_XON_XOFF, 0x11, 0x13);
+    FT_SetFlowControl(handle, FT_FLOW_RTS_CTS, 0, 0);
 
 /*
     tty.c_cflag = ( tty.c_cflag & ~CSIZE ) | CS8;
