@@ -40,14 +40,45 @@ add_executable(thumbdv
         resampler.c
         main.c)
 
+
+
 if (CMAKE_BUILD_TYPE MATCHES ThumbDV_Release)
+    target_compile_options(thumbdv PRIVATE
+            -O3
+            -mcpu=cortex-a8
+            -mfpu=neon
+            -mfloat-abi=softfp
+            -ftree-vectorize
+            -Wall
+            )
     target_compile_options(thumbdv PRIVATE
             -U_FORTIFY_SOURCE
             -c
             -fmessage-length=0
             -lpthread
             -MMD
-            -MP)
+            -MP
+            -MF)
+elseif(CMAKE_BUILD_TYPE MATCHES ThumbDV_Debug)
+    target_compile_options(thumbdv PRIVATE
+            -O0
+            -mcpu=cortex-a8
+            -mfpu=neon
+            -mfloat-abi=softfp
+            -ftree-vectorize
+            -Wall
+            -ggdb
+            -g3
+            -fstack-protector-all
+            -funwind-tables
+            -c
+            -fmessage-length=0
+            -lpthread
+            -MMD
+            -MP
+            -MF
+            )
+
 endif()
 
 TARGET_LINK_LIBRARIES(thumbdv PRIVATE
@@ -66,14 +97,7 @@ target_link_options(thumbdv INTERFACE
         -Map=Firmware.map)
 
 
-target_compile_options(thumbdv PRIVATE
-        -O3
-        -mcpu=cortex-a8
-        -mfpu=neon
-        -mfloat-abi=softfp
-        -ftree-vectorize
-        -Wall
-        )
+
 
 add_custom_command(TARGET thumbdv POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:thumbdv> /nfsroots/microburst/home/root)
