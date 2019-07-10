@@ -358,11 +358,8 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
     }
 
     FT_SetBaudRate(handle, FT_BAUD_460800);
-
-    // Set read and write timeout to 2seconds */
-    FT_SetTimeouts(handle, 0, 0);
-
     FT_SetDataCharacteristics(handle, FT_BITS_8, FT_STOP_BITS_1, FT_PARITY_NONE);
+    FT_SetTimeouts(handle, 0, 0);
     FT_SetFlowControl(handle, FT_FLOW_RTS_CTS, 0, 0);
 
 /*
@@ -409,14 +406,10 @@ FT_HANDLE thumbDV_openSerial( FT_DEVICE_LIST_INFO_NODE device )
     }
 
     FT_SetBaudRate(handle, FT_BAUD_230400 );
-
-    FT_SetTimeouts(handle, 0, 0);
-
-
     FT_SetDataCharacteristics(handle, FT_BITS_8, FT_STOP_BITS_1, FT_PARITY_NONE);
+    FT_SetTimeouts(handle, 0, 0);
     FT_SetFlowControl(handle, FT_FLOW_NONE, 0, 0);
     FT_SetLatencyTimer(handle, latency);
-
 
     if ( _check_serial( handle ) != 0 ) {
         output( "Could not detect THumbDV at 230400 Baud\n" );
