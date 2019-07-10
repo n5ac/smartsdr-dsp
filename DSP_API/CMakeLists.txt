@@ -41,24 +41,23 @@ add_executable(thumbdv
         main.c)
 
 
-
 if (CMAKE_BUILD_TYPE MATCHES ThumbDV_Release)
     target_compile_options(thumbdv PRIVATE
+            -U_FORTIFY_SOURCE
             -O3
             -mcpu=cortex-a8
             -mfpu=neon
             -mfloat-abi=softfp
             -ftree-vectorize
             -Wall
-            )
-    target_compile_options(thumbdv PRIVATE
-            -U_FORTIFY_SOURCE
             -c
             -fmessage-length=0
             -lpthread
             -MMD
             -MP
-            -MF)
+            -MF
+            )
+
 elseif(CMAKE_BUILD_TYPE MATCHES ThumbDV_Debug)
     target_compile_options(thumbdv PRIVATE
             -O0
@@ -78,6 +77,9 @@ elseif(CMAKE_BUILD_TYPE MATCHES ThumbDV_Debug)
             -MP
             -MF
             )
+    target_compile_definitions(thumbdv PRIVATE
+            DEBUG)
+
 elseif(CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_options(thumbdv PRIVATE
             -O0
@@ -95,7 +97,9 @@ elseif(CMAKE_BUILD_TYPE MATCHES Debug)
             -MP
             -MF
             )
-
+    target_compile_definitions(thumbdv PRIVATE
+            DEBUG)
+    
 endif()
 
 TARGET_LINK_LIBRARIES(thumbdv PRIVATE
@@ -105,15 +109,9 @@ TARGET_LINK_LIBRARIES(thumbdv PRIVATE
         dl
         m)
 
-if (CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES ThumbDV_Debug)
-    target_compile_definitions(thumbdv PRIVATE
-            DEBUG)
-endif()
 
 target_link_options(thumbdv INTERFACE
         -Map=Firmware.map)
-
-
 
 
 add_custom_command(TARGET thumbdv POST_BUILD
