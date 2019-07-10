@@ -78,6 +78,23 @@ elseif(CMAKE_BUILD_TYPE MATCHES ThumbDV_Debug)
             -MP
             -MF
             )
+elseif(CMAKE_BUILD_TYPE MATCHES Debug)
+    target_compile_options(thumbdv PRIVATE
+            -O0
+            -ftree-vectorize
+            -g3
+            -ggdb
+            -g3
+            -fstack-protector-all
+            -funwind-tables
+            -Wall
+            -c
+            -fmessage-length=0
+            -lpthread
+            -MMD
+            -MP
+            -MF
+            )
 
 endif()
 
