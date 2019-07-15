@@ -676,10 +676,18 @@ static void _connectSerial( FT_HANDLE * ftHandle )
     do {
 
         status = FT_CreateDeviceInfoList(&numDevs);
+        if (status != FT_OK)
+        {
+            output("Unable to create Device Info \n");
+        }
 
         devInfo = (FT_DEVICE_LIST_INFO_NODE *) safe_malloc(sizeof(FT_DEVICE_LIST_INFO_NODE) * numDevs);
 
         status = FT_GetDeviceInfoList(devInfo, &numDevs);
+        if (status != FT_OK)
+        {
+            output("Unable to fetch Device Info \n");
+        }
 
         for ( i = 0 ; i < numDevs ; i++ )
         {

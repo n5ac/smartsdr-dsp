@@ -7,7 +7,7 @@ set(CMAKE_SYSTEM_VERSION gnu)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 ## Setting up the four types of builds we have
-set(CMAKE_CONFIGURATION_TYPES "ThumbDV_Debug;ThumbDV_Release" CACHE STRING "" FORCE)
+set(CMAKE_CONFIGURATION_TYPES "ThumbDV_Debug;ThumbDV_Release;Test_Dongle" CACHE STRING "" FORCE)
 
 include_directories(.)
 include_directories(include)
@@ -57,7 +57,22 @@ if (CMAKE_BUILD_TYPE MATCHES ThumbDV_Release)
             -MP
             -MF
             )
-
+elseif(CMAKE_BUILD_TYPE MATCHES Test_Dongle)
+    target_compile_options(thumbdv PRIVATE
+            -U_FORTIFY_SOURCE
+            -O3
+            #-mcpu=cortex-a8
+            #-mfpu=neon
+            #-mfloat-abi=softfp
+            -ftree-vectorize
+            -Wall
+            -c
+            -fmessage-length=0
+            -lpthread
+            -MMD
+            -MP
+            -MF
+            )
 elseif(CMAKE_BUILD_TYPE MATCHES ThumbDV_Debug)
     target_compile_options(thumbdv PRIVATE
             -O0
