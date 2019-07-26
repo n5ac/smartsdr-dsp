@@ -94,7 +94,9 @@ static sem_t _read_sem;
 
 //static void * _thumbDV_readThread( void * param );
 
-static BufferDescriptor _thumbDVEncodedList_UnlinkHead( void ) {
+BOOL allowedToRead = TRUE;
+
+static BufferDescriptor _thumbDVEncodedList_UnlinkHead(void ) {
     BufferDescriptor buf_desc = NULL;
     pthread_rwlock_wrlock( &_encoded_list_lock );
 
@@ -757,9 +759,16 @@ static void * _thumbDV_readThread( void * param )
     while ( !_readThreadAbort )
     {
         sem_wait(&_read_sem);
-        thumbDV_processSerial(handle);
-    }
 
+        if (!allowedToRead)
+        {
+            break;
+        }
+        else
+        {
+            thumbDV_processSerial(handle);
+        }
+    }
     output( ANSI_YELLOW "thumbDV_readThread has exited\n" ANSI_WHITE );
     return 0;
 }
@@ -779,16 +788,24 @@ static void * _thumbDV_connectThread( void * param )
         ret = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_dword);
 
         if (ret != FT_OK) {
-            output("Serial is disconnected\n");
-            fprintf(stderr, "ThumbDV: error from status, status=%d\n", ret);
 
-            /* Set invalid FD in sched_waveform so we don't call write functions */
+            //clear out read buffer and stop read thread
+            sem_post(&_read_sem);
+            allowedToRead = FALSE;
+
+            output("Serial is disconnected\n");
+
+             //Set invalid FD in sched_waveform so we don't call write functions
             handle = NULL;
             sched_waveform_setHandle(&handle);
-            /* This function hangs until a new connection is made */
+             //This function hangs until a new connection is made
             _connectSerial(&handle);
-            /* Update the sched_waveform to new valid serial */
+             //Update the sched_waveform to new valid serial
             sched_waveform_setHandle(&handle);
+
+            //Start read thread again
+            allowedToRead = TRUE;
+            pthread_create( &_read_thread, NULL, &_thumbDV_readThread, &handle );
         }
     }
 }
