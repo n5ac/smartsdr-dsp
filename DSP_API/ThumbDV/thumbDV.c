@@ -73,7 +73,9 @@
 #define THUMBDV_MAX_PACKET_LEN  2048U
 
 static pthread_t _read_thread;
+static pthread_t _connect_thread;
 BOOL _readThreadAbort = FALSE;
+BOOL _connectThreadAbort = FALSE;
 
 static uint32 _buffering_target = 0;
 static uint32 _encode_buffering_target = 4;
@@ -294,7 +296,7 @@ static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint3
     {
     	//FT_SetRts(handle);
         status = FT_Write(handle, buffer, bytes, &written);
-        
+
         if ( status != FT_OK || written != bytes ) {
             output( ANSI_RED "Could not write to serial port. status = %d\n", status );
             return status;
@@ -747,11 +749,6 @@ static void _connectSerial( FT_HANDLE * ftHandle )
 
 static void * _thumbDV_readThread( void * param )
 {
-    int ret;
-    DWORD rx_bytes;
-    DWORD tx_bytes;
-    DWORD event_dword;
-
     FT_STATUS status = FT_OK;
     FT_HANDLE handle = *(FT_HANDLE *) param;
 
@@ -760,25 +757,40 @@ static void * _thumbDV_readThread( void * param )
     while ( !_readThreadAbort )
     {
         sem_wait(&_read_sem);
-
-        ret = thumbDV_processSerial(handle);
-        //TODO Handle reconnection
-//        if ( ret != FT_OK )
-//        {
-//            fprintf( stderr, "ThumbDV: error from status, status=%d\n", ret );
-//
-//            /* Set invalid FD in sched_waveform so we don't call write functions */
-//            handle = NULL;
-//            sched_waveform_setHandle(&handle);
-//            /* This function hangs until a new connection is made */
-//            _connectSerial( &handle );
-//            /* Update the sched_waveform to new valid serial */
-//            sched_waveform_setHandle( &handle );
-//        }
+        thumbDV_processSerial(handle);
     }
 
     output( ANSI_YELLOW "thumbDV_readThread has exited\n" ANSI_WHITE );
     return 0;
+}
+
+static void * _thumbDV_connectThread( void * param )
+{
+    int ret;
+    DWORD rx_bytes;
+    DWORD tx_bytes;
+    DWORD event_dword;
+
+    FT_STATUS status = FT_OK;
+    FT_HANDLE handle = *(FT_HANDLE *) param;
+
+    while ( !_connectThreadAbort ) {
+        //TODO Handle reconnection
+        ret = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_dword);
+
+        if (ret != FT_OK) {
+            output("Serial is disconnected\n");
+            fprintf(stderr, "ThumbDV: error from status, status=%d\n", ret);
+
+            /* Set invalid FD in sched_waveform so we don't call write functions */
+            handle = NULL;
+            sched_waveform_setHandle(&handle);
+            /* This function hangs until a new connection is made */
+            _connectSerial(&handle);
+            /* Update the sched_waveform to new valid serial */
+            sched_waveform_setHandle(&handle);
+        }
+    }
 }
 
 void thumbDV_init( FT_HANDLE * handle ) {
@@ -803,6 +815,7 @@ void thumbDV_init( FT_HANDLE * handle ) {
 
     _connectSerial(handle);
 
+    pthread_create( &_connect_thread, NULL, &_thumbDV_connectThread, handle );
     pthread_create( &_read_thread, NULL, &_thumbDV_readThread, handle );
 
     struct sched_param fifo_param;
