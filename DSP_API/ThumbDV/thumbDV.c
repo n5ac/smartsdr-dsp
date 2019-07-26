@@ -294,8 +294,7 @@ static int thumbDV_writeSerial( FT_HANDLE handle , unsigned char * buffer, uint3
     {
     	//FT_SetRts(handle);
         status = FT_Write(handle, buffer, bytes, &written);
-        usleep(10000);
-
+        
         if ( status != FT_OK || written != bytes ) {
             output( ANSI_RED "Could not write to serial port. status = %d\n", status );
             return status;
