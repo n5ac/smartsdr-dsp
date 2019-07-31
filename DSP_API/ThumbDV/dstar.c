@@ -951,15 +951,20 @@ BOOL dstar_rxStateMachine( DSTAR_MACHINE machine, BOOL in_bit, unsigned char * a
 
                 dstar_updateStatus( machine, machine->slice, STATUS_RX );
 
+                machine->rx_state = VOICE_FRAME;
+                machine->bit_count = 0;
+                machine->frame_count = 0;
+
 
             } else {
                 output( ANSI_RED "P_FCS Does Not Match!\n" ANSI_WHITE );
+
+                machine->rx_state = BIT_FRAME_SYNC;
+                machine->bit_count = 0;
             }
 
             /* STATE CHANGE */
-            machine->rx_state = VOICE_FRAME;
-            machine->bit_count = 0;
-            machine->frame_count = 0;
+
         }
 
         break;

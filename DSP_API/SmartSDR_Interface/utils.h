@@ -40,6 +40,7 @@ void output(const char *fmt,...);
 void tsAdd(struct timespec* time1, struct timespec time2);
 float tsfSubtract(struct timespec time1, struct timespec time2);
 uint32 usSince(struct timespec time);
+uint32 msSince(struct timespec time);
 uint32 getIP(char* text);
 void lock_malloc_init(void);
 void* safe_malloc(size_t size);

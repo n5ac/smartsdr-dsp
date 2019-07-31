@@ -519,12 +519,20 @@ static void * _sched_waveform_thread( void * param ) {
                             }
 
                             if ( ambe_packet_out == TRUE ) {
+                                thumbDV_decode( _dv_serial_handle, ambe_out, DV_PACKET_SAMPLES );
+                            }
+
+                            if ( thumbDV_getDecodeListBuffering() == FALSE)
+                            {
+                                // There is something in the decoded list - fetch audio
                                 nout = 0;
-                                nout = thumbDV_decode( _dv_serial_handle, ambe_out, speech_out, DV_PACKET_SAMPLES );
+                                nout = thumbDV_unlinkAudio(speech_out);
                                 uint32 j = 0;
 
                                 for ( j = 0 ; j < nout ; j++ )
+                                {
                                     cbWriteShort( RX3_cb, speech_out[j] );
+                                }
                             }
 
                         }
