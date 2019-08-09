@@ -784,9 +784,10 @@ static void * _thumbDV_connectThread( void * param )
     FT_HANDLE handle = *(FT_HANDLE *) param;
 
     while ( !_connectThreadAbort ) {
-        //TODO Handle reconnection
-        ret = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_dword);
+        
+        //waits 1 second before checking status to prevent CPU hogging
         usleep(1000000);
+        ret = FT_GetStatus(handle, &rx_bytes, &tx_bytes, &event_dword);
 
         if (ret != FT_OK) {
 
